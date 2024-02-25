@@ -4,15 +4,19 @@ import numpy as np
 import os
 from utils.functions import *
 
+import argparse
+
 # Data pre-processing towards making the entire training easier.
 dataset = "./dataset"
-database = './cubes' # The number of fases for each mesh must be the same with each other. SWs such as MeshLab can be used.
+database = './Nodule-98-30K-Remesh' # The number of fases for each mesh must be the same with each other. SWs such as MeshLab can be used.
 
 # ModelNet40, Manifold40: 1024
 # Cube, Shrec: 500
-target_face_num = 500 
+target_face_num = 20000 
 
-database = database+"_"+str(target_face_num)
+# database = database+"_"+str(target_face_num)
+# database = 
+
 
 class_names = np.sort(os.listdir(database))
 modes = ["train", "test"]
@@ -22,6 +26,8 @@ for name in class_names:
         path1 = os.path.join(database, name, mode)
         obj_names = os.listdir(path1)
         for obj in obj_names:
+
+            print("Processing {}".format(obj))
             path2 = os.path.join(path1, obj)
             mesh = tm.load_mesh(path2, process=False)
             
@@ -42,8 +48,15 @@ for name in class_names:
             faces_t = torch.from_numpy(faces)
             verts_t = torch.from_numpy(verts)
 
-            adjs = torch.from_numpy(mesh.face_adjacency)
-            adj_list = get_adj_nm(adjs).long()  
+            face_adj = np.copy(mesh.face_adjacency)
+            adjs = torch.from_numpy(face_adj)
+            adj_list = get_adj_nm(adjs)
+
+            if adj_list is None:
+                print("Mesh has problems. Skip.")
+                continue  
+            else:
+                adj_list = adj_list.long()
             
             # extract edge feature
             norm_t = torch.from_numpy(norms[faces_t[adj_list[:,0]]])
@@ -71,3 +84,8 @@ for name in class_names:
                 os.makedirs(save_path, exist_ok=True)
                 save_path = os.path.join(save_path, obj)
                 np.save(save_path, d1)
+            else:
+                print("Discarded, mesh has {} edge features and {} adjacents, needed is {}".format(len(edge_feature), len(adj_list), target_face_num))
+
+# if __name__ == "__main__":
+#     pass

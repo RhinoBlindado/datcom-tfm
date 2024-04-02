@@ -7,3 +7,18 @@ env/
 
 # Data
 data/
+
+# LaTex
+*.aux
+*.bbl
+*.bcf
+*.fdb_latexmk
+*.fls
+*.log
+*.lof
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.blg

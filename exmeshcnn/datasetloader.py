@@ -1,6 +1,9 @@
 import numpy as np
+import pandas as pd
 import torch
 import os
+
+from sklearn.preprocessing import OneHotEncoder
 
 class SingleImgDataset(torch.utils.data.Dataset):
     def __init__(self, root_dir, mode):
@@ -31,3 +34,47 @@ class SingleImgDataset(torch.utils.data.Dataset):
         ad = d_1.item()['adj']
         return (class_id, ed , fa, ad)
 
+
+class PSDataset(torch.utils.data.Dataset):
+    """
+    Dataset loader for the Pubic Symphysis data
+    """
+
+    def __init__(self, input_df : pd.DataFrame, path : str, tags : dict):
+        self.bone_id = input_df["name"].to_list()
+        self.path = path
+        self.tags = {}
+
+        for key, val in tags.items():
+            act_tag = input_df[key].to_list()
+
+            if val > 2:
+                tag_encoder = OneHotEncoder(categories = list(range(val)))
+                act_tag = tag_encoder.fit_transform(act_tag)
+
+            self.tags[key] = act_tag
+
+    def __len__(self):
+        return len(self.bone_id)
+    
+    def __getitem__(self, idx):
+
+        # Load the "mesh"
+        pseudo_mesh = np.load(os.path.join(self.path, "npy", f"{self.bone_id[idx]}.npy"), allow_pickle=True)
+        edge_feat = torch.from_numpy(pseudo_mesh.item()['edge'])
+        face_feat = torch.from_numpy(pseudo_mesh.item()['face'])
+        adyacent_faces = pseudo_mesh.item()['adj']
+
+        # Get the tags:
+        # Structure of dictionary is
+        # { "tag_1" : <value_at_idx>,
+        #   "tag_2" : <value_at_idx>,
+        #    ...
+        #   "tag_n" : <value_at_idx> }
+        bone_tag = {}
+
+        for key, val in self.tags.items():
+            bone_tag[key] = val[idx]
+
+        return edge_feat, face_feat, adyacent_faces, bone_tag
+    

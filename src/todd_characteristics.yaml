@@ -1,0 +1,44 @@
+"af" :
+    "name" : "ArticularFace"
+    "cat_num" : 5
+    "cat_names" : ["RegularPorosity", "RidgesAndGrooves", "GroovesShallow", "GroovesRest", "NoGrooves"]
+    
+"ip" :
+    "name" : "IrregularPorosity"
+    "cat_num" : 3
+    "cat_names" : ["Absence", "Medium", "Much"]
+
+"use" :
+    "name" : "UpperSymphysialExtremity"
+    "cat_num" : 2
+    "cat_names" : ["NotDefined", "Defined"]
+
+"bn" : 
+    "name" : "BonyNodule"
+    "cat_num" : 2
+    "cat_names" : ["Absent", "Present"]
+
+"lse" :
+    "name" : "LowerSymphysialExtremity"
+    "cat_num" : 2
+    "cat_names" : ["NotDefined", "Defined"]
+
+"dm" :
+    "name" : "DorsalMargin"
+    "cat_num" : 2
+    "cat_names" : ["Absent", "Present"]
+
+"dp" :
+    "name" : "DorsalPlateau"
+    "cat_num" : 2
+    "cat_names" : ["Absent", "Present"]
+
+"vb" :
+    "name" : "VentralBevel"
+    "cat_num" : 3
+    "cat_names" : ["Absent", "InProcess", "Present"]
+
+"vm" :
+    "name" : "VentralMargin"
+    "cat_num" : 5
+    "cat_names" : ["Absent", "PartiallyFormed", "FormedWithoutRarefactions", "FormedWitFewRarefactions", "FormedWithLotRecessesAndProtrusions"]

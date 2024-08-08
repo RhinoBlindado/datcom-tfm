@@ -5,8 +5,9 @@ env/
 # Meshes
 *.obj
 
-# Data
+# Data 
 data/
+testing/
 
 # LaTex
 *.aux

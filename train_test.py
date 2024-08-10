@@ -35,7 +35,8 @@ def train_step(model: torch.nn.Module,
     """
     # Put model in train mode
     model.train()
-    
+
+    batch_len = len(dataloader)
     # Loop through data loader data batches
     for _, batch in enumerate(dataloader):
         
@@ -56,13 +57,13 @@ def train_step(model: torch.nn.Module,
             act_tag, act_y = keyval
 
             # ... calculate its own loss with its own loss function.
-            act_y = act_y.unsqueeze(dim=1).float().to(device)
-            act_loss = tag_data[act_tag]["loss_fn"](act_y, y_preds[i])
+            act_loss = tag_data[act_tag]["loss_fn"](act_y.unsqueeze(dim=1).float().to(device),
+                                                    y_preds[i])
 
             # Save the actual loss, prediction and correct tags
-            tag_data[act_tag]["train"]["y"].extend(act_y)
-            tag_data[act_tag]["train"]["y_pred"].extend(y_preds[i])
-            tag_data[act_tag]["train"]["loss"] += act_loss
+            tag_data[act_tag]["train"]["y"].extend(act_y.tolist())
+            tag_data[act_tag]["train"]["y_pred"].extend(torch.round(torch.sigmoid(y_preds[i])).squeeze(dim=1).tolist())
+            tag_data[act_tag]["train"]["loss"] += act_loss.tolist() / batch_len
             losses.append(act_loss)
 
         # 3. Optimizer zero grad
@@ -75,16 +76,35 @@ def train_step(model: torch.nn.Module,
         # 5. Optimizer step
         optimizer.step()
 
+    for _, values in tag_data.items():
+        values["train"]["class_report"] = classification_report(values["train"]["y"], values["train"]["y_pred"],  output_dict=True, zero_division=0)
+        values["train"]["cm"] = confusion_matrix(values["train"]["y"], values["train"]["y_pred"])
 
-    return train_loss, train_acc
 
 
 def training(model: torch.nn.Module, train_data, validation_data, tag_data : dict, optimizer, epochs, device, epoch_begin = 0):
     
 
     for epoch in range(epochs):
+
         train_step(model, train_data, tag_data, optimizer, device)
-    
+
+        train_report = ""
+        for tag, values in tag_data.items():
+
+            curr_acc  =  values["train"]["class_report"]["accuracy"]
+            curr_f1   =  values["train"]["class_report"]["macro avg"]["f1-score"]
+            curr_loss =  values["train"]["loss"]
+
+            train_report += f"[{tag.upper()}] [T] ACC={curr_acc:.2f} F1={curr_f1:.2f} LOSS={curr_loss:.2f} "
+
+            values["train"]["loss"] = 0
+            values["train"]["y"].clear()
+            values["train"]["y_pred"].clear()
+            values["train"]["class_report"] = None
+            values["train"]["cm"] = None
+
+        print(f"{epoch+1:03d}/{epochs:03d}: {train_report}")
 
 if __name__ == "__main__":
 
@@ -102,6 +122,7 @@ if __name__ == "__main__":
     parser.add_argument("-w", "--workers", type=int, default=4, help="Dataloader workers, default is 4.")
 
     # Training specific arguments.
+    parser.add_argument("-e", "--epochs", type=int, default=30)
     parser.add_argument("-f", "--folds", type=int, default=1)
     parser.add_argument("-t", "--tags", type=str, required=True, nargs="+", choices=["af", "ip", "use", "bn", "lse", "dm", "dp", "vb", "vm", "all"])
     parser.add_argument("--lr", type=float, default=0.001)
@@ -112,15 +133,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    torch.cuda.empty_cache()
     # Select the device to perform the computations.
+    torch.cuda.empty_cache()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-    # Load up the datasets
-    # This needs to be changed to divide the data in some way, but that's not for todayyyyy
-    train_df = pd.read_csv(os.path.join(args.dataset, "dataset.csv"))
-    # val_df
-    # test_df
 
     # Prepare the multiclass data dictionary
     # - Read the YAML to get the metadata of the tags: names, number of characteristics and their names.
@@ -149,9 +164,9 @@ if __name__ == "__main__":
         # Using char as the key, access the number of categories in current tag, ...
         tag_data[char]["classes"] = tag_metadata[char]["cat_num"]
         # ... make another nested dictionary to hold values relevant to the training, validation, and test ...
-        tag_data[char]["train"] = {"y" : [], "y_pred" : [], "loss" : -1, "class_report" : None, "cm" : None}
-        tag_data[char]["val"] = {"y" : [], "y_pred" : [], "loss" : -1, "class_report" : None, "cm" : None}
-        tag_data[char]["test"] = {"y" : [], "y_pred" : [], "loss" : -1, "class_report" : None, "cm" : None}
+        tag_data[char]["train"] = {"y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
+        tag_data[char]["val"] = {"y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
+        tag_data[char]["test"] = {"y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
 
         # ... and select a certaing loss function depending on the type of classification: Binary or multiple.
         if tag_metadata[char]["cat_num"] > 2:
@@ -168,10 +183,18 @@ if __name__ == "__main__":
         sys.exit(-1)
 
 
+    # Load up the dataset
+    dataset_df = pd.read_csv(os.path.join(args.dataset, "dataset.csv"))
+
+    # This needs to be changed to divide the data in some way, but that's not for todayyyyy
+    train_df = pd.read_csv(os.path.join(args.dataset, "dataset.csv"))
+    # val_df
+    # test_df
+
     train_loader = torch.utils.data.DataLoader(PSDataset(train_df, args.dataset, tag_data), batch_size=args.batch_sz, shuffle=True, num_workers=args.workers)
     val_loader = torch.utils.data.DataLoader(PSDataset(train_df, args.dataset, tag_data), batch_size=args.batch_sz, shuffle=True, num_workers=args.workers)
     # test_loader = torch.utils.data.DataLoader(PSDataset(train_df, args.dataset, tag_data), batch_size=args.batch_sz, shuffle=True, num_workers=args.workers)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-    training(model, train_loader, val_loader, tag_data, optimizer, 10, device)
+    training(model, train_loader, val_loader, tag_data, optimizer, 30, device)

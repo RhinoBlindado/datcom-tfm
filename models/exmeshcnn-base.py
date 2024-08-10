@@ -22,16 +22,23 @@ class ExMeshCNN(nn.Module):
         self.conv4 = MeshConv(256,512)
 
         # Fully Connected block declarations
-        self.fcn_branches = []
-        self.avg_pool_branches = []
+        self.fns = nn.ModuleList()
+        self.avg_pools = nn.ModuleList()
 
         for _, values in tag_data.items():
-            self.fn = nn.Sequential(
-            nn.Conv1d(in_channels=512 , out_channels=values["classes"] - 1, kernel_size=1, stride=1, bias=False),
-            nn.BatchNorm1d(values["classes"] - 1))
 
-            # self.fcn_branches.append(act_fn)
-            self.avgp = nn.AdaptiveAvgPool1d(1)
+            if values["classes"] > 2:
+                output_channels =  values["classes"]
+            else:
+                output_channels = 1
+
+            self.fns.append(nn.Sequential(
+                nn.Conv1d(in_channels=512 , out_channels=output_channels, kernel_size=1, stride=1, bias=False),
+                nn.BatchNorm1d(output_channels)))
+            
+            self.avg_pools.append(nn.AdaptiveAvgPool1d(1))
+
+    
 
     def forward(self, ed, fa, ad):
         ed = self.conv_e(ed)
@@ -42,14 +49,14 @@ class ExMeshCNN(nn.Module):
         fe = self.conv3(fe, ad)
         fe = self.conv4(fe, ad)
         
-        # preds = []
-        # for fn, avgp in zip(self.fcn_branches, self.avg_pool_branches):
-        fe_out = self.fn(fe)
-        fe_out = self.avgp(fe_out)
-        fe_out = fe_out.view(fe_out.size(0), -1)
-            # preds.append(fe_out)
+        preds = []
+        for act_fn, act_avgp in zip(self.fns, self.avg_pools):
+            fe_out = act_fn(fe)
+            fe_out = act_avgp(fe_out)
+            fe_out = fe_out.view(fe_out.size(0), -1)
+            preds.append(fe_out)
 
-        return torch.stack((fe_out,))
+        return preds
 
 
 def get_model(tag_data, device, opt_sel = None, options = None):

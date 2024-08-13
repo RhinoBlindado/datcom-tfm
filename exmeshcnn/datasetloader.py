@@ -40,17 +40,17 @@ class PSDataset(torch.utils.data.Dataset):
     Dataset loader for the Pubic Symphysis data
     """
 
-    def __init__(self, input_df : pd.DataFrame, path : str, tag_data : dict):
-        self.bone_id = input_df["name"].to_list()
+    def __init__(self, x_names : np.array, y_tags : pd.DataFrame, path : str, tag_data : dict):
+        self.bone_id = x_names
         self.path = path
         self.tags = {}
 
-        for key, val in tag_data.items():
-            act_tag = input_df[key].to_list()
+        for key, _ in tag_data.items():
+            act_tag = y_tags[key].to_list()
 
-            if val["classes"] > 2:
-                tag_encoder = OneHotEncoder(categories = list(range(val["classes"])))
-                act_tag = tag_encoder.fit_transform(act_tag)
+            # if val["classes"] > 2:
+            #     tag_encoder = OneHotEncoder(categories = list(range(val["classes"])))
+            #     act_tag = tag_encoder.fit_transform(np.reshape(act_tag, (-1,1)))
 
             self.tags[key] = act_tag
 

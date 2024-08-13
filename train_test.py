@@ -15,6 +15,8 @@ import tqdm
 import yaml
 
 from sklearn.metrics import classification_report, confusion_matrix
+from skmultilearn.model_selection import iterative_train_test_split
+
 
 ROOT = pyrootutils.setup_root(
     search_from=__file__,
@@ -25,16 +27,20 @@ ROOT = pyrootutils.setup_root(
 
 from exmeshcnn.datasetloader import PSDataset
 
-def train_step(model: torch.nn.Module,
+def model_step(mode : str,
+               model: torch.nn.Module,
                dataloader: torch.utils.data.DataLoader,
                tag_data : dict,
-               optimizer: torch.optim.Optimizer,
-               device):
+               optimizer: torch.optim.Optimizer = None,
+               device = "cuda"):
     """
     a
     """
-    # Put model in train mode
-    model.train()
+    # Put the model in the desired mode:
+    if mode == "train":
+        model.train()
+    else:
+        model.eval()
 
     batch_len = len(dataloader)
     # Loop through data loader data batches
@@ -55,48 +61,62 @@ def train_step(model: torch.nn.Module,
         y = batch[3]
         for i, keyval in enumerate(y.items()):
             act_tag, act_y = keyval
+            act_y_pred_logit = y_preds[i]
+
+            if tag_data[act_tag]["classes"] == 2:
+                act_y = act_y.unsqueeze(dim=1).float()
+                act_y_pred = torch.round(torch.sigmoid(act_y_pred_logit)).squeeze(dim=1).tolist()
+            else:
+                act_y_pred = torch.argmax(act_y_pred_logit, dim=1).tolist()
 
             # ... calculate its own loss with its own loss function.
-            act_loss = tag_data[act_tag]["loss_fn"](act_y.unsqueeze(dim=1).float().to(device),
-                                                    y_preds[i])
+            act_loss = tag_data[act_tag]["loss_fn"](act_y_pred_logit,
+                                                    act_y.to(device))
 
             # Save the actual loss, prediction and correct tags
-            tag_data[act_tag]["train"]["y"].extend(act_y.tolist())
-            tag_data[act_tag]["train"]["y_pred"].extend(torch.round(torch.sigmoid(y_preds[i])).squeeze(dim=1).tolist())
-            tag_data[act_tag]["train"]["loss"] += act_loss.tolist() / batch_len
+            tag_data[act_tag][mode]["y"].extend(act_y.tolist())
+            tag_data[act_tag][mode]["y_pred"].extend(act_y_pred)
+            tag_data[act_tag][mode]["loss"] += act_loss.tolist() / batch_len
             losses.append(act_loss)
+            
+        # End of Y tags loop
 
-        # 3. Optimizer zero grad
-        optimizer.zero_grad()
+        if mode == "train":
+            # 3. Optimizer zero grad
+            optimizer.zero_grad()
 
-        # 4. Loss backward
-        total_loss = sum(losses)
-        total_loss.backward()
+            # 4. Loss backward
+            total_loss = sum(losses)
+            total_loss.backward()
 
-        # 5. Optimizer step
-        optimizer.step()
+            # 5. Optimizer step
+            optimizer.step()
 
     for _, values in tag_data.items():
-        values["train"]["class_report"] = classification_report(values["train"]["y"], values["train"]["y_pred"],  output_dict=True, zero_division=0)
-        values["train"]["cm"] = confusion_matrix(values["train"]["y"], values["train"]["y_pred"])
+        values[mode]["class_report"] = classification_report(values[mode]["y"], values[mode]["y_pred"],  output_dict=True, zero_division=0)
+        values[mode]["cm"] = confusion_matrix(values[mode]["y"], values[mode]["y_pred"])
 
 
 
 def training(model: torch.nn.Module, train_data, validation_data, tag_data : dict, optimizer, epochs, device, epoch_begin = 0):
-    
 
     for epoch in range(epochs):
 
-        train_step(model, train_data, tag_data, optimizer, device)
+        model_step("train", model, train_data, tag_data, optimizer=optimizer, device=device)
+        model_step("val", model, validation_data, tag_data, device=device)
 
-        train_report = ""
+        training_report = ""
         for tag, values in tag_data.items():
 
-            curr_acc  =  values["train"]["class_report"]["accuracy"]
-            curr_f1   =  values["train"]["class_report"]["macro avg"]["f1-score"]
-            curr_loss =  values["train"]["loss"]
+            curr_acc_train  =  values["train"]["class_report"]["accuracy"]
+            curr_f1_train   =  values["train"]["class_report"]["macro avg"]["f1-score"]
+            curr_loss_train =  values["train"]["loss"]
 
-            train_report += f"[{tag.upper()}] [T] ACC={curr_acc:.2f} F1={curr_f1:.2f} LOSS={curr_loss:.2f} "
+            curr_acc_val  =  values["val"]["class_report"]["accuracy"]
+            curr_f1_val   =  values["val"]["class_report"]["macro avg"]["f1-score"]
+            curr_loss_val =  values["val"]["loss"]
+
+            training_report += f"[{tag.upper()}] [T] ACC={curr_acc_train:.2f} F1={curr_f1_train:.2f} LOSS={curr_loss_train:.2f} [V] ACC={curr_acc_val:.2f} F1={curr_f1_val:.2f} LOSS={curr_loss_val:.2f}"
 
             values["train"]["loss"] = 0
             values["train"]["y"].clear()
@@ -104,7 +124,13 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
             values["train"]["class_report"] = None
             values["train"]["cm"] = None
 
-        print(f"{epoch+1:03d}/{epochs:03d}: {train_report}")
+            values["val"]["loss"] = 0
+            values["val"]["y"].clear()
+            values["val"]["y_pred"].clear()
+            values["val"]["class_report"] = None
+            values["val"]["cm"] = None
+
+        print(f"{epoch+1:03d}/{epochs:03d}: {training_report}")
 
 if __name__ == "__main__":
 
@@ -124,7 +150,7 @@ if __name__ == "__main__":
     # Training specific arguments.
     parser.add_argument("-e", "--epochs", type=int, default=30)
     parser.add_argument("-f", "--folds", type=int, default=1)
-    parser.add_argument("-t", "--tags", type=str, required=True, nargs="+", choices=["af", "ip", "use", "bn", "lse", "dm", "dp", "vb", "vm", "all"])
+    parser.add_argument("-t", "--tags", type=str, required=True, nargs="+") # choices=["af", "ip", "use", "bn", "lse", "dm", "dp", "vb", "vm", "all"]
     parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--optimizer", type=str, default="Adam")
 
@@ -139,7 +165,7 @@ if __name__ == "__main__":
 
     # Prepare the multiclass data dictionary
     # - Read the YAML to get the metadata of the tags: names, number of characteristics and their names.
-    with open("./src/todd_characteristics.yaml", "r", encoding="utf-8") as f:
+    with open(args.tag_yaml, "r", encoding="utf-8") as f:
         try:
             tag_metadata =  yaml.safe_load(f)
         except yaml.YAMLError as exc:
@@ -186,15 +212,29 @@ if __name__ == "__main__":
     # Load up the dataset
     dataset_df = pd.read_csv(os.path.join(args.dataset, "dataset.csv"))
 
-    # This needs to be changed to divide the data in some way, but that's not for todayyyyy
-    train_df = pd.read_csv(os.path.join(args.dataset, "dataset.csv"))
-    # val_df
-    # test_df
+    x_names = dataset_df.pop("name")
+    x_names = x_names.to_numpy().reshape((-1,1))
 
-    train_loader = torch.utils.data.DataLoader(PSDataset(train_df, args.dataset, tag_data), batch_size=args.batch_sz, shuffle=True, num_workers=args.workers)
-    val_loader = torch.utils.data.DataLoader(PSDataset(train_df, args.dataset, tag_data), batch_size=args.batch_sz, shuffle=True, num_workers=args.workers)
-    # test_loader = torch.utils.data.DataLoader(PSDataset(train_df, args.dataset, tag_data), batch_size=args.batch_sz, shuffle=True, num_workers=args.workers)
+    y_tags_str = dataset_df.columns
+    y_tags = dataset_df.to_numpy()
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    # Split the data
+    X_train_val, y_train_val, X_test, y_test = iterative_train_test_split(x_names, y_tags, test_size = 0.2)
+    X_train, y_train, X_val, y_val =  iterative_train_test_split(X_train_val, y_train_val, test_size = 0.2)
+
+    X_train = X_train.reshape((X_train.shape[0],))
+    X_val = X_val.reshape((X_val.shape[0],))
+    X_test = X_test.reshape((X_test.shape[0],))
+
+    y_train = pd.DataFrame(y_train, columns=y_tags_str)
+    y_val = pd.DataFrame(y_val, columns=y_tags_str)
+    y_test = pd.DataFrame(y_test, columns=y_tags_str)
+
+    train_loader = torch.utils.data.DataLoader(PSDataset(X_train, y_train, args.dataset, tag_data), batch_size=args.batch_sz, shuffle=True, num_workers=args.workers)
+    val_loader = torch.utils.data.DataLoader(PSDataset(X_val, y_val, args.dataset, tag_data), batch_size=args.batch_sz, shuffle=False, num_workers=args.workers)
+    test_loader = torch.utils.data.DataLoader(PSDataset(X_test, y_test, args.dataset, tag_data), batch_size=args.batch_sz, shuffle=False, num_workers=args.workers)
+    
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.003)
 
     training(model, train_loader, val_loader, tag_data, optimizer, 30, device)
+    

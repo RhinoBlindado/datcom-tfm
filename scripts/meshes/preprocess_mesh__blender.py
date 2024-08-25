@@ -2,6 +2,7 @@
 """ 
 import os
 import sys
+import time
 
 import numpy as np
 import bmesh
@@ -64,18 +65,18 @@ def cut_with_bbox(ps_obj, bbox_obj, perc_cut):
     bpy.ops.object.modifier_apply(modifier=mod_trig.name)
 
 def calculate_non_manifold(in_ps_obj):
+    in_ps_obj.select_set(True)    
+    bpy.context.view_layer.objects.active = in_ps_obj
+    
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.mesh.select_all(action='DESELECT')
     bpy.ops.mesh.select_non_manifold()
+    num_non_m = bpy.context.active_object.data.total_vert_sel
     bpy.ops.object.mode_set(mode='OBJECT')
-
-    sel = np.zeros(len(in_ps_obj.data.vertices), dtype=bool)
-    in_ps_obj.data.vertices.foreach_get('select', sel)
-
-    num_non_m = len(np.where(sel is True)[0])
 
     return num_non_m
 
+init_time = time.time()
 # Parse the arguments
 args = sys.argv[sys.argv.index("--")+1:]
 obj_path = args[0]
@@ -127,20 +128,22 @@ while not is_manifold:
     print("Cutting...")
     cut_with_bbox(ps_obj, bbox_obj_act, cut_perc)
     number_non_manifold = calculate_non_manifold(ps_obj)
-    print(f"Non-Manifold vertices are {number_non_manifold}.")
+    print(f"{number_non_manifold} non-Manifold vertices detected...")
 
     if number_non_manifold == 0:
         is_manifold = True
     else:
         # The mesh still has a hole in it somewhere, make the cutting bbox bigger.
-        cut_perc += 0.01
+        cut_perc += 0.005
         # Delete the PS mesh and reload it.
         bpy.data.objects.remove(ps_obj, do_unlink = True)
-        print(f"Trying with {cut_perc * 100:.2f}% of BBOX.")
+        print(f"Trying with {cut_perc * 100:.2f}% of bounding box.")
 
     bpy.data.objects.remove(bbox_obj_act, do_unlink = True)
     bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
 
+bpy.data.objects.remove(bbox_obj, do_unlink = True)
+bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
 print("Cutting complete.")
 
 # Scale the mesh to the wanted trigs
@@ -148,6 +151,7 @@ act_trigs = len(ps_mesh.polygons)
 
 while act_trigs != tgt_trig:
     # Edge collapse it
+    print("Decimating...")
     ratio = tgt_trig / act_trigs
     mod_collapse = ps_obj.modifiers.new(name="Decimate", type="DECIMATE")
     mod_collapse.use_collapse_triangulate = True
@@ -158,14 +162,19 @@ while act_trigs != tgt_trig:
 
     # Subdivide the object if needed
     if(act_trigs != tgt_trig):
-        print("Mesh has {} polygons, {} are needed.".format(act_trigs, tgt_trig))
+        print("Mesh has {} triangles, but {} are needed...".format(act_trigs, tgt_trig))
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_all(action='SELECT')
         bpy.ops.mesh.subdivide()
         bpy.ops.object.mode_set(mode='OBJECT')
 
         act_trigs = len(ps_mesh.polygons)
-        print("After Subsurf, mesh now has {} polys".format(act_trigs))
+        print("After subdivision, mesh now has {} triangles...".format(act_trigs))
+
+print("Decimation complete.")
+
+# Center on origin
+bpy.ops.object.origin_set(type="GEOMETRY_ORIGIN")
 
 # Reexport the OBJ file.
 mesh_name = os.path.split(obj_path)[1]
@@ -177,3 +186,5 @@ bpy.ops.wm.obj_export(
     export_normals=False,
     export_uv=False
 )
+end_time = time.time()
+print(f"Done, took {end_time-init_time:.4f} s")

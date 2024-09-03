@@ -23,16 +23,16 @@ from tqdm import tqdm
 # class_names = np.sort(os.listdir(database))
 # modes = ["train", "test"]
 
-def to_npy(dataset_path, target_face_num, force_overwrite = False):
+def to_npy(obj_folder, dataset_folder, target_face_num, force_overwrite = False, npy_folder_name = "npy"):
 
-    obj_files = glob.glob(os.path.join(dataset_path, "obj", "*.obj"))
+    obj_files = glob.glob(os.path.join(obj_folder, "*.obj"))
 
     pbar = tqdm(initial=0, total=len(obj_files), unit=" objs")
 
     for obj in obj_files:
 
         obj_fname = os.path.split(obj)[-1].split(".")[0]
-        npy_path = os.path.join(dataset_path, "npy", obj_fname) + ".npy"
+        npy_path = os.path.join(dataset_folder, npy_folder_name, obj_fname) + ".npy"
 
         if(os.path.isfile(npy_path) and not force_overwrite):
             print("Mesh {} already has NPY. Skip.".format(obj_fname))
@@ -65,7 +65,7 @@ def to_npy(dataset_path, target_face_num, force_overwrite = False):
         if adj_list is None:
             print("Mesh {} has problems. Skip.".format(obj_fname))
             pbar.update(1)
-            continue  
+            continue
         else:
             adj_list = adj_list.long()
         
@@ -93,7 +93,7 @@ def to_npy(dataset_path, target_face_num, force_overwrite = False):
             d1={'edge':edge_feature, 'adj':adj_list, 'face':face_feature}
             np.save(npy_path, d1)
         else:
-            print("Discarded, mesh has {} edge features and {} adjacents, needed is {}".format(len(edge_feature), len(adj_list), target_face_num))
+            print("Discarded, mesh {} has {} edge features and {} adjacents, needed is {}".format(obj_fname, len(edge_feature), len(adj_list), target_face_num))
         pbar.update(1)
 
     pbar.close()
@@ -101,10 +101,16 @@ def to_npy(dataset_path, target_face_num, force_overwrite = False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--dataset", type=str, required=True, help="Path to the dataset folder. Inside there must be a CSV file named 'dataset.csv' and a 'obj' folder containing the meshes.")
+    parser.add_argument("--obj-folder", type=str, required=True, help="")
+    parser.add_argument("--dataset-out-folder", type=str, required=True, help="")
+    parser.add_argument("--npy-out-folder-name", type=str, default="npy", help="")
     parser.add_argument("--num-faces", type=int, required=True, help="Number of desired faces to use.")
     parser.add_argument("--force", action="store_true", help="If set, any NPY file already existing will be overwritten.")
 
     args = parser.parse_args()
 
-    to_npy(args.dataset, args.num_faces, args.force)
+    to_npy(args.obj_folder,
+           args.dataset_out_folder,
+           args.num_faces,
+           force_overwrite=args.force,
+           npy_folder_name=args.npy_out_folder_name)

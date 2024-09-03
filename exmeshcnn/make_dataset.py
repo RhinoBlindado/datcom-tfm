@@ -32,7 +32,10 @@ def to_npy(obj_folder, dataset_folder, target_face_num, force_overwrite = False,
     for obj in obj_files:
 
         obj_fname = os.path.split(obj)[-1].split(".")[0]
-        npy_path = os.path.join(dataset_folder, npy_folder_name, obj_fname) + ".npy"
+        npy_folder_path = os.path.join(dataset_folder, npy_folder_name)
+        npy_path = os.path.join(npy_folder_path, obj_fname) + ".npy"
+
+        os.makedirs(npy_folder_path, exist_ok=True)
 
         if(os.path.isfile(npy_path) and not force_overwrite):
             print("Mesh {} already has NPY. Skip.".format(obj_fname))

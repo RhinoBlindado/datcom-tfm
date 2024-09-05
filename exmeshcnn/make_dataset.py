@@ -1,11 +1,15 @@
+
+import multiprocessing as mp
+import argparse
+import glob
+import time
+
 import trimesh as tm
 import torch
 import numpy as np
 import os
 from utils.functions import *
 
-import argparse
-import glob
 from tqdm import tqdm
 
 # # Data pre-processing towards making the entire training easier.
@@ -23,83 +27,92 @@ from tqdm import tqdm
 # class_names = np.sort(os.listdir(database))
 # modes = ["train", "test"]
 
-def to_npy(obj_folder, dataset_folder, target_face_num, force_overwrite = False, npy_folder_name = "npy"):
+def to_npy(obj, dataset_folder, target_face_num, force_overwrite, npy_folder_name):
 
-    obj_files = glob.glob(os.path.join(obj_folder, "*.obj"))
+    start_t = time.time()
+    # obj_files = glob.glob(os.path.join(obj_folder, "*.obj"))
 
-    pbar = tqdm(initial=0, total=len(obj_files), unit=" objs")
+    # pbar = tqdm(initial=0, total=len(obj_files), unit="objs")
+    
+    # for obj in obj_files:
 
-    for obj in obj_files:
+    obj_fname = os.path.split(obj)[-1].split(".")[0]
+    print(f"[{obj_fname}]: Start...")
+    npy_folder_path = os.path.join(dataset_folder, npy_folder_name)
+    npy_path = os.path.join(npy_folder_path, obj_fname) + ".npy"
 
-        obj_fname = os.path.split(obj)[-1].split(".")[0]
-        npy_folder_path = os.path.join(dataset_folder, npy_folder_name)
-        npy_path = os.path.join(npy_folder_path, obj_fname) + ".npy"
+    os.makedirs(npy_folder_path, exist_ok=True)
 
-        os.makedirs(npy_folder_path, exist_ok=True)
+    if(os.path.isfile(npy_path) and not force_overwrite):
+        end_t = time.time()
+        time_delta = end_t - start_t
+        print(f"[{obj_fname}]: already has NPY. Skip. Took {time_delta:.2f} s")
+        # pbar.update(1)
+        return
 
-        if(os.path.isfile(npy_path) and not force_overwrite):
-            print("Mesh {} already has NPY. Skip.".format(obj_fname))
-            pbar.update(1)
-            continue
+    mesh = tm.load_mesh(obj, process=False)
+    
+    verts = mesh.vertices
+    faces = mesh.faces
+    
+    # normalization
+    centroid = mesh.centroid
+    verts = verts - centroid
+    max_len = np.max(verts[:, 0]**2 + verts[:, 1]**2 + verts[:, 2]**2)
+    verts /= np.sqrt(max_len)
+    mesh = tm.Trimesh(verts, faces, process=False)
 
-        mesh = tm.load_mesh(obj, process=False)
-        
-        verts = mesh.vertices
-        faces = mesh.faces
-        
-        # normalization
-        centroid = mesh.centroid
-        verts = verts - centroid
-        max_len = np.max(verts[:, 0]**2 + verts[:, 1]**2 + verts[:, 2]**2)
-        verts /= np.sqrt(max_len)
-        mesh = tm.Trimesh(verts, faces, process=False)
+    verts = mesh.vertices
+    faces = mesh.faces
+    norms = mesh.vertex_normals
+    
+    faces_t = torch.from_numpy(faces)
+    verts_t = torch.from_numpy(verts)
 
-        verts = mesh.vertices
-        faces = mesh.faces
-        norms = mesh.vertex_normals
-        
-        faces_t = torch.from_numpy(faces)
-        verts_t = torch.from_numpy(verts)
+    face_adj = np.copy(mesh.face_adjacency)
+    adjs = torch.from_numpy(face_adj)
+    adj_list = get_adj_nm(adjs)
 
-        face_adj = np.copy(mesh.face_adjacency)
-        adjs = torch.from_numpy(face_adj)
-        adj_list = get_adj_nm(adjs)
+    if adj_list is None:
+        end_t = time.time()
+        time_delta = end_t - start_t
+        print(f"[{obj_fname}]: Has problems. Skip. Took {time_delta:.2f} s")
+        # pbar.update(1)
+        return
+    else:
+        adj_list = adj_list.long()
+    
+    # extract edge feature
+    norm_t = torch.from_numpy(norms[faces_t[adj_list[:,0]]])
+    in_face = faces_t[adj_list].clone()
+    size = len(in_face)
+    edges_t = torch.stack([get_edges(in_face[i], verts_t) for i in range(size)])
+    edges_t = edges_t.reshape(-1,3,6)
+    face_centroid = torch.mean(verts_t[faces_t[adj_list[:,0]]],dim=1)
+    facen=face_centroid.unsqueeze(1).repeat(1,3,1)
+    facened = facen - verts_t[faces_t[adj_list[:,0]]]
+    edge_feature = torch.cat([edges_t, facened, norm_t],dim=2)
+    edge_feature = np.float16(edge_feature.detach().numpy())
+    
+    # extract face feature
+    adj_list = adj_list.detach().numpy()
+    normals = mesh.face_normals[adj_list]
+    faces_t = faces_t.detach().numpy()
+    verts_t = verts_t.detach().numpy()
+    points = verts_t[faces_t[adj_list]].reshape(-1,4,9)
+    face_feature = np.concatenate((points, normals), axis=2)
+    
+    if (len(edge_feature) == target_face_num) and (len(adj_list) == target_face_num):
+        d1={'edge':edge_feature, 'adj':adj_list, 'face':face_feature}
+        np.save(npy_path, d1)
+        end_t = time.time()
+        time_delta = end_t - start_t
+        print(f"[{obj_fname}]: Saved, took {time_delta:.2f} s")
+    else:
+        end_t = time.time()
+        time_delta = end_t - start_t
+        print(f"[{obj_fname}]: Discarded, mesh has {len(edge_feature)} edge features and {len(adj_list)} adjacents, needed is {target_face_num}. Took {time_delta:.2f} s")
 
-        if adj_list is None:
-            print("Mesh {} has problems. Skip.".format(obj_fname))
-            pbar.update(1)
-            continue
-        else:
-            adj_list = adj_list.long()
-        
-        # extract edge feature
-        norm_t = torch.from_numpy(norms[faces_t[adj_list[:,0]]])
-        in_face = faces_t[adj_list].clone()
-        size = len(in_face)
-        edges_t = torch.stack([get_edges(in_face[i], verts_t) for i in range(size)])
-        edges_t = edges_t.reshape(-1,3,6)
-        face_centroid = torch.mean(verts_t[faces_t[adj_list[:,0]]],dim=1)
-        facen=face_centroid.unsqueeze(1).repeat(1,3,1)
-        facened = facen - verts_t[faces_t[adj_list[:,0]]]
-        edge_feature = torch.cat([edges_t, facened, norm_t],dim=2)
-        edge_feature = np.float16(edge_feature.detach().numpy())
-        
-        # extract face feature
-        adj_list = adj_list.detach().numpy()
-        normals = mesh.face_normals[adj_list]
-        faces_t = faces_t.detach().numpy()
-        verts_t = verts_t.detach().numpy()
-        points = verts_t[faces_t[adj_list]].reshape(-1,4,9)
-        face_feature = np.concatenate((points, normals), axis=2)
-        
-        if (len(edge_feature) == target_face_num) and (len(adj_list) == target_face_num):
-            d1={'edge':edge_feature, 'adj':adj_list, 'face':face_feature}
-            np.save(npy_path, d1)
-        else:
-            print("Discarded, mesh {} has {} edge features and {} adjacents, needed is {}".format(obj_fname, len(edge_feature), len(adj_list), target_face_num))
-        pbar.update(1)
-
-    pbar.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -109,11 +122,22 @@ if __name__ == "__main__":
     parser.add_argument("--npy-out-folder-name", type=str, default="npy", help="")
     parser.add_argument("--num-faces", type=int, required=True, help="Number of desired faces to use.")
     parser.add_argument("--force", action="store_true", help="If set, any NPY file already existing will be overwritten.")
+    parser.add_argument("--cpus", default=4, help="Number of processes to use, default is 4.")
 
     args = parser.parse_args()
 
-    to_npy(args.obj_folder,
-           args.dataset_out_folder,
-           args.num_faces,
-           force_overwrite=args.force,
-           npy_folder_name=args.npy_out_folder_name)
+    obj_files = glob.glob(os.path.join(args.obj_folder, "*.obj"))
+
+    if args.cpus > 1:
+        args_pool=[(obj, args.dataset_out_folder, args.num_faces, args.force, args.npy_out_folder_name) for obj in obj_files]
+        pool = mp.Pool(processes=4)
+        pool.starmap(to_npy, args_pool, chunksize=None)
+        pool.close()
+        pool.join()
+    else:
+        for obj in obj_files:
+            to_npy(obj,
+                args.dataset_out_folder,
+                args.num_faces,
+                force_overwrite=args.force,
+                npy_folder_name=args.npy_out_folder_name)

@@ -122,7 +122,7 @@ if __name__ == "__main__":
     parser.add_argument("--npy-out-folder-name", type=str, default="npy", help="")
     parser.add_argument("--num-faces", type=int, required=True, help="Number of desired faces to use.")
     parser.add_argument("--force", action="store_true", help="If set, any NPY file already existing will be overwritten.")
-    parser.add_argument("--cpus", default=4, help="Number of processes to use, default is 4.")
+    parser.add_argument("--cpus", default=4, type=int, help="Number of processes to use, default is 4.")
 
     args = parser.parse_args()
 

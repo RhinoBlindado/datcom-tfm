@@ -6,9 +6,24 @@ def get_adj_nm(adjs_): # integrate all the adjacent face lists to make a unified
     tt = ag[ag[:,0].sort()[1]]
     t1 = tt[:,0].unique(return_inverse =True)[1]
     t2 = (tt[:,0].unique(return_counts =True)[1] == 3).nonzero(as_tuple=False)[:,0].unsqueeze(1)
-    uid = ((t1 == t2) == True).nonzero(as_tuple=False)[:,1]
-    aa= tt[uid].reshape(-1,6)
+    # uid = ((t1 == t2) == True).nonzero(as_tuple=False)[:,1]
+
+    # Batched version
+    # Initialize a list to store the result
+    result = []
+
+    # Loop over each element in t2
+    for i, value in enumerate(t2.squeeze()):  # Remove the extra dimension from t2 and get the index and value
+        indices = (t1 == value).nonzero(as_tuple=True)[0]  # Get indices where t1 matches the value
+        for index in indices:
+            result.append([i, index.item()])
+
+    uid_batched = torch.Tensor(result).to(torch.int64)[:,1]
+    # print(torch.equal(uid, uid_batched))
+
+    aa= tt[uid_batched].reshape(-1,6)
     add=torch.unique(aa, dim=1)
+
     return add
     
 def get_edges(face_, verts_): # looking for an edge path

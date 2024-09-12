@@ -22,22 +22,20 @@ class ExMeshCNN(nn.Module):
         self.conv4 = MeshConv(256,512)
 
         # Fully Connected block declarations
-        self.fns = nn.ModuleList()
-        self.avg_pools = nn.ModuleList()
+        self.fns = nn.ModuleDict()
 
-        for _, values in tag_data.items():
-
+        for tag, values in tag_data.items():
+            
             if values["classes"] > 2:
                 output_channels =  values["classes"]
             else:
                 output_channels = 1
 
-            self.fns.append(nn.Sequential(
+            self.fns[tag] = nn.Sequential(
                 nn.Conv1d(in_channels=512 , out_channels=output_channels, kernel_size=1, stride=1, bias=False),
-                nn.BatchNorm1d(output_channels)))
+                nn.BatchNorm1d(output_channels),
+                nn.AdaptiveAvgPool1d(1))
             
-            self.avg_pools.append(nn.AdaptiveAvgPool1d(1))
-
     
 
     def forward(self, ed, fa, ad):
@@ -49,12 +47,11 @@ class ExMeshCNN(nn.Module):
         fe = self.conv3(fe, ad)
         fe = self.conv4(fe, ad)
         
-        preds = []
-        for act_fn, act_avgp in zip(self.fns, self.avg_pools):
+        preds = {}
+        for tag, act_fn in self.fns.items():
             fe_out = act_fn(fe)
-            fe_out = act_avgp(fe_out)
             fe_out = fe_out.view(fe_out.size(0), -1)
-            preds.append(fe_out)
+            preds[tag] = fe_out
 
         return preds
 

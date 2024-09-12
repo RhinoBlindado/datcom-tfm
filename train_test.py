@@ -14,6 +14,7 @@ import torch
 import tqdm
 import yaml
 
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 from skmultilearn.model_selection import iterative_train_test_split
 
@@ -32,7 +33,7 @@ def model_step(mode : str,
                dataloader: torch.utils.data.DataLoader,
                tag_data : dict,
                optimizer: torch.optim.Optimizer = None,
-               device = "cuda"):
+               device: str = "cuda"):
     """
     a
     """
@@ -59,9 +60,8 @@ def model_step(mode : str,
 
         # For each tag...
         y = batch[3]
-        for i, keyval in enumerate(y.items()):
-            act_tag, act_y = keyval
-            act_y_pred_logit = y_preds[i]
+        for act_tag, act_y in y.items():
+            act_y_pred_logit = y_preds[act_tag]
 
             if tag_data[act_tag]["classes"] == 2:
                 act_y = act_y.unsqueeze(dim=1).float()
@@ -100,6 +100,8 @@ def model_step(mode : str,
 
 def training(model: torch.nn.Module, train_data, validation_data, tag_data : dict, optimizer, epochs, device, epoch_begin = 0):
 
+    training_stats = {"epoch" : [],}
+    
     for epoch in range(epochs):
 
         model_step("train", model, train_data, tag_data, optimizer=optimizer, device=device)
@@ -215,20 +217,23 @@ if __name__ == "__main__":
     x_names = dataset_df.pop("name")
     x_names = x_names.to_numpy().reshape((-1,1))
 
-    y_tags_str = dataset_df.columns
-    y_tags = dataset_df.to_numpy()
+    y_tags = dataset_df[selected_tags].to_numpy()
 
     # Split the data
-    X_train_val, y_train_val, X_test, y_test = iterative_train_test_split(x_names, y_tags, test_size = 0.2)
-    X_train, y_train, X_val, y_val =  iterative_train_test_split(X_train_val, y_train_val, test_size = 0.2)
+    if len(selected_tags) > 1:
+        X_train_val, y_train_val, X_test, y_test = iterative_train_test_split(x_names, y_tags, test_size = 0.2)
+        X_train, y_train, X_val, y_val =  iterative_train_test_split(X_train_val, y_train_val, test_size = 0.2)
+    else:
+        X_train_val, y_train_val, X_test, y_test = train_test_split(x_names, y_tags, test_size = 0.2, stratify=y_tags)
+        X_train, y_train, X_val, y_val =  train_test_split(X_train_val, y_train_val, test_size = 0.2, stratify=y_train_val)
 
     X_train = X_train.reshape((X_train.shape[0],))
     X_val = X_val.reshape((X_val.shape[0],))
     X_test = X_test.reshape((X_test.shape[0],))
 
-    y_train = pd.DataFrame(y_train, columns=y_tags_str)
-    y_val = pd.DataFrame(y_val, columns=y_tags_str)
-    y_test = pd.DataFrame(y_test, columns=y_tags_str)
+    y_train = pd.DataFrame(y_train, columns=selected_tags)
+    y_val = pd.DataFrame(y_val, columns=selected_tags)
+    y_test = pd.DataFrame(y_test, columns=selected_tags)
 
     train_loader = torch.utils.data.DataLoader(PSDataset(X_train, y_train, args.dataset, tag_data), batch_size=args.batch_sz, shuffle=True, num_workers=args.workers)
     val_loader = torch.utils.data.DataLoader(PSDataset(X_val, y_val, args.dataset, tag_data), batch_size=args.batch_sz, shuffle=False, num_workers=args.workers)
@@ -236,5 +241,5 @@ if __name__ == "__main__":
     
     optimizer = torch.optim.Adam(model.parameters(), lr=0.003)
 
-    training(model, train_loader, val_loader, tag_data, optimizer, 30, device)
+    training(model, train_loader, val_loader, tag_data, optimizer, args.epochs, device)
     

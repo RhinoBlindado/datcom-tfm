@@ -9,6 +9,9 @@ env/
 data/
 testing/
 
+# Experiments
+experiments/
+
 # LaTex
 *.aux
 *.bbl

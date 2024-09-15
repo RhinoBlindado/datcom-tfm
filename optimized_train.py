@@ -10,7 +10,9 @@ from sklearn.model_selection import train_test_split
 from skmultilearn.model_selection import iterative_train_test_split
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 import pandas as pd
+import numpy as np
 import datetime
 import optuna
 import torch
@@ -23,7 +25,7 @@ class HyperParamOptimizer():
     """
     
     """
-    def __init__(self, model_str, dataset_str, X_train, y_train, X_val, y_val, tag_data, n_epochs, n_folds, n_batch, n_workers, device = "cuda") -> None:
+    def __init__(self, model_str, dataset_str, output_folder, X_train, y_train, X_val, y_val, tag_data, tag_meta, n_epochs, n_folds, n_batch, n_workers, device = "cuda") -> None:
         
         # Training parameters
         self.model_str = model_str
@@ -40,13 +42,44 @@ class HyperParamOptimizer():
         # Misc Parameters
         self.dataloader_workers = n_workers
         self.device = device
+        self.output_f = output_folder
+        self.tag_meta = tag_meta
 
 
     def load_model(self, trial):
-        model_class = importlib.import_module(f"optuna_models.{self.model_str}")
-        return model_class.get_model(None, trial).to(self.device)
+        model_class = importlib.import_module(f"models.{self.model_str}")
+        return model_class.get_model(tag_data, trial).to(self.device)
         
+
+    def save_trial_stats(self, trial, model, training_stats, validation_stats, best = -1):
+        trial_path = os.path.join(self.output_f, f"trial_{trial.number}")
+        os.mkdir(trial_path)
+
+        torch.save(model.state_dict(), os.path.join(trial_path, "trial_model.pth"))
+
+        trial_plot_path = os.path.join(trial_path, "plots")
+        os.mkdir(trial_plot_path)
+        for act_train_res, act_val_res in zip(training_stats.items(), validation_stats.items()):
+            tag, train_items = act_train_res
+            _, val_items = act_val_res
+
+            pd.DataFrame(train_items).to_csv(os.path.join(trial_path, f"{tag}-training-prog.csv"), index=None)
+            pd.DataFrame(val_items).to_csv(os.path.join(trial_path, f"{tag}-validation-prog.csv"), index=None)
+
+            train_test.progression_plot(train_items["epoch"], train_items["acc"], val_items["acc"], "Accuracy", os.path.join(trial_plot_path, f"{tag}-acc.pdf"), ylim=(0,1))
+            train_test.progression_plot(train_items["epoch"], train_items["f1"], val_items["f1"], "F1", os.path.join(trial_plot_path, f"{tag}-f1.pdf"), ylim=(0,1))
+            train_test.progression_plot(train_items["epoch"], train_items["loss"], val_items["loss"], "Loss", os.path.join(trial_plot_path, f"{tag}-loss.pdf"))
+
+            train_test.confusion_matrix_plot(train_items["cm"][-1], self.tag_meta[tag]["cat_names"], os.path.join(trial_plot_path, f"{tag}-training-cm.pdf"))
+            train_test.confusion_matrix_plot(val_items["cm"][-1], self.tag_meta[tag]["cat_names"], os.path.join(trial_plot_path, f"{tag}-validation-cm.pdf"))
+
+    def calculate_fitness(self, act_train_f1, act_val_f1):
+        return act_val_f1 * (1 - abs(act_train_f1 - act_val_f1))
+
     def optimize_model(self, trial):
+
+        print(f"---------------- TRIAL {trial.number} ----------------")
+
         ## Set up the parameters to optimize.
         # Model Parameters
         model = self.load_model(trial)
@@ -63,13 +96,13 @@ class HyperParamOptimizer():
         optimizer_selection = trial.suggest_categorical("optimizer", ["adam", "adamw", "radam", "sgd"])
 
         if optimizer_selection == "adam":
-            optimizer = torch.optim.Adam(model.params, lr=lr)
+            optimizer = torch.optim.Adam(model.parameters(), lr=lr)
         elif optimizer_selection == "adamw":
-            optimizer = torch.optim.AdamW(model.params, lr=lr)
+            optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
         elif optimizer_selection == "radam":
-            optimizer = torch.optim.RAdam(model.params, lr=lr)
+            optimizer = torch.optim.RAdam(model.parameters(), lr=lr)
         else:
-            optimizer = torch.optim.SGD(model.params, lr=lr)
+            optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
         # Weight Initialization.
 
@@ -77,13 +110,25 @@ class HyperParamOptimizer():
         # Not yet implemented.
 
         # Load the dataset.
-        train_loader = torch.utils.data.DataLoader(PSDataset(self.X_train, self.y_train, self.dataset_str, self.tag_data), batch_size=self.batch_sz, shuffle=True, num_workers=self.workers)
-        val_loader = torch.utils.data.DataLoader(PSDataset(self.X_val, self.y_val, self.dataset_str, self.tag_data), batch_size=self.batch_sz, shuffle=False, num_workers=self.workers)
+        train_loader = torch.utils.data.DataLoader(PSDataset(self.X_train, self.y_train, self.dataset_str, self.tag_data), batch_size=self.batch_sz, shuffle=True, num_workers=self.dataloader_workers)
+        val_loader = torch.utils.data.DataLoader(PSDataset(self.X_val, self.y_val, self.dataset_str, self.tag_data), batch_size=self.batch_sz, shuffle=False, num_workers=self.dataloader_workers)
 
         # Run the model with the parameters.
-        train_test.training(model, train_loader, val_loader, self.tag_data, optimizer, self.epochs, self.device)
+        train_res, val_res = train_test.training(model, train_loader, val_loader, self.tag_data, optimizer, self.epochs, self.device)
 
         # Record results and return optimization value.
+        total_fitness = []
+        for act_train_res, act_val_res in zip(train_res.items(), val_res.items()):
+            best_train_f1 = act_train_res[1]["f1"][-1]
+            best_val_f1 = act_val_res[1]["f1"][-1]
+
+            total_fitness.append(self.calculate_fitness(best_train_f1, best_val_f1))
+
+        total_fitness = np.mean(total_fitness)
+
+        self.save_trial_stats(trial, model, train_res, val_res)
+
+        return total_fitness
 
 def show_optimization_info(study, save, output_path):
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
@@ -173,6 +218,8 @@ args = parser.parse_args()
 
 ## Starting setup:
 
+plt.ioff()
+
 # Select the device to perform the computations.
 torch.cuda.empty_cache()
 if args.debug_use_cpu:
@@ -180,13 +227,14 @@ if args.debug_use_cpu:
 else:
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-print(f"Using {device} for optimization")
+print(f"Using {device}")
 
 # Create the output folder.
 out_folder_path = args.output_path
 
 if args.output_name is None:
-    out_name = f"opt-{datetime.datetime.now().strftime('%y%m%d-%H%M%S')}-{args.model}-{args.dataset}_{args.npy_name}"
+    dataset_basename = os.path.split(args.dataset.strip("/"))[1]
+    out_name = f"opt-{datetime.datetime.now().strftime('%y%m%d-%H%M%S')}-{args.model}-{dataset_basename}_{args.npy_name}"
 else:
     out_name = args.output_name
 
@@ -246,8 +294,8 @@ if args.train_val_test_split is None:
         X_train_val, y_train_val, X_test, y_test = iterative_train_test_split(x_names, y_tags, test_size = 0.2)
         X_train, y_train, X_val, y_val =  iterative_train_test_split(X_train_val, y_train_val, test_size = 0.2)
     else:
-        X_train_val, y_train_val, X_test, y_test = train_test_split(x_names, y_tags, test_size = 0.2, stratify=y_tags)
-        X_train, y_train, X_val, y_val =  train_test_split(X_train_val, y_train_val, test_size = 0.2, stratify=y_train_val)
+        X_train_val, X_test, y_train_val, y_test = train_test_split(x_names, y_tags, test_size = 0.2, stratify=y_tags, random_state=args.seed)
+        X_train, X_val, y_train, y_val =  train_test_split(X_train_val, y_train_val, test_size = 0.2, stratify=y_train_val, random_state=args.seed)
 
     X_train = X_train.reshape((X_train.shape[0],))
     X_val = X_val.reshape((X_val.shape[0],))
@@ -257,9 +305,14 @@ if args.train_val_test_split is None:
     y_val = pd.DataFrame(y_val, columns=selected_tags)
     y_test = pd.DataFrame(y_test, columns=selected_tags)
 
+    # y_train.to_csv(os.path.join(out_folder, "train.csv"), index=False)
+    # y_val.to_csv(os.path.join(out_folder, "validation.csv"), index=False)
+    # y_test.to_csv(os.path.join(out_folder, "test.csv"), index=False)
+else:
+    pass
 # Create the Optuna and...
 study = optuna.create_study(study_name=out_name, direction="maximize")
-hpo = HyperParamOptimizer(args.model, X_train, y_train, X_val, y_val, tag_data, args.epochs, args.folds, args.batch, args.workers)
+hpo = HyperParamOptimizer(args.model, args.dataset, out_folder, X_train, y_train, X_val, y_val, tag_data, tag_metadata, args.epochs, args.folds, args.batch, args.workers)
 
 # ...start the optimization procedure, then...
 study.optimize(hpo.optimize_model, n_trials=args.trials)

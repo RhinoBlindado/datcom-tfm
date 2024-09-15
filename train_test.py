@@ -8,15 +8,18 @@ import sys
 import argparse
 import importlib
 
+import matplotlib.pyplot as plt
+import seaborn as sns
 import pandas as pd
 import pyrootutils
 import torch
 import tqdm
 import yaml
 
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix
 from skmultilearn.model_selection import iterative_train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
+from tabulate import tabulate
 
 
 ROOT = pyrootutils.setup_root(
@@ -96,18 +99,56 @@ def model_step(mode : str,
         values[mode]["class_report"] = classification_report(values[mode]["y"], values[mode]["y_pred"],  output_dict=True, zero_division=0)
         values[mode]["cm"] = confusion_matrix(values[mode]["y"], values[mode]["y_pred"])
 
+def confusion_matrix_plot(cm, names, savepath, figsize = (8,8)):
+    fig = plt.figure(figsize=figsize)
 
+    sns.heatmap(cm, annot=True, xticklabels=names, yticklabels=names)
+    plt.xlabel("Predicted")
+    plt.ylabel("Real")
 
-def training(model: torch.nn.Module, train_data, validation_data, tag_data : dict, optimizer, epochs, device, epoch_begin = 0):
+    plt.tight_layout()
+    plt.savefig(savepath, format="pdf", bbox_inches="tight")
 
-    training_stats = {"epoch" : [],}
+    plt.close(fig)
+
+def progression_plot(epochs, metric_train, metric_validation, metric_name, savepath, figsize = (8, 5), ylim = None):
+
+    fig = plt.figure(figsize=figsize)
+    plt.plot(epochs, metric_train, 'o--', color='r', label="Training")
+    plt.plot(epochs, metric_validation, 'o-', color='g', label="Validation")
+
+    plt.legend()
+
+    if ylim is not None:
+        plt.ylim(ylim)
     
+    plt.xlabel("Epochs")
+    plt.ylabel(metric_name)
+    plt.grid()
+    plt.tight_layout()
+
+    plt.savefig(savepath, format="pdf", bbox_inches="tight")
+
+    plt.close(fig)
+
+def training(model: torch.nn.Module, train_data, validation_data, tag_data : dict, optimizer, epochs, device, epoch_begin = 0, best = False):
+
+    training_stats = {}
+    validation_stats = {}
+
+    for tag, _ in tag_data.items():
+        training_stats[tag] = {"epoch" : [], "acc" : [], "f1" : [], "loss" : [], "class_report" : [], "cm": []}
+        validation_stats[tag] = {"epoch" : [], "acc" : [], "f1" : [], "loss" : [], "class_report" : [], "cm": []}
+
     for epoch in range(epochs):
 
         model_step("train", model, train_data, tag_data, optimizer=optimizer, device=device)
         model_step("val", model, validation_data, tag_data, device=device)
 
-        training_report = ""
+
+        training_report_header = ["TAG", "TRAINING\nACC", "\nF1", "\nLOSS", "VALIDATION\nACC", "\nF1", "\nLOSS"]
+        training_report_body   = []
+
         for tag, values in tag_data.items():
 
             curr_acc_train  =  values["train"]["class_report"]["accuracy"]
@@ -118,7 +159,21 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
             curr_f1_val   =  values["val"]["class_report"]["macro avg"]["f1-score"]
             curr_loss_val =  values["val"]["loss"]
 
-            training_report += f"[{tag.upper()}] [T] ACC={curr_acc_train:.2f} F1={curr_f1_train:.2f} LOSS={curr_loss_train:.2f} [V] ACC={curr_acc_val:.2f} F1={curr_f1_val:.2f} LOSS={curr_loss_val:.2f}"
+            training_report_body.append([tag.upper(), curr_acc_train, curr_f1_train, curr_loss_train, curr_acc_val, curr_f1_val, curr_loss_val])
+
+            training_stats[tag]["epoch"].append(epoch)
+            training_stats[tag]["acc"].append(curr_acc_train)
+            training_stats[tag]["f1"].append(curr_f1_train)
+            training_stats[tag]["loss"].append(curr_loss_train)
+            training_stats[tag]["class_report"].append(values["train"]["class_report"])
+            training_stats[tag]["cm"].append(values["train"]["cm"])
+
+            validation_stats[tag]["epoch"].append(epoch)
+            validation_stats[tag]["acc"].append(curr_acc_val)
+            validation_stats[tag]["f1"].append(curr_f1_val)
+            validation_stats[tag]["loss"].append(curr_loss_val)
+            validation_stats[tag]["class_report"].append(values["val"]["class_report"])
+            validation_stats[tag]["cm"].append(values["val"]["cm"])
 
             values["train"]["loss"] = 0
             values["train"]["y"].clear()
@@ -132,7 +187,9 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
             values["val"]["class_report"] = None
             values["val"]["cm"] = None
 
-        print(f"{epoch+1:03d}/{epochs:03d}: {training_report}")
+        print(f"------- EPOCH {epoch+1:03d}/{epochs:03d}")
+        print(tabulate(training_report_body, training_report_header, tablefmt="grid", floatfmt=".4f"))
+    return training_stats, validation_stats
 
 if __name__ == "__main__":
 

@@ -77,6 +77,7 @@ class ExMeshCNN(nn.Module):
 
         # ...then through the pooling bridge...
         fe = self.pool_bridge(fe)
+        fe = fe.view(fe.size(0), -1)
 
         # ...and finally into FN city.
         preds = {}
@@ -87,7 +88,7 @@ class ExMeshCNN(nn.Module):
         return preds
 
 
-def get_model(tag_data, device, trial = None, params = None):
+def get_model(tag_data, trial = None, params = None):
 
     if trial is not None:
         params = {}
@@ -104,12 +105,12 @@ def get_model(tag_data, device, trial = None, params = None):
             params[f"conv{layer}_out_channel"]  = trial.suggest_categorical(f"conv{layer}_out_channel", [16, 32, 64, 128, 256, 512])
         
         # Fully Connected block
-        params["fn_layer_num"] = trial.suggest_int("conv_layer_num", 1, 5)
+        params["fn_layer_num"] = trial.suggest_int("fn_layer_num", 1, 5)
 
         for layer in range(params["fn_layer_num"]):
             params[f"fn{layer}_out_channel"]  = trial.suggest_categorical(f"fn{layer}_out_channel", [8, 16, 32, 64, 128, 256])
         
 
-    model = ExMeshCNN(tag_data, params).to(device)
+    model = ExMeshCNN(tag_data, params)
 
     return model

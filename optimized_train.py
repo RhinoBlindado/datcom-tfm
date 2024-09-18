@@ -6,6 +6,7 @@ import importlib
 import argparse
 import os
 
+from optuna.trial import TrialState
 from sklearn.model_selection import train_test_split
 from skmultilearn.model_selection import iterative_train_test_split
 
@@ -51,11 +52,11 @@ class HyperParamOptimizer():
         return model_class.get_model(tag_data, trial).to(self.device)
         
 
-    def save_trial_stats(self, trial, model, training_stats, validation_stats, best = -1):
+    def save_trial_stats(self, trial, model_state_dict, training_stats, validation_stats, best_mean_epoch):
         trial_path = os.path.join(self.output_f, f"trial_{trial.number}")
         os.mkdir(trial_path)
 
-        torch.save(model.state_dict(), os.path.join(trial_path, "trial_model.pth"))
+        torch.save(model_state_dict, os.path.join(trial_path, "trial_model.pth"))
 
         trial_plot_path = os.path.join(trial_path, "plots")
         os.mkdir(trial_plot_path)
@@ -70,8 +71,8 @@ class HyperParamOptimizer():
             train_test.progression_plot(train_items["epoch"], train_items["f1"], val_items["f1"], "F1", os.path.join(trial_plot_path, f"{tag}-f1.pdf"), ylim=(0,1))
             train_test.progression_plot(train_items["epoch"], train_items["loss"], val_items["loss"], "Loss", os.path.join(trial_plot_path, f"{tag}-loss.pdf"))
 
-            train_test.confusion_matrix_plot(train_items["cm"][-1], self.tag_meta[tag]["cat_names"], os.path.join(trial_plot_path, f"{tag}-training-cm.pdf"))
-            train_test.confusion_matrix_plot(val_items["cm"][-1], self.tag_meta[tag]["cat_names"], os.path.join(trial_plot_path, f"{tag}-validation-cm.pdf"))
+            train_test.confusion_matrix_plot(train_items["cm"][best_mean_epoch], self.tag_meta[tag]["cat_names"], os.path.join(trial_plot_path, f"{tag}-training-cm.pdf"))
+            train_test.confusion_matrix_plot(val_items["cm"][best_mean_epoch], self.tag_meta[tag]["cat_names"], os.path.join(trial_plot_path, f"{tag}-validation-cm.pdf"))
 
     def calculate_fitness(self, act_train_f1, act_val_f1):
         return act_val_f1 * (1 - abs(act_train_f1 - act_val_f1))
@@ -114,19 +115,19 @@ class HyperParamOptimizer():
         val_loader = torch.utils.data.DataLoader(PSDataset(self.X_val, self.y_val, self.dataset_str, self.tag_data), batch_size=self.batch_sz, shuffle=False, num_workers=self.dataloader_workers)
 
         # Run the model with the parameters.
-        train_res, val_res = train_test.training(model, train_loader, val_loader, self.tag_data, optimizer, self.epochs, self.device)
+        train_res, val_res, best_models = train_test.training(model, train_loader, val_loader, self.tag_data, optimizer, self.epochs, self.device)
 
         # Record results and return optimization value.
         total_fitness = []
         for act_train_res, act_val_res in zip(train_res.items(), val_res.items()):
-            best_train_f1 = act_train_res[1]["f1"][-1]
-            best_val_f1 = act_val_res[1]["f1"][-1]
+            best_train_f1 = act_train_res[1]["f1"][best_models["mean"]["epoch"]]
+            best_val_f1 = act_val_res[1]["f1"][best_models["mean"]["epoch"]]
 
             total_fitness.append(self.calculate_fitness(best_train_f1, best_val_f1))
 
         total_fitness = np.mean(total_fitness)
 
-        self.save_trial_stats(trial, model, train_res, val_res)
+        self.save_trial_stats(trial, best_models["mean"]["model"], train_res, val_res, best_models["mean"]["epoch"])
 
         return total_fitness
 
@@ -318,4 +319,4 @@ hpo = HyperParamOptimizer(args.model, args.dataset, out_folder, X_train, y_train
 study.optimize(hpo.optimize_model, n_trials=args.trials)
 
 # ...save metadata after optimization.
-# show_optimization_info(study, out_folder)
+show_optimization_info(study, True, out_folder)

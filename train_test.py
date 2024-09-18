@@ -3,14 +3,16 @@
     another code.
 """
 
-import os
-import sys
-import argparse
 import importlib
+import argparse
+import copy
+import sys
+import os
 
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import numpy as np
 import pyrootutils
 import torch
 import tqdm
@@ -135,10 +137,12 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
 
     training_stats = {}
     validation_stats = {}
+    best_model = {"mean" : {"epoch" : -1, "f1" : -1, "model_params" : None}}
 
     for tag, _ in tag_data.items():
         training_stats[tag] = {"epoch" : [], "acc" : [], "f1" : [], "loss" : [], "class_report" : [], "cm": []}
         validation_stats[tag] = {"epoch" : [], "acc" : [], "f1" : [], "loss" : [], "class_report" : [], "cm": []}
+        best_model[tag] = {"epoch" : -1, "f1" : -1, "model_params" : None}
 
     for epoch in range(epochs):
 
@@ -149,6 +153,7 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
         training_report_header = ["TAG", "TRAINING\nACC", "\nF1", "\nLOSS", "VALIDATION\nACC", "\nF1", "\nLOSS"]
         training_report_body   = []
 
+        curr_f1_val_all = []
         for tag, values in tag_data.items():
 
             curr_acc_train  =  values["train"]["class_report"]["accuracy"]
@@ -158,6 +163,13 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
             curr_acc_val  =  values["val"]["class_report"]["accuracy"]
             curr_f1_val   =  values["val"]["class_report"]["macro avg"]["f1-score"]
             curr_loss_val =  values["val"]["loss"]
+
+            if curr_f1_val > best_model[tag]["f1"]:
+                best_model[tag]["f1"] = curr_f1_val
+                best_model[tag]["epoch"] = epoch
+                best_model[tag]["model"] = copy.deepcopy(model.state_dict())
+
+            curr_f1_val_all.append(curr_f1_val)
 
             training_report_body.append([tag.upper(), curr_acc_train, curr_f1_train, curr_loss_train, curr_acc_val, curr_f1_val, curr_loss_val])
 
@@ -187,9 +199,24 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
             values["val"]["class_report"] = None
             values["val"]["cm"] = None
 
+        if np.mean(curr_f1_val_all) > best_model["mean"]["f1"]:
+            best_model["mean"]["f1"] = np.mean(curr_f1_val_all)
+            best_model["mean"]["epoch"] = epoch
+            best_model["mean"]["model"] = copy.deepcopy(model.state_dict())
+
         print(f"------- EPOCH {epoch+1:03d}/{epochs:03d}")
         print(tabulate(training_report_body, training_report_header, tablefmt="grid", floatfmt=".4f"))
-    return training_stats, validation_stats
+        print("\nBEST:")
+
+        best_header = ["TAG", "EPOCH", "VALIDATION F1"]
+        best_body = []
+        for key, value in best_model.items():
+            best_body.append([key.upper(), value["epoch"], value["f1"]])
+
+        print(tabulate(best_body, best_header, tablefmt="grid", floatfmt=".4f"))
+        print("\n")
+
+    return training_stats, validation_stats, best_model
 
 if __name__ == "__main__":
 

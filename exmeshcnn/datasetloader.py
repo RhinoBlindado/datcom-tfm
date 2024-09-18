@@ -40,9 +40,10 @@ class PSDataset(torch.utils.data.Dataset):
     Dataset loader for the Pubic Symphysis data
     """
 
-    def __init__(self, x_names : np.array, y_tags : pd.DataFrame, path : str, tag_data : dict):
+    def __init__(self, x_names : np.array, y_tags : pd.DataFrame, path : str, tag_data : dict, npy_name : str = "npy", ):
         self.bone_id = x_names
         self.path = path
+        self.npy_name = npy_name
         self.tags = {}
 
         for key, _ in tag_data.items():
@@ -60,7 +61,7 @@ class PSDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
 
         # Load the "mesh"
-        pseudo_mesh = np.load(os.path.join(self.path, "npy", f"{self.bone_id[idx]}.npy"), allow_pickle=True)
+        pseudo_mesh = np.load(os.path.join(self.path, self.npy_name, f"{self.bone_id[idx]}.npy"), allow_pickle=True)
         edge_feat = torch.from_numpy(pseudo_mesh.item()['edge'])
         face_feat = torch.from_numpy(pseudo_mesh.item()['face'])
         adyacent_faces = pseudo_mesh.item()['adj']

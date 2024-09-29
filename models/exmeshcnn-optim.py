@@ -66,6 +66,8 @@ class ExMeshCNN(nn.Module):
 
             self.fn_layers[tag] = nn.Sequential(*act_fn_list)
 
+            self.optuna_trial_params = params
+
     def forward(self, ed, fa, ad):
         ed = self.conv_e(ed)
         fa = self.conv_f(fa)
@@ -86,23 +88,25 @@ class ExMeshCNN(nn.Module):
             preds[tag] = fe_out
 
         return preds
-
+    
+    def get_optuna_trial_params(self):
+        return self.optuna_trial_params
 
 def get_model(tag_data, trial = None, params = None):
 
     if trial is not None:
         params = {}
         # Input block
-        params["geod_mid_channel"] = trial.suggest_categorical("geod_mid_channel", [16, 32, 64, 128, 256, 512])
-        params["geod_out_channel"] = trial.suggest_categorical("geod_out_channel", [16, 32, 64, 128, 256, 512])
-        params["geom_mid_channel"] = trial.suggest_categorical("geom_mid_channel", [16, 32, 64, 128, 256, 512])
-        params["geom_out_channel"] = trial.suggest_categorical("geom_out_channel", [16, 32, 64, 128, 256, 512])
+        params["geod_mid_channel"] = trial.suggest_categorical("geod_mid_channel", [16, 32, 64, 128, 256])
+        params["geod_out_channel"] = trial.suggest_categorical("geod_out_channel", [16, 32, 64, 128, 256])
+        params["geom_mid_channel"] = trial.suggest_categorical("geom_mid_channel", [16, 32, 64, 128, 256])
+        params["geom_out_channel"] = trial.suggest_categorical("geom_out_channel", [16, 32, 64, 128, 256])
         
         # Mesh Convolution block
         params["conv_layer_num"] = trial.suggest_int("conv_layer_num", 2, 6)
 
         for layer in range(params["conv_layer_num"]):
-            params[f"conv{layer}_out_channel"]  = trial.suggest_categorical(f"conv{layer}_out_channel", [16, 32, 64, 128, 256, 512])
+            params[f"conv{layer}_out_channel"]  = trial.suggest_categorical(f"conv{layer}_out_channel", [16, 32, 64, 128, 256])
         
         # Fully Connected block
         params["fn_layer_num"] = trial.suggest_int("fn_layer_num", 1, 5)

@@ -5,6 +5,8 @@
 
 import importlib
 import argparse
+import datetime
+import random
 import copy
 import sys
 import os
@@ -15,14 +17,12 @@ import pandas as pd
 import numpy as np
 import pyrootutils
 import torch
-import tqdm
 import yaml
 
 from skmultilearn.model_selection import iterative_train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from tabulate import tabulate
-
 
 ROOT = pyrootutils.setup_root(
     search_from=__file__,
@@ -270,6 +270,7 @@ def save_testing_stats(dir_path, test_results, tag_metadata):
 
     for tag, item in test_res.items():
         confusion_matrix_plot(item["cm"], tag_metadata[tag]["cat_names"], os.path.join(plot_path, f"{tag}-test_cm_plot.pdf"))
+        np.save(os.path.join(dir_path, f"{tag}-test_cm.npy"), item["cm"])
         item.pop("cm")
 
     with open(os.path.join(dir_path, "test_result.yaml"), mode="wt", encoding="utf8") as f:
@@ -280,11 +281,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Base arguments
-    parser.add_argument("-d", "--dataset", type=str, required=True, help="Path to a dataset folder. Must follow required format, see README.")
+    parser.add_argument("--dataset", type=str, help="Path to the dataset folder")
+    parser.add_argument("--npy-name", type=str, help="Name of the NPY folder to be used. Must be inside the dataset folder.")
     parser.add_argument("-m", "--model", type=str, default="exmeshcnn-base", help="CNN model to use. Default is 'exmeshcnn-base'")
     parser.add_argument("-o", "--output", type=str, default="./experiments", help="Output folder where to save experiment data. Default is 'experiments' folder.")
     parser.add_argument("-n", "--exp-name", type=str, default=None, help="Name of the experiment. Default is <YYYY>_<MM>_<DD>__<model>__<dataset>")
     parser.add_argument("--seed", type=int, default=0, help="Random seed to be used, default is 0.")
+    parser.add_argument("--train-val-test-split", type=str, default=None, help="")
 
     # Performance
     parser.add_argument("-b", "--batch-sz", type=int, default=2, help="Batch size to be used. Default is 2.")
@@ -297,14 +300,57 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--optimizer", type=str, default="Adam")
 
+    parser.add_argument("--model-weights", default=None)
+    parser.add_argument("--train-params", default=None)
+
+    # Output
+    parser.add_argument("--output-path", type=str, default="./experiments")
+    parser.add_argument("--output-name", type=str, default=None, help="Name of the experiment. Default is exp--<YYYY>_<MM>_<DD>__<model>__<dataset>")
+
     # Configuration files, etc.
     parser.add_argument("--tag-yaml", type=str, default="./src/todd_characteristics.yaml", help="YAML file containing the number of categories per characteristic and their names. Default is located at '/src/todd_characteristics.yaml'")
 
+    # Debug
+    parser.add_argument("--debug-use-cpu", action="store_true")
+
     args = parser.parse_args()
+
+    ## Starting setup:
+
+    # Turn off Matplotlib interactive mode
+    plt.ioff()
+
+    # Set random seeds
+    RANDOM_STATE = args.seed
+    random.seed(RANDOM_STATE)
+    torch.manual_seed(RANDOM_STATE)
+    np.random.seed(RANDOM_STATE)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(RANDOM_STATE)
+        torch.cuda.manual_seed_all(RANDOM_STATE)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
     # Select the device to perform the computations.
     torch.cuda.empty_cache()
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    if args.debug_use_cpu:
+        device = "cpu"
+    else:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    print(f"Using {device}")
+
+    # Create the output folder.
+    out_folder_path = args.output_path
+
+    if args.output_name is None:
+        dataset_basename = os.path.split(args.dataset.strip("/"))[1]
+        out_name = f"exp-{datetime.datetime.now().strftime('%y%m%d-%H%M%S')}-{args.model}-{dataset_basename}_{args.npy_name}"
+    else:
+        out_name = args.output_name
+
+    out_folder = os.path.join(out_folder_path, out_name)
+    os.makedirs(out_folder)
 
     # Prepare the multiclass data dictionary
     # - Read the YAML to get the metadata of the tags: names, number of characteristics and their names.
@@ -343,38 +389,77 @@ if __name__ == "__main__":
         else:
             tag_data[char]["loss_fn"] = torch.nn.BCEWithLogitsLoss().to(device)
 
+
     # Load the given model.
     try:
         model_module = importlib.import_module(f"models.{args.model}")
-        model = model_module.get_model(tag_data, device)
+        if args.train_params is None:
+            model = model_module.get_model(tag_data)
+        else:
+            with open(args.train_params, "r", encoding="utf-8") as f:
+                try:
+                    train_params =  yaml.safe_load(f)
+                except yaml.YAMLError as exc:
+                    print(exc)
+            model = model_module.get_model(tag_data, params=train_params)
+
+        model = model.to(device)
     except Exception:
         print(f"Model {args.model} not found.")
         sys.exit(-1)
 
+    if args.model_weights is not None:
+        model.load_state_dict(torch.load(args.model_weights))
 
-    # Load up the dataset
-    dataset_df = pd.read_csv(os.path.join(args.dataset, "dataset.csv"))
+    # Generate the train-test split or use one provided.
+    if args.train_val_test_split is None:
+        # Load up the dataset
+        dataset_df = pd.read_csv(os.path.join(args.dataset, "dataset.csv"))
 
-    x_names = dataset_df.pop("name")
-    x_names = x_names.to_numpy().reshape((-1,1))
+        x_names = dataset_df.pop("name")
+        x_names = x_names.to_numpy().reshape((-1,1))
 
-    y_tags = dataset_df[selected_tags].to_numpy()
+        y_tags = dataset_df[selected_tags].to_numpy()
 
-    # Split the data
-    if len(selected_tags) > 1:
-        X_train_val, y_train_val, X_test, y_test = iterative_train_test_split(x_names, y_tags, test_size = 0.2)
-        X_train, y_train, X_val, y_val =  iterative_train_test_split(X_train_val, y_train_val, test_size = 0.2)
+        # Split the data
+        if len(selected_tags) > 1:
+            X_train_val, y_train_val, X_test, y_test = iterative_train_test_split(x_names, y_tags, test_size = 0.2)
+            X_train, y_train, X_val, y_val =  iterative_train_test_split(X_train_val, y_train_val, test_size = 0.2)
+        else:
+            X_train_val, X_test, y_train_val, y_test = train_test_split(x_names, y_tags, test_size = 0.2, stratify=y_tags, random_state=args.seed)
+            X_train, X_val, y_train, y_val =  train_test_split(X_train_val, y_train_val, test_size = 0.2, stratify=y_train_val, random_state=args.seed)
+
+        X_train = X_train.reshape((X_train.shape[0],))
+        X_val = X_val.reshape((X_val.shape[0],))
+        X_test = X_test.reshape((X_test.shape[0],))
+
+        y_train = pd.DataFrame(y_train, columns=selected_tags)
+        y_val = pd.DataFrame(y_val, columns=selected_tags)
+        y_test = pd.DataFrame(y_test, columns=selected_tags)
+
+        act_training_set = y_train.copy()
+        act_validation_set = y_val.copy()
+        act_test_set = y_test.copy()
+
+        act_training_set.insert(0, "name", X_train)
+        act_validation_set.insert(0, "name", X_val)
+        act_test_set.insert(0, "name", X_test)
+
+        act_training_set.to_csv(os.path.join(out_folder, "train.csv"), index=False)
+        act_validation_set.to_csv(os.path.join(out_folder, "validation.csv"), index=False)
+        act_test_set.to_csv(os.path.join(out_folder, "test.csv"), index=False)
     else:
-        X_train_val, y_train_val, X_test, y_test = train_test_split(x_names, y_tags, test_size = 0.2, stratify=y_tags)
-        X_train, y_train, X_val, y_val =  train_test_split(X_train_val, y_train_val, test_size = 0.2, stratify=y_train_val)
+        act_training_set = pd.read_csv(os.path.join(args.train_val_test_split, "train.csv"))
+        act_validation_set = pd.read_csv(os.path.join(args.train_val_test_split, "validation.csv"))
+        act_test_set = pd.read_csv(os.path.join(args.train_val_test_split, "test.csv"))
 
-    X_train = X_train.reshape((X_train.shape[0],))
-    X_val = X_val.reshape((X_val.shape[0],))
-    X_test = X_test.reshape((X_test.shape[0],))
+        y_train = pd.DataFrame(act_training_set, columns=selected_tags)
+        y_val = pd.DataFrame(act_validation_set, columns=selected_tags)
+        y_test = pd.DataFrame(act_test_set, columns=selected_tags)
 
-    y_train = pd.DataFrame(y_train, columns=selected_tags)
-    y_val = pd.DataFrame(y_val, columns=selected_tags)
-    y_test = pd.DataFrame(y_test, columns=selected_tags)
+        X_train = act_training_set["name"].to_numpy()
+        X_val = act_validation_set["name"].to_numpy()
+        X_test = act_test_set["name"].to_numpy()
 
     train_loader = torch.utils.data.DataLoader(PSDataset(X_train, y_train, args.dataset, tag_data), batch_size=args.batch_sz, shuffle=True, num_workers=args.workers)
     val_loader = torch.utils.data.DataLoader(PSDataset(X_val, y_val, args.dataset, tag_data), batch_size=args.batch_sz, shuffle=False, num_workers=args.workers)

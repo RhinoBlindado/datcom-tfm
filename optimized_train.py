@@ -4,6 +4,7 @@
 
 import importlib
 import argparse
+import random
 import os
 
 from optuna.trial import TrialState
@@ -11,7 +12,6 @@ from sklearn.model_selection import train_test_split
 from skmultilearn.model_selection import iterative_train_test_split
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 import pandas as pd
 import numpy as np
 import datetime
@@ -46,17 +46,26 @@ class HyperParamOptimizer():
         self.output_f = output_folder
         self.tag_meta = tag_meta
 
+        # Best model
+        self.best_trial = -1
+        self.best_fitness = -1
+        self.best_model = None
+
 
     def load_model(self, trial):
         model_class = importlib.import_module(f"models.{self.model_str}")
         return model_class.get_model(tag_data, trial).to(self.device)
         
 
-    def save_trial_stats(self, trial, model_state_dict, training_stats, validation_stats, best_mean_epoch):
+    def save_trial_stats(self, trial, model, training_stats, validation_stats, best_mean_epoch):
+
         trial_path = os.path.join(self.output_f, f"trial_{trial.number}")
         os.mkdir(trial_path)
 
-        torch.save(model_state_dict, os.path.join(trial_path, "trial_model.pth"))
+        torch.save(model.state_dict(), os.path.join(trial_path, "trial_model_state_dict.pth"))
+        
+        with open(os.path.join(self.output_f, "params.yaml"), mode="wt", encoding="utf8") as fparam:
+            yaml.dump(trial.params, fparam)
 
         trial_plot_path = os.path.join(trial_path, "plots")
         os.mkdir(trial_plot_path)
@@ -71,11 +80,26 @@ class HyperParamOptimizer():
             train_test.progression_plot(train_items["epoch"], train_items["f1"], val_items["f1"], "F1", os.path.join(trial_plot_path, f"{tag}-f1.pdf"), ylim=(0,1))
             train_test.progression_plot(train_items["epoch"], train_items["loss"], val_items["loss"], "Loss", os.path.join(trial_plot_path, f"{tag}-loss.pdf"))
 
-            train_test.confusion_matrix_plot(train_items["cm"][best_mean_epoch], self.tag_meta[tag]["cat_names"], os.path.join(trial_plot_path, f"{tag}-training-cm.pdf"))
-            train_test.confusion_matrix_plot(val_items["cm"][best_mean_epoch], self.tag_meta[tag]["cat_names"], os.path.join(trial_plot_path, f"{tag}-validation-cm.pdf"))
+            train_test.confusion_matrix_plot(train_items["cm"][best_mean_epoch], self.tag_meta[tag]["cat_names"], os.path.join(trial_plot_path, f"{tag}-training_cm_plot.pdf"))
+            train_test.confusion_matrix_plot(val_items["cm"][best_mean_epoch], self.tag_meta[tag]["cat_names"], os.path.join(trial_plot_path, f"{tag}-validation_cm_plot.pdf"))
+
+            with open(os.path.join(trial_path, f"{tag}-best_model-train_val_result.yaml"), mode="wt", encoding="utf8") as f_act:
+                act_dict = {"train" : {"acc": train_items["acc"][best_mean_epoch], 
+                                       "f1" : train_items["f1"][best_mean_epoch],
+                                       "loss" : train_items["loss"][best_mean_epoch]}, 
+                            "val" :   {"acc": val_items["acc"][best_mean_epoch], 
+                                       "f1" : val_items["f1"][best_mean_epoch],
+                                       "loss" : val_items["loss"][best_mean_epoch]}}
+                yaml.dump(act_dict, f_act)
+
+            np.save(os.path.join(trial_path, f"{tag}-training_cm.npy"), train_items["cm"][best_mean_epoch])
+            np.save(os.path.join(trial_path, f"{tag}-validation_cm.npy"), val_items["cm"][best_mean_epoch])
 
     def calculate_fitness(self, act_train_f1, act_val_f1):
         return act_val_f1 * (1 - abs(act_train_f1 - act_val_f1))
+    
+    def get_best_model(self):
+        return self.best_model, self.best_fitness, self.best_trial
 
     def optimize_model(self, trial):
 
@@ -120,14 +144,19 @@ class HyperParamOptimizer():
         # Record results and return optimization value.
         total_fitness = []
         for act_train_res, act_val_res in zip(train_res.items(), val_res.items()):
-            best_train_f1 = act_train_res[1]["f1"][best_models["mean"]["epoch"]]
-            best_val_f1 = act_val_res[1]["f1"][best_models["mean"]["epoch"]]
+            best_train_f1 = act_train_res[1]["f1"][best_models["*mean*"]["epoch"]]
+            best_val_f1 = act_val_res[1]["f1"][best_models["*mean*"]["epoch"]]
 
             total_fitness.append(self.calculate_fitness(best_train_f1, best_val_f1))
 
         total_fitness = np.mean(total_fitness)
 
-        self.save_trial_stats(trial, best_models["mean"]["model"], train_res, val_res, best_models["mean"]["epoch"])
+        self.save_trial_stats(trial, best_models["*mean*"]["model"], train_res, val_res, best_models["*mean*"]["epoch"])
+
+        if total_fitness > self.best_fitness:
+            self.best_trial = trial.number
+            self.best_fitness = total_fitness
+            self.best_model = best_models["*mean*"]["model"]
 
         return total_fitness
 
@@ -155,7 +184,9 @@ def show_optimization_info(study, save, output_path):
                 f.write("    {}: {}\n".format(key, value))
 
         with open(os.path.join(output_path, 'best_optuna_params.yaml'), 'w') as fout:
-            yaml.dump(trial.params, fout, default_flow_style=False)
+            optuna_params = trial.params
+            optuna_params.update(study.user_attrs)
+            yaml.dump(optuna_params, fout, default_flow_style=False)
 
     print("Study statistics: ")
     print("  Number of finished trials: ", len(study.trials))
@@ -176,17 +207,16 @@ def show_optimization_info(study, save, output_path):
         print("Saving plots to {}".format(output_path))
 
         optuna.visualization.matplotlib.plot_intermediate_values(study)
-        plt.savefig(os.path.join(output_path, "intermediate_values.png"), bbox_inches='tight')
+        plt.savefig(os.path.join(output_path, "intermediate_values.pdf"), format="pdf", bbox_inches='tight')
 
         try:
             optuna.visualization.matplotlib.plot_param_importances(study)
-            plt.savefig(os.path.join(output_path, "param_importances.png"), bbox_inches='tight')
+            plt.savefig(os.path.join(output_path, "param_importances.pdf"), format="pdf", bbox_inches='tight')
         except:
             print("Encountered zero total variance in all trees. If all trees have 0 variance, we cannot assess any importances. This could occur if for instance `X.shape[0] == 1`.")
 
         optuna.visualization.matplotlib.plot_optimization_history(study)
-        plt.savefig(os.path.join(output_path, "optimization_history.png"), bbox_inches='tight')
-
+        plt.savefig(os.path.join(output_path, "optimization_history.pdf"), format="pdf", bbox_inches='tight')
 
 parser = argparse.ArgumentParser()
 
@@ -194,7 +224,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, help="Path to the dataset folder")
 parser.add_argument("--npy-name", type=str, help="Name of the NPY folder to be used. Must be inside the dataset folder.")
 parser.add_argument("--model", type=str, help="Name of the model to optimize with.")
-parser.add_argument("--train-val-test-split", type=str, default=None, help="Name of the model to optimize with.")
+parser.add_argument("--train-val-test-split", type=str, default=None, help="")
 parser.add_argument("-t", "--tags", type=str, required=True, nargs="+") # choices=["af", "ip", "use", "bn", "lse", "dm", "dp", "vb", "vm", "all"]
 parser.add_argument("--tag-yaml", type=str, default="./src/todd_characteristics.yaml", help="YAML file containing the number of categories per characteristic and their names. Default is located at '/src/todd_characteristics.yaml'")
 
@@ -219,7 +249,19 @@ args = parser.parse_args()
 
 ## Starting setup:
 
+# Turn off Matplotlib interactive mode
 plt.ioff()
+
+# Set random seeds
+RANDOM_STATE = args.seed
+random.seed(RANDOM_STATE)
+torch.manual_seed(RANDOM_STATE)
+np.random.seed(RANDOM_STATE)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(RANDOM_STATE)
+    torch.cuda.manual_seed_all(RANDOM_STATE)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 # Select the device to perform the computations.
 torch.cuda.empty_cache()
@@ -306,17 +348,58 @@ if args.train_val_test_split is None:
     y_val = pd.DataFrame(y_val, columns=selected_tags)
     y_test = pd.DataFrame(y_test, columns=selected_tags)
 
-    # y_train.to_csv(os.path.join(out_folder, "train.csv"), index=False)
-    # y_val.to_csv(os.path.join(out_folder, "validation.csv"), index=False)
-    # y_test.to_csv(os.path.join(out_folder, "test.csv"), index=False)
+    act_training_set = y_train.copy()
+    act_validation_set = y_val.copy()
+    act_test_set = y_test.copy()
+
+    act_training_set.insert(0, "name", X_train)
+    act_validation_set.insert(0, "name", X_val)
+    act_test_set.insert(0, "name", X_test)
+
+    act_training_set.to_csv(os.path.join(out_folder, "train.csv"), index=False)
+    act_validation_set.to_csv(os.path.join(out_folder, "validation.csv"), index=False)
+    act_test_set.to_csv(os.path.join(out_folder, "test.csv"), index=False)
 else:
-    pass
+    act_training_set = pd.read_csv(os.path.join(args.train_val_test_split, "train.csv"))
+    act_validation_set = pd.read_csv(os.path.join(args.train_val_test_split, "validation.csv"))
+    act_test_set = pd.read_csv(os.path.join(args.train_val_test_split, "test.csv"))
+
+    y_train = pd.DataFrame(act_training_set, columns=selected_tags)
+    y_val = pd.DataFrame(act_validation_set, columns=selected_tags)
+    y_test = pd.DataFrame(act_test_set, columns=selected_tags)
+
+    X_train = act_training_set["name"].to_numpy()
+    X_val = act_validation_set["name"].to_numpy()
+    X_test = act_test_set["name"].to_numpy()
+
 # Create the Optuna and...
 study = optuna.create_study(study_name=out_name, direction="maximize")
-hpo = HyperParamOptimizer(args.model, args.dataset, out_folder, X_train, y_train, X_val, y_val, tag_data, tag_metadata, args.epochs, args.folds, args.batch, args.workers)
+
+study.set_user_attr("trials", args.trials)
+study.set_user_attr("epochs", args.epochs)
+study.set_user_attr("folds", args.folds)
+study.set_user_attr("batch", args.batch)
+study.set_user_attr("workers", args.workers)
+study.set_user_attr("seed", args.seed)
+
+trials_folder = os.path.join(out_folder, "trials")
+os.makedirs(trials_folder)
+hpo = HyperParamOptimizer(args.model, args.dataset, trials_folder, X_train, y_train, X_val, y_val, tag_data, tag_metadata, args.epochs, args.folds, args.batch, args.workers, device=device)
 
 # ...start the optimization procedure, then...
 study.optimize(hpo.optimize_model, n_trials=args.trials)
 
 # ...save metadata after optimization.
-show_optimization_info(study, True, out_folder)
+trials_metadata_folder = os.path.join(out_folder, "trials_metadata")
+os.makedirs(trials_metadata_folder)
+show_optimization_info(study, True, trials_metadata_folder)
+
+best_model, _, _ = hpo.get_best_model()
+test_loader = torch.utils.data.DataLoader(PSDataset(X_test, y_test, args.dataset, tag_data, npy_name=args.npy_name), batch_size=args.batch, shuffle=False, num_workers=args.workers)
+testing_results = train_test.testing(best_model, test_loader, tag_data, device=device)
+
+test_folder = os.path.join(out_folder, "test")
+os.makedirs(test_folder)
+
+train_test.save_testing_stats(test_folder, testing_results, tag_metadata)
+print("Done!")

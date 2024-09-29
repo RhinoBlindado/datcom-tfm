@@ -99,7 +99,132 @@ def model_step(mode : str,
 
     for _, values in tag_data.items():
         values[mode]["class_report"] = classification_report(values[mode]["y"], values[mode]["y_pred"],  output_dict=True, zero_division=0)
-        values[mode]["cm"] = confusion_matrix(values[mode]["y"], values[mode]["y_pred"])
+        values[mode]["cm"] = confusion_matrix(values[mode]["y"], values[mode]["y_pred"]).tolist()
+
+def testing(model: torch.nn.Module, test_data, tag_data, device = "cuda"):
+    
+    testing_stats = {}
+    for tag, _ in tag_data.items():
+        testing_stats[tag] = {"acc" : -1, "f1" : -1, "loss" : -1, "class_report" : None, "cm": None}
+
+    model_step("val", model, test_data, tag_data, device=device)
+
+    testing_report_header = ["TAG", "TEST\nACC", "\nF1", "\nLOSS"]
+    testing_report_body   = []
+
+    curr_f1_val_all = []
+    for tag, values in tag_data.items():
+
+        curr_acc_val  =  values["val"]["class_report"]["accuracy"]
+        curr_f1_val   =  values["val"]["class_report"]["macro avg"]["f1-score"]
+        curr_loss_val =  values["val"]["loss"]
+
+        curr_f1_val_all.append(curr_f1_val)
+
+        testing_report_body.append([tag.upper(), curr_acc_val, curr_f1_val, curr_loss_val])
+
+        testing_stats[tag]["acc"] = curr_acc_val
+        testing_stats[tag]["f1"] = curr_f1_val
+        testing_stats[tag]["loss"] = curr_loss_val
+        testing_stats[tag]["class_report"] = values["val"]["class_report"]
+        testing_stats[tag]["cm"] = values["val"]["cm"]
+
+    testing_report_body.append(["*MEAN*", "0", np.mean(curr_f1_val_all), "0"])
+
+    print("------- TEST ")
+    print(tabulate(testing_report_body, testing_report_header, tablefmt="grid", floatfmt=".4f"))
+
+    return testing_stats
+
+def training(model: torch.nn.Module, train_data, validation_data, tag_data : dict, optimizer, epochs, device, epoch_begin = 0, best = False):
+
+    training_stats = {}
+    validation_stats = {}
+    best_model = {}
+
+    for tag, _ in tag_data.items():
+        training_stats[tag] = {"epoch" : [], "acc" : [], "f1" : [], "loss" : [], "class_report" : [], "cm": []}
+        validation_stats[tag] = {"epoch" : [], "acc" : [], "f1" : [], "loss" : [], "class_report" : [], "cm": []}
+        best_model[tag] = {"epoch" : -1, "f1" : -1, "model" : None}
+
+    best_model["*mean*"] = {"epoch" : -1, "f1" : -1, "model" : None}
+
+    for epoch in range(epochs):
+
+        model_step("train", model, train_data, tag_data, optimizer=optimizer, device=device)
+        model_step("val", model, validation_data, tag_data, device=device)
+
+
+        training_report_header = ["TAG", "TRAINING\nACC", "\nF1", "\nLOSS", "VALIDATION\nACC", "\nF1", "\nLOSS"]
+        training_report_body   = []
+
+        curr_f1_val_all = []
+        for tag, values in tag_data.items():
+
+            curr_acc_train  =  values["train"]["class_report"]["accuracy"]
+            curr_f1_train   =  values["train"]["class_report"]["macro avg"]["f1-score"]
+            curr_loss_train =  values["train"]["loss"]
+
+            curr_acc_val  =  values["val"]["class_report"]["accuracy"]
+            curr_f1_val   =  values["val"]["class_report"]["macro avg"]["f1-score"]
+            curr_loss_val =  values["val"]["loss"]
+
+            if curr_f1_val > best_model[tag]["f1"]:
+                best_model[tag]["f1"] = curr_f1_val
+                best_model[tag]["epoch"] = epoch
+                best_model[tag]["model"] = copy.deepcopy(model)
+
+            curr_f1_val_all.append(curr_f1_val)
+
+            training_report_body.append([tag.upper(), curr_acc_train, curr_f1_train, curr_loss_train, curr_acc_val, curr_f1_val, curr_loss_val])
+
+            training_stats[tag]["epoch"].append(epoch)
+            training_stats[tag]["acc"].append(curr_acc_train)
+            training_stats[tag]["f1"].append(curr_f1_train)
+            training_stats[tag]["loss"].append(curr_loss_train)
+            training_stats[tag]["class_report"].append(values["train"]["class_report"])
+            training_stats[tag]["cm"].append(values["train"]["cm"])
+
+            validation_stats[tag]["epoch"].append(epoch)
+            validation_stats[tag]["acc"].append(curr_acc_val)
+            validation_stats[tag]["f1"].append(curr_f1_val)
+            validation_stats[tag]["loss"].append(curr_loss_val)
+            validation_stats[tag]["class_report"].append(values["val"]["class_report"])
+            validation_stats[tag]["cm"].append(values["val"]["cm"])
+
+            values["train"]["loss"] = 0
+            values["train"]["y"].clear()
+            values["train"]["y_pred"].clear()
+            values["train"]["class_report"] = None
+            values["train"]["cm"] = None
+
+            values["val"]["loss"] = 0
+            values["val"]["y"].clear()
+            values["val"]["y_pred"].clear()
+            values["val"]["class_report"] = None
+            values["val"]["cm"] = None
+
+        if np.mean(curr_f1_val_all) > best_model["*mean*"]["f1"]:
+            best_model["*mean*"]["f1"] = np.mean(curr_f1_val_all)
+            best_model["*mean*"]["epoch"] = epoch
+            best_model["*mean*"]["model"] = copy.deepcopy(model)
+
+
+        training_report_body.append(["*MEAN*", "0", "0", "0", "0", np.mean(curr_f1_val_all), "0"])
+
+        print(f"------- EPOCH {epoch+1:03d}/{epochs:03d}")
+        print(tabulate(training_report_body, training_report_header, tablefmt="grid", floatfmt=".4f"))
+        print("\nBEST:")
+
+        best_header = ["TAG", "EPOCH", "VALIDATION F1"]
+        best_body = []
+        for key, value in best_model.items():
+            best_body.append([key.upper(), value["epoch"] + 1, value["f1"]])
+
+        print(tabulate(best_body, best_header, tablefmt="grid", floatfmt=".4f"))
+        print("\n")
+
+    return training_stats, validation_stats, best_model
 
 def confusion_matrix_plot(cm, names, savepath, figsize = (8,8)):
     fig = plt.figure(figsize=figsize)
@@ -133,90 +258,22 @@ def progression_plot(epochs, metric_train, metric_validation, metric_name, savep
 
     plt.close(fig)
 
-def training(model: torch.nn.Module, train_data, validation_data, tag_data : dict, optimizer, epochs, device, epoch_begin = 0, best = False):
+def save_training_stats():
+    pass
 
-    training_stats = {}
-    validation_stats = {}
-    best_model = {"mean" : {"epoch" : -1, "f1" : -1, "model_params" : None}}
+def save_testing_stats(dir_path, test_results, tag_metadata):
+    
+    plot_path = os.path.join(dir_path, "plots")
+    os.makedirs(plot_path, exist_ok=True)
 
-    for tag, _ in tag_data.items():
-        training_stats[tag] = {"epoch" : [], "acc" : [], "f1" : [], "loss" : [], "class_report" : [], "cm": []}
-        validation_stats[tag] = {"epoch" : [], "acc" : [], "f1" : [], "loss" : [], "class_report" : [], "cm": []}
-        best_model[tag] = {"epoch" : -1, "f1" : -1, "model_params" : None}
+    test_res = copy.deepcopy(test_results)
 
-    for epoch in range(epochs):
+    for tag, item in test_res.items():
+        confusion_matrix_plot(item["cm"], tag_metadata[tag]["cat_names"], os.path.join(plot_path, f"{tag}-test_cm_plot.pdf"))
+        item.pop("cm")
 
-        model_step("train", model, train_data, tag_data, optimizer=optimizer, device=device)
-        model_step("val", model, validation_data, tag_data, device=device)
-
-
-        training_report_header = ["TAG", "TRAINING\nACC", "\nF1", "\nLOSS", "VALIDATION\nACC", "\nF1", "\nLOSS"]
-        training_report_body   = []
-
-        curr_f1_val_all = []
-        for tag, values in tag_data.items():
-
-            curr_acc_train  =  values["train"]["class_report"]["accuracy"]
-            curr_f1_train   =  values["train"]["class_report"]["macro avg"]["f1-score"]
-            curr_loss_train =  values["train"]["loss"]
-
-            curr_acc_val  =  values["val"]["class_report"]["accuracy"]
-            curr_f1_val   =  values["val"]["class_report"]["macro avg"]["f1-score"]
-            curr_loss_val =  values["val"]["loss"]
-
-            if curr_f1_val > best_model[tag]["f1"]:
-                best_model[tag]["f1"] = curr_f1_val
-                best_model[tag]["epoch"] = epoch
-                best_model[tag]["model"] = copy.deepcopy(model.state_dict())
-
-            curr_f1_val_all.append(curr_f1_val)
-
-            training_report_body.append([tag.upper(), curr_acc_train, curr_f1_train, curr_loss_train, curr_acc_val, curr_f1_val, curr_loss_val])
-
-            training_stats[tag]["epoch"].append(epoch)
-            training_stats[tag]["acc"].append(curr_acc_train)
-            training_stats[tag]["f1"].append(curr_f1_train)
-            training_stats[tag]["loss"].append(curr_loss_train)
-            training_stats[tag]["class_report"].append(values["train"]["class_report"])
-            training_stats[tag]["cm"].append(values["train"]["cm"])
-
-            validation_stats[tag]["epoch"].append(epoch)
-            validation_stats[tag]["acc"].append(curr_acc_val)
-            validation_stats[tag]["f1"].append(curr_f1_val)
-            validation_stats[tag]["loss"].append(curr_loss_val)
-            validation_stats[tag]["class_report"].append(values["val"]["class_report"])
-            validation_stats[tag]["cm"].append(values["val"]["cm"])
-
-            values["train"]["loss"] = 0
-            values["train"]["y"].clear()
-            values["train"]["y_pred"].clear()
-            values["train"]["class_report"] = None
-            values["train"]["cm"] = None
-
-            values["val"]["loss"] = 0
-            values["val"]["y"].clear()
-            values["val"]["y_pred"].clear()
-            values["val"]["class_report"] = None
-            values["val"]["cm"] = None
-
-        if np.mean(curr_f1_val_all) > best_model["mean"]["f1"]:
-            best_model["mean"]["f1"] = np.mean(curr_f1_val_all)
-            best_model["mean"]["epoch"] = epoch
-            best_model["mean"]["model"] = copy.deepcopy(model.state_dict())
-
-        print(f"------- EPOCH {epoch+1:03d}/{epochs:03d}")
-        print(tabulate(training_report_body, training_report_header, tablefmt="grid", floatfmt=".4f"))
-        print("\nBEST:")
-
-        best_header = ["TAG", "EPOCH", "VALIDATION F1"]
-        best_body = []
-        for key, value in best_model.items():
-            best_body.append([key.upper(), value["epoch"], value["f1"]])
-
-        print(tabulate(best_body, best_header, tablefmt="grid", floatfmt=".4f"))
-        print("\n")
-
-    return training_stats, validation_stats, best_model
+    with open(os.path.join(dir_path, "test_result.yaml"), mode="wt", encoding="utf8") as f:
+        yaml.dump(test_res, f)
 
 if __name__ == "__main__":
 

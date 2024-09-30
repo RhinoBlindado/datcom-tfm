@@ -158,6 +158,8 @@ class HyperParamOptimizer():
             self.best_fitness = total_fitness
             self.best_model = best_models["*mean*"]["model"]
 
+        del optimizer
+        del model
         torch.cuda.empty_cache()
 
         return total_fitness

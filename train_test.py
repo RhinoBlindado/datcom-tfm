@@ -8,6 +8,7 @@ import argparse
 import datetime
 import random
 import copy
+import time
 import sys
 import os
 
@@ -32,6 +33,28 @@ ROOT = pyrootutils.setup_root(
 )
 
 from exmeshcnn.datasetloader import PSDataset
+
+class EarlyStopper:
+    """
+    
+    Source: https://stackoverflow.com/a/73704579
+    """
+    def __init__(self, patience=1, min_delta=0):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.min_validation_loss = float('inf')
+
+    def early_stop(self, validation_loss):
+        if validation_loss < self.min_validation_loss:
+            self.min_validation_loss = validation_loss
+            self.counter = 0
+        elif validation_loss > (self.min_validation_loss + self.min_delta):
+            self.counter += 1
+            print(f"!EARLY STOP WARNING!: {self.counter} / {self.patience}")
+            if self.counter >= self.patience:
+                return True
+        return False
 
 def model_step(mode : str,
                model: torch.nn.Module,
@@ -136,7 +159,7 @@ def testing(model: torch.nn.Module, test_data, tag_data, device = "cuda"):
 
     return testing_stats
 
-def training(model: torch.nn.Module, train_data, validation_data, tag_data : dict, optimizer, epochs, device, epoch_begin = 0, best = False):
+def training(model: torch.nn.Module, train_data, validation_data, tag_data : dict, optimizer, epochs, device, epoch_begin = 0, best = False, es_watch : EarlyStopper = None):
 
     training_stats = {}
     validation_stats = {}
@@ -150,10 +173,10 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
     best_model["*mean*"] = {"epoch" : -1, "f1" : -1, "model" : None}
 
     for epoch in range(epochs):
-
+        init_t = time.time()
         model_step("train", model, train_data, tag_data, optimizer=optimizer, device=device)
         model_step("val", model, validation_data, tag_data, device=device)
-
+        end_t = time.time()
 
         training_report_header = ["TAG", "TRAINING\nACC", "\nF1", "\nLOSS", "VALIDATION\nACC", "\nF1", "\nLOSS"]
         training_report_body   = []
@@ -209,11 +232,11 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
             best_model["*mean*"]["epoch"] = epoch
             best_model["*mean*"]["model"] = copy.deepcopy(model).cpu()
 
-
         training_report_body.append(["*MEAN*", "0", "0", "0", "0", np.mean(curr_f1_val_all), "0"])
 
-        print(f"------- EPOCH {epoch+1:03d}/{epochs:03d}")
+        print(f"------- EPOCH {epoch+1:03d}/{epochs:03d} ({(end_t-init_t):.4f} s)")
         print(tabulate(training_report_body, training_report_header, tablefmt="grid", floatfmt=".4f"))
+
         print("\nBEST:")
 
         best_header = ["TAG", "EPOCH", "VALIDATION F1"]
@@ -223,6 +246,9 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
 
         print(tabulate(best_body, best_header, tablefmt="grid", floatfmt=".4f"))
         print("\n")
+
+        if es_watch is not None and es_watch.early_stop(np.mean(curr_f1_val_all)):
+            break
 
     return training_stats, validation_stats, best_model
 

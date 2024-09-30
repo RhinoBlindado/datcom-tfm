@@ -51,7 +51,7 @@ class EarlyStopper:
             self.counter = 0
         elif validation_loss > (self.min_validation_loss + self.min_delta):
             self.counter += 1
-            print(f"!EARLY STOP WARNING!: {self.counter} / {self.patience}")
+            print(f"!EARLY STOP WARNING!: {self.counter} / {self.patience}", flush=True)
             if self.counter >= self.patience:
                 return True
         return False
@@ -181,7 +181,7 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
         training_report_header = ["TAG", "TRAINING\nACC", "\nF1", "\nLOSS", "VALIDATION\nACC", "\nF1", "\nLOSS"]
         training_report_body   = []
 
-        curr_f1_val_all = []
+        mean_tag_stats = {"acc" : [], "f1": [], "loss" : []}
         for tag, values in tag_data.items():
 
             curr_acc_train  =  values["train"]["class_report"]["accuracy"]
@@ -197,7 +197,9 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
                 best_model[tag]["epoch"] = epoch
                 best_model[tag]["model"] = copy.deepcopy(model).cpu()
 
-            curr_f1_val_all.append(curr_f1_val)
+            mean_tag_stats["acc"].append(curr_acc_val)
+            mean_tag_stats["f1"].append(curr_f1_val)
+            mean_tag_stats["loss"].append(curr_loss_val)
 
             training_report_body.append([tag.upper(), curr_acc_train, curr_f1_train, curr_loss_train, curr_acc_val, curr_f1_val, curr_loss_val])
 
@@ -227,15 +229,15 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
             values["val"]["class_report"] = None
             values["val"]["cm"] = None
 
-        if np.mean(curr_f1_val_all) > best_model["*mean*"]["f1"]:
-            best_model["*mean*"]["f1"] = np.mean(curr_f1_val_all)
+        if np.mean(mean_tag_stats["f1"]) > best_model["*mean*"]["f1"]:
+            best_model["*mean*"]["f1"] = np.mean(mean_tag_stats["f1"])
             best_model["*mean*"]["epoch"] = epoch
             best_model["*mean*"]["model"] = copy.deepcopy(model).cpu()
 
-        training_report_body.append(["*MEAN*", "0", "0", "0", "0", np.mean(curr_f1_val_all), "0"])
+        training_report_body.append(["*MEAN*", "0", "0", "0", "0", np.mean(mean_tag_stats["f1"]), np.mean(mean_tag_stats["loss"])])
 
         print(f"------- EPOCH {epoch+1:03d}/{epochs:03d} ({(end_t-init_t):.4f} s)")
-        print(tabulate(training_report_body, training_report_header, tablefmt="grid", floatfmt=".4f"))
+        print(tabulate(training_report_body, training_report_header, tablefmt="grid", floatfmt=".4f"), flush=True)
 
         print("\nBEST:")
 
@@ -244,10 +246,9 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
         for key, value in best_model.items():
             best_body.append([key.upper(), value["epoch"] + 1, value["f1"]])
 
-        print(tabulate(best_body, best_header, tablefmt="grid", floatfmt=".4f"))
-        print("\n")
+        print(tabulate(best_body, best_header, tablefmt="grid", floatfmt=".4f"), flush=True)
 
-        if es_watch is not None and es_watch.early_stop(np.mean(curr_f1_val_all)):
+        if es_watch is not None and es_watch.early_stop(np.mean(mean_tag_stats["loss"])):
             break
 
     return training_stats, validation_stats, best_model

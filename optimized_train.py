@@ -138,8 +138,11 @@ class HyperParamOptimizer():
         train_loader = torch.utils.data.DataLoader(PSDataset(self.X_train, self.y_train, self.dataset_str, self.tag_data, npy_name=args.npy_name), batch_size=self.batch_sz, shuffle=True, num_workers=self.dataloader_workers)
         val_loader = torch.utils.data.DataLoader(PSDataset(self.X_val, self.y_val, self.dataset_str, self.tag_data, npy_name=args.npy_name), batch_size=self.batch_sz, shuffle=False, num_workers=self.dataloader_workers)
 
+        # Instantiate the EarlyStopper
+        early_stopper = train_test.EarlyStopper(patience = 5, min_delta = 0)
+
         # Run the model with the parameters.
-        train_res, val_res, best_models = train_test.training(model, train_loader, val_loader, self.tag_data, optimizer, self.epochs, self.device)
+        train_res, val_res, best_models = train_test.training(model, train_loader, val_loader, self.tag_data, optimizer, self.epochs, self.device, es_watch=early_stopper)
 
         # Record results and return optimization value.
         total_fitness = []

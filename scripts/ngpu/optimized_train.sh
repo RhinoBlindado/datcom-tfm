@@ -10,7 +10,7 @@
 #SBATCH --gres=gpu:1
 
 # Assign job to a particular node
-##SBATCH --nodelist=talos
+#SBATCH --nodelist=talos
 
 # Default configs for NGPU
 export PATH="/opt/anaconda/anaconda3/bin:$PATH"

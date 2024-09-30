@@ -172,7 +172,7 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
             if curr_f1_val > best_model[tag]["f1"]:
                 best_model[tag]["f1"] = curr_f1_val
                 best_model[tag]["epoch"] = epoch
-                best_model[tag]["model"] = copy.deepcopy(model)
+                best_model[tag]["model"] = model.to("cpu", copy=True)
 
             curr_f1_val_all.append(curr_f1_val)
 
@@ -207,7 +207,7 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
         if np.mean(curr_f1_val_all) > best_model["*mean*"]["f1"]:
             best_model["*mean*"]["f1"] = np.mean(curr_f1_val_all)
             best_model["*mean*"]["epoch"] = epoch
-            best_model["*mean*"]["model"] = copy.deepcopy(model)
+            best_model["*mean*"]["model"] = model.to("cpu", copy=True)
 
 
         training_report_body.append(["*MEAN*", "0", "0", "0", "0", np.mean(curr_f1_val_all), "0"])

@@ -158,6 +158,8 @@ class HyperParamOptimizer():
             self.best_fitness = total_fitness
             self.best_model = best_models["*mean*"]["model"]
 
+        torch.cuda.empty_cache()
+
         return total_fitness
 
 def show_optimization_info(study, save, output_path):
@@ -395,6 +397,7 @@ os.makedirs(trials_metadata_folder)
 show_optimization_info(study, True, trials_metadata_folder)
 
 best_model, _, _ = hpo.get_best_model()
+best_model = best_model.to(device)
 test_loader = torch.utils.data.DataLoader(PSDataset(X_test, y_test, args.dataset, tag_data, npy_name=args.npy_name), batch_size=args.batch, shuffle=False, num_workers=args.workers)
 testing_results = train_test.testing(best_model, test_loader, tag_data, device=device)
 

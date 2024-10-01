@@ -64,7 +64,7 @@ class HyperParamOptimizer():
 
         torch.save(model.state_dict(), os.path.join(trial_path, "trial_model_state_dict.pth"))
         
-        with open(os.path.join(self.output_f, "params.yaml"), mode="wt", encoding="utf8") as fparam:
+        with open(os.path.join(trial_path, "params.yaml"), mode="wt", encoding="utf8") as fparam:
             yaml.dump(trial.params, fparam)
 
         trial_plot_path = os.path.join(trial_path, "plots")

@@ -139,7 +139,7 @@ class HyperParamOptimizer():
         val_loader = torch.utils.data.DataLoader(PSDataset(self.X_val, self.y_val, self.dataset_str, self.tag_data, npy_name=args.npy_name), batch_size=self.batch_sz, shuffle=False, num_workers=self.dataloader_workers)
 
         # Instantiate the EarlyStopper
-        early_stopper = train_test.EarlyStopper(patience = int(self.epochs // 3), min_delta = 0.4)
+        early_stopper = train_test.EarlyStopper(patience = int(self.epochs // 3), min_delta = 0.09)
 
         # Run the model with the parameters.
         train_res, val_res, best_models = train_test.training(model, train_loader, val_loader, self.tag_data, optimizer, self.epochs, self.device, es_watch=early_stopper)
@@ -284,7 +284,7 @@ out_folder_path = args.output_path
 
 if args.output_name is None:
     dataset_basename = os.path.split(args.dataset.strip("/"))[1]
-    tags_str = "_".join(list(set(args.tags)))
+    tags_str = "_".join(sorted(list(set(args.tags))))
     out_name = f"opt-{datetime.datetime.now().strftime('%y%m%d-%H%M%S')}-{args.model}-{dataset_basename}-{args.npy_name}-{tags_str}"
 else:
     out_name = args.output_name

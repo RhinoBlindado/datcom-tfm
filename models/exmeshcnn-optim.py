@@ -46,23 +46,25 @@ class ExMeshCNN(nn.Module):
         for tag, values in tag_data.items():
 
             # - How many layers
+            act_fn_in_channel = fn_in_channel
             fn_layer_count = params["fn_layer_num"]
 
             act_fn_list = nn.ModuleList()
 
             for layer in range(fn_layer_count):
                 fn_out_channel = params[f"fn{layer}_out_channel"]
-                act_fn_list.append(nn.Linear(fn_in_channel, fn_out_channel))
+                act_fn_list.append(nn.Linear(act_fn_in_channel, fn_out_channel))
                 act_fn_list.append(nn.ReLU())
 
-                fn_in_channel = fn_out_channel
+                act_fn_in_channel = fn_out_channel
 
-            if values["classes"] > 2:
-                fn_out_channel = values["classes"]
-            else:
-                fn_out_channel = 1
+            fn_out_channel = values["classes"]
+            # if values["classes"] > 2:
+            #     fn_out_channel = values["classes"]
+            # else:
+            #     fn_out_channel = 1
     
-            act_fn_list.append(nn.Linear(fn_in_channel, fn_out_channel))
+            act_fn_list.append(nn.Linear(act_fn_in_channel, fn_out_channel))
 
             self.fn_layers[tag] = nn.Sequential(*act_fn_list)
 

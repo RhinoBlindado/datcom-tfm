@@ -65,7 +65,7 @@ def cut_with_bbox(ps_obj, bbox_obj, perc_cut):
     bpy.ops.object.modifier_apply(modifier=mod_trig.name)
 
 def calculate_non_manifold(in_ps_obj):
-    in_ps_obj.select_set(True)    
+    in_ps_obj.select_set(True)
     bpy.context.view_layer.objects.active = in_ps_obj
     
     bpy.ops.object.mode_set(mode='EDIT')
@@ -81,8 +81,10 @@ init_time = time.time()
 args = sys.argv[sys.argv.index("--")+1:]
 obj_path = args[0]
 save_path = args[1]
-tgt_trig = int(args[2])
-cut_perc = float(args[3])
+cut_perc = float(args[2])
+
+mesh_name = os.path.split(obj_path)[1]
+# tgt_trig = int(args[2])
 # remesh_octdepth = int(args[5])
 # remesh_type = args[6]
 
@@ -125,12 +127,20 @@ while not is_manifold:
     bpy.context.view_layer.objects.active = ps_obj
     ps_mesh = ps_obj.data.id_data
 
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='DESELECT')
+    bpy.ops.mesh.remove_doubles()
+    bpy.ops.object.mode_set(mode='OBJECT')
+
     print("Cutting...")
     cut_with_bbox(ps_obj, bbox_obj_act, cut_perc)
     number_non_manifold = calculate_non_manifold(ps_obj)
     print(f"{number_non_manifold} non-Manifold vertices detected...")
 
-    if number_non_manifold == 0:
+    mesh_trigs = len(ps_obj.data.vertices)
+    print(f"{mesh_trigs} Triangles in mesh...")
+
+    if number_non_manifold == 0 and mesh_trigs > 0:
         is_manifold = True
     else:
         # The mesh still has a hole in it somewhere, make the cutting bbox bigger.
@@ -139,6 +149,13 @@ while not is_manifold:
         bpy.data.objects.remove(ps_obj, do_unlink = True)
         print(f"Trying with {cut_perc * 100:.2f}% of bounding box.")
 
+        if cut_perc > 0.9:
+            err_msg = "Bounding box too big, check model."
+            print(err_msg)
+            with open(os.path.join(save_path, mesh_name.split(".")[0] + "_err.txt"), "wt", encoding="utf8") as f:
+                f.write(err_msg)
+            exit(-1)
+
     bpy.data.objects.remove(bbox_obj_act, do_unlink = True)
     bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
 
@@ -146,35 +163,35 @@ bpy.data.objects.remove(bbox_obj, do_unlink = True)
 bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
 print("Cutting complete.")
 
-# Scale the mesh to the wanted trigs
-act_trigs = len(ps_mesh.polygons)
+# # Scale the mesh to the wanted trigs
+# act_trigs = len(ps_mesh.polygons)
 
-while act_trigs != tgt_trig:
-    # Edge collapse it
-    print("Decimating...")
-    ratio = tgt_trig / act_trigs
-    mod_collapse = ps_obj.modifiers.new(name="Decimate", type="DECIMATE")
-    mod_collapse.use_collapse_triangulate = True
-    mod_collapse.ratio = ratio
-    bpy.ops.object.modifier_apply(modifier=mod_collapse.name)
+# while act_trigs != tgt_trig:
+#     # Edge collapse it
+#     print("Decimating...")
+#     ratio = tgt_trig / act_trigs
+#     mod_collapse = ps_obj.modifiers.new(name="Decimate", type="DECIMATE")
+#     mod_collapse.use_collapse_triangulate = True
+#     mod_collapse.ratio = ratio
+#     bpy.ops.object.modifier_apply(modifier=mod_collapse.name)
 
-    act_trigs = len(ps_mesh.polygons)
+#     act_trigs = len(ps_mesh.polygons)
 
-    # Subdivide the object if needed
-    if(act_trigs != tgt_trig):
-        print("Mesh has {} triangles, but {} are needed...".format(act_trigs, tgt_trig))
-        bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.mesh.select_all(action='SELECT')
-        bpy.ops.mesh.subdivide()
-        bpy.ops.object.mode_set(mode='OBJECT')
+#     # Subdivide the object if needed
+#     if(act_trigs != tgt_trig):
+#         print("Mesh has {} triangles, but {} are needed...".format(act_trigs, tgt_trig))
+#         bpy.ops.object.mode_set(mode='EDIT')
+#         bpy.ops.mesh.select_all(action='SELECT')
+#         bpy.ops.mesh.subdivide()
+#         bpy.ops.object.mode_set(mode='OBJECT')
 
-        act_trigs = len(ps_mesh.polygons)
-        print("After subdivision, mesh now has {} triangles...".format(act_trigs))
+#         act_trigs = len(ps_mesh.polygons)
+#         print("After subdivision, mesh now has {} triangles...".format(act_trigs))
 
-print("Decimation complete.")
+# print("Decimation complete.")
 
 # Center on origin
-bpy.ops.object.origin_set(type="GEOMETRY_ORIGIN")
+# bpy.ops.object.origin_set(type="GEOMETRY_ORIGIN")
 
 # Reexport the OBJ file.
 mesh_name = os.path.split(obj_path)[1]
@@ -188,3 +205,7 @@ bpy.ops.wm.obj_export(
 )
 end_time = time.time()
 print(f"Done, took {end_time-init_time:.4f} s")
+
+with open(os.path.join(save_path, "timing.txt"), "a+", encoding="utf8") as f:
+    f.write(f"{mesh_name.split('.')[0]},{end_time-init_time}\n")
+    

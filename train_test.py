@@ -91,12 +91,13 @@ def model_step(mode : str,
         for act_tag, act_y in y.items():
             act_y_pred_logit = y_preds[act_tag]
 
-            if tag_data[act_tag]["classes"] == 2:
-                act_y = act_y.unsqueeze(dim=1).float()
-                act_y_pred = torch.round(torch.sigmoid(act_y_pred_logit)).squeeze(dim=1).tolist()
-            else:
-                act_y_pred = torch.argmax(act_y_pred_logit, dim=1).tolist()
+            # if tag_data[act_tag]["classes"] == 2:
+            #     act_y = act_y.unsqueeze(dim=1).float()
+            #     act_y_pred = torch.round(torch.sigmoid(act_y_pred_logit)).squeeze(dim=1).tolist()
+            # else:
+            #     act_y_pred = torch.argmax(act_y_pred_logit, dim=1).tolist()
 
+            act_y_pred = torch.argmax(act_y_pred_logit, dim=1).tolist()
             # ... calculate its own loss with its own loss function.
             act_loss = tag_data[act_tag]["loss_fn"](act_y_pred_logit,
                                                     act_y.to(device))
@@ -252,6 +253,20 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
             break
 
     return training_stats, validation_stats, best_model
+
+def get_class_weight(train_val_classes):
+    _, classes_counts = np.unique(train_val_classes, return_counts=True)
+
+    total_samples = len(train_val_classes)
+
+    weight_func = np.vectorize(class_weight)
+    weights = weight_func(classes_counts, total_samples)
+    weights = torch.tensor(weights / np.sum(weights))
+
+    return weights
+
+def class_weight(class_sample_num, total_number_samples):
+    return 1 - (class_sample_num / total_number_samples)
 
 def confusion_matrix_plot(cm, names, savepath, figsize = (8,8)):
     fig = plt.figure(figsize=figsize)

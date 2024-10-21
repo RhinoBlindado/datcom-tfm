@@ -20,6 +20,8 @@ import torch
 import yaml
 
 from exmeshcnn.datasetloader import PSDataset
+from src.class_balanced_loss import ClassBalancedLoss
+from src.focalloss import FocalLoss
 import train_test
 
 class HyperParamOptimizer():
@@ -95,6 +97,63 @@ class HyperParamOptimizer():
             np.save(os.path.join(trial_path, f"{tag}-training_cm.npy"), train_items["cm"][best_mean_epoch])
             np.save(os.path.join(trial_path, f"{tag}-validation_cm.npy"), val_items["cm"][best_mean_epoch])
 
+
+    def init_weights(self, net, optuna_trial):
+        init_type = optuna_trial.suggest_categorical("init_type", ["normal", "xavier", "kaiming", "orthogonal", "none"])
+        init_gain = optuna_trial.suggest_float("init_gain", 1, 10)
+
+        def init_func(m):
+            classname = m.__class__.__name__
+            if hasattr(m, 'weight') and (classname.find('Conv') != -1 or classname.find('Linear') != -1):
+                if init_type == 'normal':
+                    torch.nn.init.normal_(m.weight.data, 0.0, init_gain)
+                elif init_type == 'xavier':
+                    torch.nn.init.xavier_normal_(m.weight.data, gain=init_gain)
+                elif init_type == 'kaiming':
+                    torch.nn.init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
+                elif init_type == 'orthogonal':
+                    torch.nn.init.orthogonal_(m.weight.data, gain=init_gain)
+                else:
+                    raise NotImplementedError('initialization method [%s] is not implemented' % init_type)
+            elif classname.find('BatchNorm2d') != -1:
+                torch.nn.init.normal_(m.weight.data, 1.0, init_gain)
+                torch.nn.init.constant_(m.bias.data, 0.0)
+        
+        if init_type != "none":
+            net.apply(init_func)
+
+    def set_loss(self, optuna_trial):
+
+        for key, val in self.tag_data.items():
+            act_classes = val["classes"]
+            act_samples_per_class = val["samples_per_class"]
+
+            loss_fn_selection = optuna_trial.suggest_categorical(f"loss_{key}", ["cross_entropy", "cross_entropy_weighted", "focal", "class_balanced"])
+            
+            if loss_fn_selection == "cross_entropy":
+                self.tag_data[key]["loss_fn"] = torch.nn.CrossEntropyLoss().to(self.device)
+            
+            elif loss_fn_selection == "cross_entropy_weighted":
+                act_weighted = torch.tensor(1 - (act_samples_per_class / np.sum(act_samples_per_class)))
+                act_weighted.to(self.device)
+
+                self.tag_data[key]["loss_fn"] = torch.nn.CrossEntropyLoss(weight=act_weighted.float()).to(self.device)
+            
+            elif loss_fn_selection == "focal":
+                fl_gamma = optuna_trial.suggest_float("fl_gamma", 1, 10)
+                self.tag_data[key]["loss_fn"] = FocalLoss(gamma=fl_gamma).to(self.device)
+            
+            elif loss_fn_selection == "class_balanced":
+                cbl_type = optuna_trial.suggest_categorical("cbl_type",["sigmoid", "focal", "softmax"])
+                cbl_beta = optuna_trial.suggest_float("cbl_beta", 0, 0.9999)
+
+                if cbl_type == "focal":
+                    cbl_gamma = optuna_trial.suggest_float("cbl_gamma", 1, 10)
+                else:
+                    cbl_gamma = None
+                
+                self.tag_data[key]["loss_fn"] = ClassBalancedLoss(act_samples_per_class, act_classes, cbl_type, cbl_beta, cbl_gamma, device=self.device).to(self.device)
+
     def calculate_fitness(self, act_train_f1, act_val_f1):
         return act_val_f1 * (1 - abs(act_train_f1 - act_val_f1))
     
@@ -130,9 +189,10 @@ class HyperParamOptimizer():
             optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
         # Weight Initialization.
+        self.init_weights(model, trial)
 
         # Loss Function.
-        # Not yet implemented.
+        self.set_loss(trial)
 
         # Load the dataset.
         train_loader = torch.utils.data.DataLoader(PSDataset(self.X_train, self.y_train, self.dataset_str, self.tag_data, npy_name=args.npy_name), batch_size=self.batch_sz, shuffle=True, num_workers=self.dataloader_workers)
@@ -246,6 +306,7 @@ parser.add_argument("--folds", type=int, default=1)
 parser.add_argument("--batch", type=int, default=4)
 parser.add_argument("--workers", type=int, default=4)
 parser.add_argument("--seed", type=int, default=0, help="Random seed to be used, default is 0.")
+# parser.add_argument("--weighted-loss", action="store_true")
 
 # Debug
 parser.add_argument("--debug-use-cpu", action="store_true")
@@ -310,26 +371,6 @@ if "all" in args.tags:
 else:
     selected_tags = list(set(args.tags))
 
-# For each selected tag...
-tag_data = {}
-for char in selected_tags:
-    # Make a nested dictionary and,
-    tag_data[char] = {}
-
-    # Using char as the key, access the number of categories in current tag, ...
-    tag_data[char]["classes"] = tag_metadata[char]["cat_num"]
-    # ... make another nested dictionary to hold values relevant to the training, validation, and test ...
-    tag_data[char]["train"] = {"y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
-    tag_data[char]["val"] = {"y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
-    tag_data[char]["test"] = {"y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
-
-    # ... and select a certaing loss function depending on the type of classification: Binary or multiple.
-    if tag_metadata[char]["cat_num"] > 2:
-        tag_data[char]["loss_fn"] = torch.nn.CrossEntropyLoss().to(device)
-    else:
-        tag_data[char]["loss_fn"] = torch.nn.BCEWithLogitsLoss().to(device)
-
-
 # Generate the train-test split or use one provided.
 if args.train_val_test_split is None:
     # Load up the dataset
@@ -379,6 +420,31 @@ else:
     X_train = act_training_set["name"].to_numpy()
     X_val = act_validation_set["name"].to_numpy()
     X_test = act_test_set["name"].to_numpy()
+
+
+    # For each selected tag...
+tag_data = {}
+for char in selected_tags:
+    # Make a nested dictionary and,
+    tag_data[char] = {}
+
+    # Using char as the key, access the number of categories in current tag, ...
+    tag_data[char]["classes"] = tag_metadata[char]["cat_num"]
+    _ , tag_data[char]["samples_per_class"] = np.unique(y_train[char], return_counts=True)
+    # ... make another nested dictionary to hold values relevant to the training, validation, and test ...
+    tag_data[char]["train"] = {"y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
+    tag_data[char]["val"] = {"y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
+    tag_data[char]["test"] = {"y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
+
+    # Get the weights for the loss...
+    # tag_weights = train_test.get_class_weight(y_train[char])
+    # tag_weights = tag_weights.to(device)
+
+    # ... and select a certaing loss function depending on the type of classification: Binary or multiple.
+    # if tag_metadata[char]["cat_num"] > 2:
+    #     tag_data[char]["loss_fn"] = torch.nn.CrossEntropyLoss(weight=tag_weights.float()).to(device)
+    # else:
+    #     tag_data[char]["loss_fn"] = torch.nn.BCEWithLogitsLoss().to(device)
 
 # Create the Optuna and...
 study = optuna.create_study(study_name=out_name, direction="maximize")

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Job name
-#SBATCH --job-name=MK-DATA
+# Job name        |        |
+#SBATCH --job-name=MAKEDATA
 
 # Assign job to a queue
 #SBATCH --partition=dgx
@@ -10,7 +10,7 @@
 #SBATCH --gres=gpu:1
 
 # Assign job to a particular node
-#SBATCH --nodelist=talos
+##SBATCH --nodelist=talos
 
 # Assign RAM to job
 #SBATCH --mem=50G
@@ -21,7 +21,8 @@ export PATH="/opt/anaconda/bin:$PATH"
 eval "$(conda shell.bash hook)"
 export TFHUB_CACHE_DIR=.
 
-# Activating conda enviroment
+# Activating Python enviroment.
 source ./env/bin/activate
+# Calling the script passing all parameters from outside.
 python exmeshcnn/make_dataset $*
 

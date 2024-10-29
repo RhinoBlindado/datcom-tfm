@@ -130,7 +130,7 @@ if __name__ == "__main__":
 
     if args.cpus > 1:
         args_pool=[(obj, args.dataset_out_folder, args.num_faces, args.force, args.npy_out_folder_name) for obj in obj_files]
-        pool = mp.Pool(processes=4)
+        pool = mp.Pool(processes=args.cpus)
         pool.starmap(to_npy, args_pool, chunksize=None)
         pool.close()
         pool.join()

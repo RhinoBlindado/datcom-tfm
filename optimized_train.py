@@ -285,6 +285,45 @@ def show_optimization_info(study, save, output_path):
         optuna.visualization.matplotlib.plot_optimization_history(study)
         plt.savefig(os.path.join(output_path, "optimization_history.pdf"), format="pdf", bbox_inches='tight')
 
+def get_reduced_dataset(input_df, sel_tags):
+    copy_df_in = input_df.copy()
+    x_names = copy_df_in.pop("subject")
+    x_names = np.unique(x_names.to_numpy()).reshape((-1,1))
+    x_names_lst = list(x_names.squeeze())
+    
+    reduced_df = pd.DataFrame()
+
+    for _, row in input_df.iterrows():
+        act_name = row["name"]
+        act_bname = int(act_name.split("-")[0])
+
+        if act_bname in x_names_lst:
+            x_names_lst.remove(act_bname)
+            reduced_df = pd.concat([reduced_df, pd.DataFrame(row).transpose()], ignore_index=True)
+        
+        if len(x_names_lst) == 0:
+            break
+
+    y_tags = reduced_df[sel_tags].to_numpy()
+
+    return x_names, y_tags
+
+def expand_dataset(input_df, sel_tags, x_names):
+    
+    x_names_lst = x_names.squeeze()
+    exp_ytags = pd.DataFrame()
+
+    for name in x_names_lst:
+        act_samples = input_df[input_df["subject"] == name]
+        exp_ytags = pd.concat([exp_ytags, act_samples], ignore_index=True)
+
+    exp_xnames = exp_ytags.pop("name")
+    exp_xnames = exp_xnames.to_numpy()
+    
+    exp_ytags = exp_ytags[sel_tags]
+
+    return exp_xnames, exp_ytags
+
 parser = argparse.ArgumentParser()
 
 # Input parameters
@@ -376,10 +415,13 @@ if args.train_val_test_split is None:
     # Load up the dataset
     dataset_df = pd.read_csv(os.path.join(args.dataset, "dataset.csv"))
 
-    x_names = dataset_df.pop("name")
-    x_names = x_names.to_numpy().reshape((-1,1))
+    if "subject" in dataset_df.columns:
+        x_names, y_tags = get_reduced_dataset(dataset_df, selected_tags)
+    else:
+        x_names = dataset_df.pop("name")
+        x_names = x_names.to_numpy().reshape((-1,1))
 
-    y_tags = dataset_df[selected_tags].to_numpy()
+        y_tags = dataset_df[selected_tags].to_numpy()
 
     # Split the data
     if len(selected_tags) > 1:
@@ -389,13 +431,18 @@ if args.train_val_test_split is None:
         X_train_val, X_test, y_train_val, y_test = train_test_split(x_names, y_tags, test_size = 0.2, stratify=y_tags, random_state=args.seed)
         X_train, X_val, y_train, y_val =  train_test_split(X_train_val, y_train_val, test_size = 0.2, stratify=y_train_val, random_state=args.seed)
 
-    X_train = X_train.reshape((X_train.shape[0],))
-    X_val = X_val.reshape((X_val.shape[0],))
-    X_test = X_test.reshape((X_test.shape[0],))
+    if "subject" in dataset_df.columns:
+        X_train, y_train = expand_dataset(dataset_df, selected_tags, X_train)
+        X_val, y_val = expand_dataset(dataset_df, selected_tags, X_val)
+        X_test, y_test = expand_dataset(dataset_df, selected_tags, X_test)
+    else:
+        X_train = X_train.reshape((X_train.shape[0],))
+        X_val = X_val.reshape((X_val.shape[0],))
+        X_test = X_test.reshape((X_test.shape[0],))
 
-    y_train = pd.DataFrame(y_train, columns=selected_tags)
-    y_val = pd.DataFrame(y_val, columns=selected_tags)
-    y_test = pd.DataFrame(y_test, columns=selected_tags)
+        y_train = pd.DataFrame(y_train, columns=selected_tags)
+        y_val = pd.DataFrame(y_val, columns=selected_tags)
+        y_test = pd.DataFrame(y_test, columns=selected_tags)
 
     act_training_set = y_train.copy()
     act_validation_set = y_val.copy()

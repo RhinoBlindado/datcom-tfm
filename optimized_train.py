@@ -199,7 +199,7 @@ class HyperParamOptimizer():
         val_loader = torch.utils.data.DataLoader(PSDataset(self.X_val, self.y_val, self.dataset_str, self.tag_data, npy_name=args.npy_name), batch_size=self.batch_sz, shuffle=False, num_workers=self.dataloader_workers)
 
         # Instantiate the EarlyStopper
-        early_stopper = train_test.EarlyStopper(patience = int(self.epochs // 3), min_delta = 0.09)
+        early_stopper = train_test.EarlyStopper(patience = int(self.epochs // 4), min_delta = 0.03)
 
         # Run the model with the parameters.
         train_res, val_res, best_models = train_test.training(model, train_loader, val_loader, self.tag_data, optimizer, self.epochs, self.device, es_watch=early_stopper)
@@ -355,6 +355,9 @@ parser.add_argument("--debug-no-save", action="store_true")
 args = parser.parse_args()
 
 ## Starting setup:
+
+# Reduce VRAM usage by reducing fragmentation
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 # Turn off Matplotlib interactive mode
 plt.ioff()

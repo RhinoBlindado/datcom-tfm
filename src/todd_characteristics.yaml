@@ -28,6 +28,7 @@
     "cat_num" : 3
     "cat_names" : ["Absent", "Forming", "Present"]
 
+# In reality... There's three categories but in current data, it's not feasible to use "Present" as it only has 1 sample.
 "dp" :
     "name" : "DorsalPlateau"
     "cat_num" : 2

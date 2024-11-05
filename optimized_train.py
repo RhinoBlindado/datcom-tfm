@@ -418,6 +418,10 @@ if args.train_val_test_split is None:
     # Load up the dataset
     dataset_df = pd.read_csv(os.path.join(args.dataset, "dataset.csv"))
 
+    # Special case for Dorsal Plateau, given the current dataset, remove the single sample of category "2".
+    if "dp" in selected_tags or "all" in args.tags:
+        dataset_df = dataset_df.drop(index=dataset_df[dataset_df["dp"] == 2].index)
+
     if "subject" in dataset_df.columns:
         x_names, y_tags = get_reduced_dataset(dataset_df, selected_tags)
     else:

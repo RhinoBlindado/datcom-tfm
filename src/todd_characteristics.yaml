@@ -25,8 +25,8 @@
 
 "dm" :
     "name" : "DorsalMargin"
-    "cat_num" : 2
-    "cat_names" : ["Absent", "Present"]
+    "cat_num" : 3
+    "cat_names" : ["Absent", "Forming", "Present"]
 
 "dp" :
     "name" : "DorsalPlateau"

@@ -128,6 +128,41 @@ print(f"[{mesh_name.split('.')[0]}] Geometry fixed.")
 # Center on origin
 # bpy.ops.object.origin_set(type="GEOMETRY_ORIGIN")
 
+print(f"[{mesh_name}] Separating mesh...")
+
+bpy.ops.object.mode_set(mode='EDIT')
+bpy.ops.mesh.select_all(action='DESELECT')
+bpy.ops.mesh.separate(type="LOOSE")
+bpy.ops.object.mode_set(mode='OBJECT')
+
+loose_parts = 0
+biggest_part_trigs = -1
+biggest_obj_name = ""
+
+for obj in bpy.data.objects:
+    act_trigs = len(obj.data.polygons)
+    print(obj.name, act_trigs)
+
+    if act_trigs > biggest_part_trigs:
+        biggest_obj_name = obj.name
+        biggest_part_trigs = act_trigs
+    loose_parts += 1
+
+if loose_parts == 1:
+    print(f"[{mesh_name}] Mesh has no loose parts")
+else:
+    print(f"[{mesh_name}] Mesh has {loose_parts} parts. Biggest is {biggest_obj_name}.")
+
+    for obj in bpy.data.objects:
+        if obj.name != biggest_obj_name:
+            bpy.data.objects.remove(obj, do_unlink = True)
+
+    act_obj = bpy.data.objects[0]
+    bpy.context.view_layer.objects.active = act_obj
+    act_obj.select_set(True)
+
+    print(f"[{mesh_name}] Removed stray parts.")
+
 # Reexport the OBJ file.
 mesh_name = os.path.split(obj_path)[1]
 

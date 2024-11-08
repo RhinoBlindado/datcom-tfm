@@ -27,7 +27,7 @@ parser = argparse.ArgumentParser()
 # Basic parameters
 parser.add_argument("--input", type=str)
 parser.add_argument("--out", type=str)
-parser.add_argument("--cpus", default=4, type=int, help="Number of processes to use, default is 4.")
+parser.add_argument("--cpus", default=3, type=int, help="Number of processes to use, default is 3.")
 
 # parser.add_argument("--trig-n", type=int)
 

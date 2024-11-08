@@ -46,6 +46,11 @@ class EarlyStopper:
         self.min_validation_loss = float('inf')
 
     def early_stop(self, validation_loss):
+
+        if validation_loss == np.nan:
+            print("!NaN ENCOUNTERED!", flush=True)
+            return True
+
         if validation_loss < self.min_validation_loss:
             self.min_validation_loss = validation_loss
             self.counter = 0
@@ -54,9 +59,7 @@ class EarlyStopper:
             print(f"!EARLY STOP WARNING!: {self.counter} / {self.patience}", flush=True)
             if self.counter >= self.patience:
                 return True
-        elif validation_loss == np.nan:
-            print("!NaN ENCOUNTERED!", flush=True)
-            return True
+
         return False
 
 def model_step(mode : str,

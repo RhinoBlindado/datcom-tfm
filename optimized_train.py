@@ -202,28 +202,43 @@ class HyperParamOptimizer():
         early_stopper = train_test.EarlyStopper(patience = int(self.epochs // 4), min_delta = 0.03)
 
         # Run the model with the parameters.
-        train_res, val_res, best_models = train_test.training(model, train_loader, val_loader, self.tag_data, optimizer, self.epochs, self.device, es_watch=early_stopper)
+        try:
+            train_res, val_res, best_models = train_test.training(model, train_loader, val_loader, self.tag_data, optimizer, self.epochs, self.device, es_watch=early_stopper)
+        except RuntimeError as e:
+            # Catch the CUDA Out of Memory error
+            print(f"!RUNTIME ERROR ENCOUNTERED!: {e}")
 
-        # Record results and return optimization value.
-        total_fitness = []
-        for act_train_res, act_val_res in zip(train_res.items(), val_res.items()):
-            best_train_f1 = act_train_res[1]["f1"][best_models["*mean*"]["epoch"]]
-            best_val_f1 = act_val_res[1]["f1"][best_models["*mean*"]["epoch"]]
+            total_fitness = 0
 
-            total_fitness.append(self.calculate_fitness(best_train_f1, best_val_f1))
+            trial_path = os.path.join(self.output_f, f"trial_{trial.number}")
+            os.mkdir(trial_path)
 
-        total_fitness = np.mean(total_fitness)
+            with open(os.path.join(trial_path, "gpu_oom_err.txt"), mode="w", encoding="utf-8") as f_err:
+                f_err.write(str(e))
 
-        self.save_trial_stats(trial, best_models["*mean*"]["model"], train_res, val_res, best_models["*mean*"]["epoch"])
+        else:
+            # Record results and return optimization value.
+            total_fitness = []
+            for act_train_res, act_val_res in zip(train_res.items(), val_res.items()):
+                best_train_f1 = act_train_res[1]["f1"][best_models["*mean*"]["epoch"]]
+                best_val_f1 = act_val_res[1]["f1"][best_models["*mean*"]["epoch"]]
 
-        if total_fitness > self.best_fitness:
-            self.best_trial = trial.number
-            self.best_fitness = total_fitness
-            self.best_model = best_models["*mean*"]["model"]
+                total_fitness.append(self.calculate_fitness(best_train_f1, best_val_f1))
 
-        del optimizer
-        del model
-        torch.cuda.empty_cache()
+            total_fitness = np.mean(total_fitness)
+
+            self.save_trial_stats(trial, best_models["*mean*"]["model"], train_res, val_res, best_models["*mean*"]["epoch"])
+
+            if total_fitness > self.best_fitness:
+                self.best_trial = trial.number
+                self.best_fitness = total_fitness
+                self.best_model = best_models["*mean*"]["model"]
+
+        finally:
+
+            del optimizer
+            del model
+            torch.cuda.empty_cache()
 
         return total_fitness
 
@@ -273,8 +288,8 @@ def show_optimization_info(study, save, output_path):
     if save: 
         print("Saving plots to {}".format(output_path))
 
-        optuna.visualization.matplotlib.plot_intermediate_values(study)
-        plt.savefig(os.path.join(output_path, "intermediate_values.pdf"), format="pdf", bbox_inches='tight')
+        # optuna.visualization.matplotlib.plot_intermediate_values(study)
+        # plt.savefig(os.path.join(output_path, "intermediate_values.pdf"), format="pdf", bbox_inches='tight')
 
         try:
             optuna.visualization.matplotlib.plot_param_importances(study)

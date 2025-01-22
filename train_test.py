@@ -47,7 +47,7 @@ class EarlyStopper:
 
     def early_stop(self, validation_loss):
 
-        if validation_loss == np.nan:
+        if np.isnan(validation_loss):
             print("!NaN ENCOUNTERED!", flush=True)
             return True
 

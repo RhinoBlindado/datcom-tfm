@@ -95,6 +95,10 @@ def model_step(mode : str,
         # For each tag...
         y = batch[3]
         for act_tag, act_y in y.items():
+            # Save the samples used in the step.
+            tag_data[act_tag][mode]["x"].extend(batch[4])
+
+            # Get the logit for the current tag.
             act_y_pred_logit = y_preds[act_tag]
 
             # if tag_data[act_tag]["classes"] == 2:
@@ -135,7 +139,7 @@ def testing(model: torch.nn.Module, test_data, tag_data, device = "cuda"):
     
     testing_stats = {}
     for tag, _ in tag_data.items():
-        testing_stats[tag] = {"acc" : -1, "f1" : -1, "loss" : -1, "class_report" : None, "cm": None}
+        testing_stats[tag] = {"acc" : -1, "f1" : -1, "loss" : -1, "class_report" : None, "cm": None, "x" : None, "y" : None, "y_pred" : None}
 
     model_step("val", model, test_data, tag_data, device=device)
 
@@ -143,13 +147,18 @@ def testing(model: torch.nn.Module, test_data, tag_data, device = "cuda"):
     testing_report_body   = []
 
     curr_f1_val_all = []
+    curr_acc_val_all = []
+    curr_loss_val_all = []
+    
     for tag, values in tag_data.items():
 
         curr_acc_val  =  values["val"]["class_report"]["accuracy"]
         curr_f1_val   =  values["val"]["class_report"]["macro avg"]["f1-score"]
         curr_loss_val =  values["val"]["loss"]
 
+        curr_acc_val_all.append(curr_acc_val)
         curr_f1_val_all.append(curr_f1_val)
+        curr_loss_val_all.append(curr_loss_val)
 
         testing_report_body.append([tag.upper(), curr_acc_val, curr_f1_val, curr_loss_val])
 
@@ -159,7 +168,11 @@ def testing(model: torch.nn.Module, test_data, tag_data, device = "cuda"):
         testing_stats[tag]["class_report"] = values["val"]["class_report"]
         testing_stats[tag]["cm"] = values["val"]["cm"]
 
-    testing_report_body.append(["*MEAN*", "0", np.mean(curr_f1_val_all), "0"])
+        testing_stats[tag]["x"] = values["val"]["x"]
+        testing_stats[tag]["y"] = values["val"]["y"]
+        testing_stats[tag]["y_pred"] = values["val"]["y_pred"]
+
+    testing_report_body.append(["*MEAN*", np.mean(curr_acc_val_all), np.mean(curr_f1_val_all), np.mean(curr_loss_val_all)])
 
     print("------- TEST ")
     print(tabulate(testing_report_body, testing_report_header, tablefmt="grid", floatfmt=".4f"))
@@ -173,8 +186,8 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
     best_model = {}
 
     for tag, _ in tag_data.items():
-        training_stats[tag] = {"epoch" : [], "acc" : [], "f1" : [], "loss" : [], "class_report" : [], "cm": []}
-        validation_stats[tag] = {"epoch" : [], "acc" : [], "f1" : [], "loss" : [], "class_report" : [], "cm": []}
+        training_stats[tag] = {"epoch" : [], "acc" : [], "f1" : [], "loss" : [], "class_report" : [], "cm": [], "x" : [], "y" : [], "y_pred" : []}
+        validation_stats[tag] = {"epoch" : [], "acc" : [], "f1" : [], "loss" : [], "class_report" : [], "cm": [], "x" : [], "y" : [], "y_pred" : []}
         best_model[tag] = {"epoch" : -1, "f1" : -1, "model" : None}
 
     best_model["*mean*"] = {"epoch" : -1, "f1" : -1, "model" : None}
@@ -188,7 +201,7 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
         training_report_header = ["TAG", "TRAINING\nACC", "\nF1", "\nLOSS", "VALIDATION\nACC", "\nF1", "\nLOSS"]
         training_report_body   = []
 
-        mean_tag_stats = {"acc" : [], "f1": [], "loss" : []}
+        mean_tag_stats = {"t_acc" : [], "t_f1": [], "t_loss" : [], "v_acc" : [], "v_f1" : [], "v_loss" : []}
         for tag, values in tag_data.items():
 
             curr_acc_train  =  values["train"]["class_report"]["accuracy"]
@@ -204,9 +217,13 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
                 best_model[tag]["epoch"] = epoch
                 best_model[tag]["model"] = copy.deepcopy(model).cpu()
 
-            mean_tag_stats["acc"].append(curr_acc_val)
-            mean_tag_stats["f1"].append(curr_f1_val)
-            mean_tag_stats["loss"].append(curr_loss_val)
+            mean_tag_stats["t_acc"].append(curr_acc_train)
+            mean_tag_stats["t_f1"].append(curr_f1_train)
+            mean_tag_stats["t_loss"].append(curr_loss_train)
+
+            mean_tag_stats["v_acc"].append(curr_acc_val)
+            mean_tag_stats["v_f1"].append(curr_f1_val)
+            mean_tag_stats["v_loss"].append(curr_loss_val)
 
             training_report_body.append([tag.upper(), curr_acc_train, curr_f1_train, curr_loss_train, curr_acc_val, curr_f1_val, curr_loss_val])
 
@@ -216,6 +233,9 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
             training_stats[tag]["loss"].append(curr_loss_train)
             training_stats[tag]["class_report"].append(values["train"]["class_report"])
             training_stats[tag]["cm"].append(values["train"]["cm"])
+            training_stats[tag]["x"].append(copy.deepcopy(values["train"]["x"]))
+            training_stats[tag]["y"].append(copy.deepcopy(values["train"]["y"]))
+            training_stats[tag]["y_pred"].append(copy.deepcopy(values["train"]["y_pred"]))
 
             validation_stats[tag]["epoch"].append(epoch)
             validation_stats[tag]["acc"].append(curr_acc_val)
@@ -223,26 +243,37 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
             validation_stats[tag]["loss"].append(curr_loss_val)
             validation_stats[tag]["class_report"].append(values["val"]["class_report"])
             validation_stats[tag]["cm"].append(values["val"]["cm"])
+            validation_stats[tag]["x"].append(copy.deepcopy(values["val"]["x"]))
+            validation_stats[tag]["y"].append(copy.deepcopy(values["val"]["y"]))
+            validation_stats[tag]["y_pred"].append(copy.deepcopy(values["val"]["y_pred"]))
 
             values["train"]["loss"] = 0
+            values["train"]["x"].clear()
             values["train"]["y"].clear()
             values["train"]["y_pred"].clear()
             values["train"]["class_report"] = None
             values["train"]["cm"] = None
 
             values["val"]["loss"] = 0
+            values["val"]["x"].clear()
             values["val"]["y"].clear()
             values["val"]["y_pred"].clear()
             values["val"]["class_report"] = None
             values["val"]["cm"] = None
 
-        if np.mean(mean_tag_stats["f1"]) > best_model["*mean*"]["f1"]:
-            best_model["*mean*"]["f1"] = np.mean(mean_tag_stats["f1"])
+        if np.mean(mean_tag_stats["v_f1"]) > best_model["*mean*"]["f1"]:
+            best_model["*mean*"]["f1"] = np.mean(mean_tag_stats["v_f1"])
             best_model["*mean*"]["epoch"] = epoch
             best_model["*mean*"]["model"] = copy.deepcopy(model).cpu()
 
-        training_report_body.append(["*MEAN*", "0", "0", "0", "0", np.mean(mean_tag_stats["f1"]), np.mean(mean_tag_stats["loss"])])
-
+        training_report_body.append(["*MEAN*", 
+                                     np.mean(mean_tag_stats["t_acc"]), 
+                                     np.mean(mean_tag_stats["t_f1"]), 
+                                     np.mean(mean_tag_stats["t_loss"]), 
+                                     np.mean(mean_tag_stats["v_acc"]), 
+                                     np.mean(mean_tag_stats["v_f1"]), 
+                                     np.mean(mean_tag_stats["v_loss"])])
+        
         print(f"------- EPOCH {epoch+1:03d}/{epochs:03d} ({(end_t-init_t):.4f} s)")
         print(tabulate(training_report_body, training_report_header, tablefmt="grid", floatfmt=".4f"), flush=True)
 
@@ -255,7 +286,7 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
 
         print(tabulate(best_body, best_header, tablefmt="grid", floatfmt=".4f"), flush=True)
 
-        if es_watch is not None and es_watch.early_stop(np.mean(mean_tag_stats["loss"])):
+        if es_watch is not None and es_watch.early_stop(np.mean(mean_tag_stats["v_loss"])):
             break
 
     return training_stats, validation_stats, best_model
@@ -320,6 +351,15 @@ def save_testing_stats(dir_path, test_results, tag_metadata):
         confusion_matrix_plot(item["cm"], tag_metadata[tag]["cat_names"], os.path.join(plot_path, f"{tag}-test_cm_plot.pdf"))
         np.save(os.path.join(dir_path, f"{tag}-test_cm.npy"), item["cm"])
         item.pop("cm")
+
+        test_preds = {"x" : item["x"],
+                      "y" : item["y"],
+                      "y_pred" : item["y_pred"]}
+        pd.DataFrame(data=test_preds).to_csv(os.path.join(dir_path, f"{tag}-test_preds.csv"), index=None)
+        
+        item.pop("x")
+        item.pop("y")
+        item.pop("y_pred")
 
     with open(os.path.join(dir_path, "test_result.yaml"), mode="wt", encoding="utf8") as f:
         yaml.dump(test_res, f)

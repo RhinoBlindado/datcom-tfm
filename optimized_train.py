@@ -59,12 +59,15 @@ class HyperParamOptimizer():
         return model_class.get_model(tag_data, trial).to(self.device)
         
 
-    def save_trial_stats(self, trial, model, training_stats, validation_stats, best_mean_epoch):
+    def save_trial_stats(self, trial, best_model, training_stats, validation_stats):
+
+        best_mean_epoch = best_model["*mean*"]["epoch"]
+        best_avg_model  = best_model["*mean*"]["model"]
 
         trial_path = os.path.join(self.output_f, f"trial_{trial.number}")
         os.mkdir(trial_path)
 
-        torch.save(model.state_dict(), os.path.join(trial_path, "trial_model_state_dict.pth"))
+        torch.save(best_avg_model.state_dict(), os.path.join(trial_path, "best_mean_model_state_dict.pth"))
         
         with open(os.path.join(trial_path, "params.yaml"), mode="wt", encoding="utf8") as fparam:
             yaml.dump(trial.params, fparam)
@@ -75,8 +78,13 @@ class HyperParamOptimizer():
             tag, train_items = act_train_res
             _, val_items = act_val_res
 
-            pd.DataFrame(train_items).to_csv(os.path.join(trial_path, f"{tag}-training-prog.csv"), index=None)
-            pd.DataFrame(val_items).to_csv(os.path.join(trial_path, f"{tag}-validation-prog.csv"), index=None)
+            tag_dir = os.path.join(trial_path, f"tag_{tag}")
+            os.mkdir(tag_dir)
+
+            torch.save(best_model[tag]["model"].state_dict(), os.path.join(tag_dir, f"{tag}-best_model_state_dict.pth"))
+
+            pd.DataFrame(train_items).to_csv(os.path.join(tag_dir, f"{tag}-training_prog.csv"), index=None)
+            pd.DataFrame(val_items).to_csv(os.path.join(tag_dir, f"{tag}-validation_prog.csv"), index=None)
 
             train_test.progression_plot(train_items["epoch"], train_items["acc"], val_items["acc"], "Accuracy", os.path.join(trial_plot_path, f"{tag}-acc.pdf"), ylim=(0,1))
             train_test.progression_plot(train_items["epoch"], train_items["f1"], val_items["f1"], "F1", os.path.join(trial_plot_path, f"{tag}-f1.pdf"), ylim=(0,1))
@@ -94,8 +102,18 @@ class HyperParamOptimizer():
                                        "loss" : val_items["loss"][best_mean_epoch]}}
                 yaml.dump(act_dict, f_act)
 
-            np.save(os.path.join(trial_path, f"{tag}-training_cm.npy"), train_items["cm"][best_mean_epoch])
-            np.save(os.path.join(trial_path, f"{tag}-validation_cm.npy"), val_items["cm"][best_mean_epoch])
+            np.save(os.path.join(tag_dir, f"{tag}-training_cm.npy"), train_items["cm"][best_mean_epoch])
+            np.save(os.path.join(tag_dir, f"{tag}-validation_cm.npy"), val_items["cm"][best_mean_epoch])
+
+            train_preds = {"x" : train_items["x"][best_mean_epoch],
+                           "y" : train_items["y"][best_mean_epoch],
+                           "y_pred" : train_items["y_pred"][best_mean_epoch]}
+            pd.DataFrame(data=train_preds).to_csv(os.path.join(trial_path, f"{tag}-training_preds.csv"), index=None)
+            
+            val_preds = {"x" : val_items["x"][best_mean_epoch],
+                         "y" : val_items["y"][best_mean_epoch],
+                         "y_pred" : val_items["y_pred"][best_mean_epoch]}
+            pd.DataFrame(data=val_preds).to_csv(os.path.join(trial_path, f"{tag}-validation_preds.csv"), index=None)
 
 
     def init_weights(self, net, optuna_trial):
@@ -140,15 +158,15 @@ class HyperParamOptimizer():
                 self.tag_data[key]["loss_fn"] = torch.nn.CrossEntropyLoss(weight=act_weighted.float()).to(self.device)
             
             elif loss_fn_selection == "focal":
-                fl_gamma = optuna_trial.suggest_float("fl_gamma", 1, 10)
+                fl_gamma = optuna_trial.suggest_float(f"loss_{key}__fl_gamma", 1, 10)
                 self.tag_data[key]["loss_fn"] = FocalLoss(gamma=fl_gamma).to(self.device)
             
             elif loss_fn_selection == "class_balanced":
-                cbl_type = optuna_trial.suggest_categorical("cbl_type",["sigmoid", "focal", "softmax"])
-                cbl_beta = optuna_trial.suggest_float("cbl_beta", 0, 0.9999)
+                cbl_type = optuna_trial.suggest_categorical(f"loss_{key}__cbl_type",["sigmoid", "focal", "softmax"])
+                cbl_beta = optuna_trial.suggest_float(f"loss_{key}__cbl_beta", 0, 0.9999)
 
                 if cbl_type == "focal":
-                    cbl_gamma = optuna_trial.suggest_float("cbl_gamma", 1, 10)
+                    cbl_gamma = optuna_trial.suggest_float(f"loss_{key}__cbl_gamma", 1, 10)
                 else:
                     cbl_gamma = None
                 
@@ -227,7 +245,7 @@ class HyperParamOptimizer():
 
             total_fitness = np.mean(total_fitness)
 
-            self.save_trial_stats(trial, best_models["*mean*"]["model"], train_res, val_res, best_models["*mean*"]["epoch"])
+            self.save_trial_stats(trial, best_models, train_res, val_res)
 
             if total_fitness > self.best_fitness:
                 self.best_trial = trial.number
@@ -366,13 +384,15 @@ parser.add_argument("--seed", type=int, default=0, help="Random seed to be used,
 parser.add_argument("--debug-use-cpu", action="store_true")
 parser.add_argument("--debug-verbose", action="store_true")
 parser.add_argument("--debug-no-save", action="store_true")
+parser.add_argument("--debug-no-exp-segs", action="store_true")
 
 args = parser.parse_args()
 
 ## Starting setup:
 
-# Reduce VRAM usage by reducing fragmentation
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+if not args.debug_no_exp_segs:
+    # Reduce VRAM usage by reducing fragmentation
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 # Turn off Matplotlib interactive mode
 plt.ioff()
@@ -501,9 +521,9 @@ for char in selected_tags:
     tag_data[char]["classes"] = tag_metadata[char]["cat_num"]
     _ , tag_data[char]["samples_per_class"] = np.unique(y_train[char], return_counts=True)
     # ... make another nested dictionary to hold values relevant to the training, validation, and test ...
-    tag_data[char]["train"] = {"y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
-    tag_data[char]["val"] = {"y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
-    tag_data[char]["test"] = {"y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
+    tag_data[char]["train"] = {"x" : [], "y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
+    tag_data[char]["val"] = {"x" : [], "y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
+    tag_data[char]["test"] = {"x" : [], "y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
 
     # Get the weights for the loss...
     # tag_weights = train_test.get_class_weight(y_train[char])

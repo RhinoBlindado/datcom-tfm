@@ -77,5 +77,5 @@ class PSDataset(torch.utils.data.Dataset):
         for key, val in self.tags.items():
             bone_tag[key] = val[idx]
 
-        return edge_feat, face_feat, adyacent_faces, bone_tag
+        return edge_feat, face_feat, adyacent_faces, bone_tag, self.bone_id[idx]
     

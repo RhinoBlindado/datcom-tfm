@@ -10,7 +10,7 @@ class ExMeshCNN(nn.Module):
     fa: face feature
     ad: adjacent face list
     """
-    def __init__(self, tag_data, params):
+    def __init__(self, tag_data, params, gradcam = False):
         super().__init__()
         
         # Input block
@@ -59,16 +59,17 @@ class ExMeshCNN(nn.Module):
                 act_fn_in_channel = fn_out_channel
 
             fn_out_channel = values["classes"]
-            # if values["classes"] > 2:
-            #     fn_out_channel = values["classes"]
-            # else:
-            #     fn_out_channel = 1
     
             act_fn_list.append(nn.Linear(act_fn_in_channel, fn_out_channel))
 
             self.fn_layers[tag] = nn.Sequential(*act_fn_list)
 
-            self.optuna_trial_params = params
+        self.optuna_trial_params = params
+
+        # Grad-CAM vars
+        self.using_gradcam = gradcam
+        self.acts = None
+        self.gradients = None
 
     def forward(self, ed, fa, ad):
         ed = self.conv_e(ed)
@@ -78,6 +79,11 @@ class ExMeshCNN(nn.Module):
         # Pass data into Mesh Convolutions fields...
         for meshconv in self.meshconv_layers:
             fe = meshconv(fe, ad)
+
+        # Optionally, save the gradient for GradCAM
+        if self.using_gradcam:
+            self.acts = fe
+            h = fe.register_hook(self.activations_hook)
 
         # ...then through the pooling bridge...
         fe = self.pool_bridge(fe)
@@ -93,8 +99,18 @@ class ExMeshCNN(nn.Module):
     
     def get_optuna_trial_params(self):
         return self.optuna_trial_params
+    
+    # GradCAM functions
+    def activations_hook(self, grad):
+        self.gradients = grad
+    
+    def get_activations_gradient(self):
+        return self.gradients
+    
+    def get_activations(self):
+        return self.acts
 
-def get_model(tag_data, trial = None, params = None):
+def get_model(tag_data, trial = None, params = None, gradcam = False):
 
     if trial is not None:
         params = {}
@@ -117,6 +133,6 @@ def get_model(tag_data, trial = None, params = None):
             params[f"fn{layer}_out_channel"]  = trial.suggest_categorical(f"fn{layer}_out_channel", [8, 16, 32, 64, 128, 256])
         
 
-    model = ExMeshCNN(tag_data, params)
+    model = ExMeshCNN(tag_data, params, gradcam=gradcam)
 
     return model

@@ -1,153 +1,249 @@
-import numpy as np
-import torch
-import torch.nn as nn
-import os
-import time
-from layers.geodesic import Geodesic
-from layers.geometric import Geometric
-from layers.meshconv import MeshConv
 
-import openmesh as om
-import pymeshlab as ml
-import trimesh as tm
-from matplotlib import pyplot as plt
+import os
+import sys
+import argparse
+import datetime
+import importlib
+
+import yaml
+import torch
+import rootutils
+
+from tqdm import tqdm
 from matplotlib import colors
 from matplotlib import cm as cmx
+from matplotlib import pyplot as plt
+from sklearn.metrics import classification_report, confusion_matrix
 
-root_dir = './dataset' # dataset name for training
-original_dataset = './cubes_500' # manifold dataset name (results of resize_manifold.py)
+import numpy as np
+import pandas as pd
+import openmesh as om
 
-class SingleImgDataset(torch.utils.data.Dataset):
+root = rootutils.setup_root(__file__, dotenv=True, pythonpath=True, cwd=True)
 
-    def __init__(self, root_dir, mode):
-        self.root_dir = root_dir
-        class_names = sorted(os.listdir(self.root_dir))
-        self.classnames = class_names
-        self.mode = mode
-        
-        self.filepaths = []
-        for class_name in class_names:
-            path = os.path.join(root_dir, class_name, mode)
-            obj_name = np.sort(os.listdir(path))
-            for obj in obj_name:
-                obj_path = os.path.join(path, obj)
-                self.filepaths.append(obj_path)
-        
-    def __len__(self):
-        return len(self.filepaths)
+from exmeshcnn.datasetloader import PSDataset
 
-    def __getitem__(self, idx):
-        path = self.filepaths[idx]
-        class_name = path.split('/')[2]
-        class_id = self.classnames.index(class_name)
-        
-        d_1 = np.load(self.filepaths[idx], allow_pickle=True)
-        ed = torch.from_numpy(d_1.item()['edge'])
-        fa = torch.from_numpy(d_1.item()['face'])
-        ad = d_1.item()['adj']
-        return (class_id, ed , fa, ad, path)
-
-
-class ExMeshCNN(nn.Module):
-    """
-    ed: edge feature
-    fa: face feature
-    ad: adjacent face list
-    """
-    def __init__(self, num_classes=10):
-        super().__init__()
-        
-        self.conv_e = Geodesic(128,64)
-        self.conv_f = Geometric(128,64)
-        self.conv1 = MeshConv(128,128)
-        self.conv2 = MeshConv(128,256)
-        self.conv3 = MeshConv(256,256)
-        self.conv4 = MeshConv(256,512)
-        self.fcn = nn.Sequential(
-            nn.Conv1d(in_channels=512 , out_channels=num_classes, kernel_size=1, stride=1, bias=False),
-            nn.BatchNorm1d(num_classes)
-        )
-        self.avg_pool = nn.AdaptiveAvgPool1d(1)
-        
-    def activations_hook(self, grad):
-        self.gradients = grad
+def save_metadata(split, out_folder, tag_str, tag_data):
     
-    def get_activations_gradient(self):
-        return self.gradients
+    # Save predictions
+    pred_df = pd.DataFrame(data={"x": tag_data[tag_str][split]["x"],
+                                 "y": tag_data[tag_str][split]["y"],
+                                 "y_pred": tag_data[tag_str][split]["y_pred"]})
     
-    def get_activations(self):
-        return self.acts
+    pred_df.sort_values(by=["x"], inplace=True)
+    pred_df.to_csv(os.path.join(out_folder, f"{tag_str}-preds.csv"), index=None)
 
-    def forward(self, ed, fa, ad):
-        ed = self.conv_e(ed)
-        fa = self.conv_f(fa)
-        fe = torch.cat([ed,fa],dim=1)
-        fe = self.conv1(fe, ad)
-        fe = self.conv2(fe, ad)
-        fe = self.conv3(fe, ad)
-        fe = self.conv4(fe, ad)
-        self.acts = fe
-        h = fe.register_hook(self.activations_hook)
-        fe = self.fcn(fe)
-        fe = self.avg_pool(fe)
-        fe = fe.view(fe.size(0), -1)
-        return fe
+    # Save classification report
+    with open(os.path.join(out_folder, f"{tag_str}-results.yaml"), mode="wt", encoding="utf8") as f:
+        yaml.dump(tag_data[tag_str][split]["class_report"], f)
 
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+    # Save confusion matrix
+    np.save(os.path.join(out_folder, f"{tag_str}-cm.npy"), tag_data[tag_str][split]["cm"])
+
+
+def grad_cam_inference(dataloader, split, tag_data, model, mesh_folder, out_folder):
+
+    pbar = tqdm(initial=0, total=len(dataloader), unit=" objs")
+    for k, batch in enumerate(dataloader):
+
+        # Send data to target device
+        x1 = batch[0].to(device)
+        x2 = batch[1].to(device)
+        x3 = batch[2].to(device)
+        y_preds = model(x1, x2, x3)
+
+        act_tag = list(batch[3].keys())[0]
+        act_y = batch[3][act_tag]
+
+        # Save the samples used in the step.
+        tag_data[act_tag][split]["x"].extend(batch[4])
+
+        # Get the logit for the current tag.
+        act_y_pred_logit = y_preds[act_tag]
+        act_y_pred = torch.argmax(act_y_pred_logit, dim=1).tolist()
+
+        act_y_pred_logit[:, act_y_pred_logit.argmax()].backward()
+
+        # Save the actual loss, prediction and correct tags
+        tag_data[act_tag][split]["y"].extend(act_y.tolist())
+        tag_data[act_tag][split]["y_pred"].extend(act_y_pred)
+            
+        gradients = model.get_activations_gradient()
+        pooled_gradients = torch.mean(gradients, dim=[0, 2])
+        activations = model.get_activations()
+
+        for i in range(activations.shape[1]):
+            activations[:,i,:] *= pooled_gradients[i]
+        heatmap = torch.mean(activations, dim=1).squeeze()
+        heatmap -= heatmap.mean()
+        heatmap = torch.relu(heatmap)
+        heatmap /= torch.max(heatmap)
+        heatmap = heatmap.detach().cpu()
+
+        ccmp = plt.get_cmap('Reds')
+        cNorm  = colors.Normalize(vmin=0, vmax=1)
+        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=ccmp)
+
+        mesh_name = f"{batch[4][0]}.obj"
+        mesh = om.read_trimesh(os.path.join(mesh_folder, mesh_name))
+
+        for i,face in enumerate(mesh.faces()):
+            mesh.set_color(face, scalarMap.to_rgba(heatmap[i]))
+
+        act_mesh_folder = os.path.join(out_folder, f"{batch[4][0]}")
+
+        if not os.path.isdir(act_mesh_folder):
+            os.makedirs(act_mesh_folder)
+            
+        om.write_mesh(os.path.join(act_mesh_folder, f"{batch[4][0]}_{act_tag}.obj"), mesh, face_color=True)
+        pbar.update(1)
+
+    pbar.close()
+                
+    for _, values in tag_data.items():
+        values[split]["class_report"] = classification_report(values[split]["y"], values[split]["y_pred"],  output_dict=True, zero_division=0)
+        values[split]["cm"] = confusion_matrix(values[split]["y"], values[split]["y_pred"]).tolist()
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("--dataset")
+parser.add_argument("--npy-name", type=str, help="Name of the NPY folder to be used. Must be inside the dataset folder.")
+parser.add_argument("--obj-data")
+
+parser.add_argument("--train-val-test", type=str, help="")
+parser.add_argument("--tag-yaml", type=str, default="./src/todd_characteristics.yaml", help="YAML file containing the number of categories per characteristic and their names. Default is located at '/src/todd_characteristics.yaml'")
+parser.add_argument("-t", "--tags", type=str, required=True, nargs="+") # choices=["af", "ip", "use", "bn", "lse", "dm", "dp", "vb", "vm", "all"]
+parser.add_argument("--model")
+parser.add_argument("--model-struct")
+parser.add_argument("--model-weights")
+
+parser.add_argument("--workers", type=int, default=4)
+
+# Output parameters
+parser.add_argument("--output-path", type=str, default="./experiments")
+parser.add_argument("--output-name", type=str, default=None, help="Name of the experiment. Default is grad-<YYYY>-<MM>_<DD>-<model>-<dataset>")
+
+parser.add_argument("--debug-use-cpu", action="store_true")
+
+args = parser.parse_args()
+
+# Select the device to perform the computations.
+torch.cuda.empty_cache()
+if args.debug_use_cpu:
+    device = "cpu"
+else:
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+print(f"Using {device}")
+
+# Create the output folder.
+out_folder_path = args.output_path
+
+if args.output_name is None:
+    dataset_basename = os.path.split(args.dataset.strip("/"))[1]
+    tags_str = "_".join(sorted(list(set(args.tags))))
+    out_name = f"grad-{datetime.datetime.now().strftime('%y%m%d_%H%M%S')}-{args.model}-{dataset_basename}-{args.npy_name}-{tags_str}"
+else:
+    out_name = args.output_name
+
+out_folder = os.path.join(out_folder_path, out_name)
+os.makedirs(out_folder)
+
+# Prepare the multiclass data dictionary
+# - Read the YAML to get the metadata of the tags: names, number of characteristics and their names.
+with open(args.tag_yaml, "r", encoding="utf-8") as f:
+    try:
+        tag_metadata =  yaml.safe_load(f)
+    except yaml.YAMLError as exc:
+        print(exc)
+
+# - Will hold the tags selected for training.
+selected_tags = []
+
+# If 'all' is passed, use all the tags, duh!
+if "all" in args.tags:
+    selected_tags = list(tag_metadata.keys())
+# If not, get the unique tags passed (there could be repeats, that's why a set is used.)
+else:
+    selected_tags = list(set(args.tags))
+
+act_training_set = pd.read_csv(os.path.join(args.train_val_test, "train.csv"))
+act_validation_set = pd.read_csv(os.path.join(args.train_val_test, "validation.csv"))
+act_test_set = pd.read_csv(os.path.join(args.train_val_test, "test.csv"))
+
+y_train = pd.DataFrame(act_training_set, columns=selected_tags)
+y_val = pd.DataFrame(act_validation_set, columns=selected_tags)
+y_test = pd.DataFrame(act_test_set, columns=selected_tags)
+
+X_train = act_training_set["name"].to_numpy()
+X_val = act_validation_set["name"].to_numpy()
+X_test = act_test_set["name"].to_numpy()
+
+out_mesh_train = os.path.join(out_folder, "train")
+os.makedirs(out_mesh_train)
+
+out_mesh_val = os.path.join(out_folder, "val")
+os.makedirs(out_mesh_val)
+
+out_mesh_test = os.path.join(out_folder, "test")
+os.makedirs(out_mesh_test)
+
+
+# Load the given model.
+try:
+    model_module = importlib.import_module(f"models.{args.model}")
+    with open(args.model_struct, "r", encoding="utf-8") as f:
+        try:
+            model_struct =  yaml.safe_load(f)
+        except yaml.YAMLError as exc:
+            print(exc)
+except Exception:
+    print(f"Model {args.model} not found.")
+    sys.exit(-1)
+
+# For each selected tag...
+tag_data = {}
+for i, char in enumerate(selected_tags):
+    # Make a nested dictionary and,
+    tag_data[char] = {}
+
+    # Using char as the key, access the number of categories in current tag, ...
+    tag_data[char]["classes"] = tag_metadata[char]["cat_num"]
+    _ , tag_data[char]["samples_per_class"] = np.unique(y_train[char], return_counts=True)
+    # ... make another nested dictionary to hold values relevant to the training, validation, and test ...
+    tag_data[char]["train"] = {"x" : [], "y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
+    tag_data[char]["val"] = {"x" : [], "y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
+    tag_data[char]["test"] = {"x" : [], "y" : [], "y_pred" : [], "loss" : 0, "class_report" : None, "cm" : None}
+
+    model = model_module.get_model(tag_data, params=model_struct, gradcam=True)
+    model = model.to(device)
+
+    model.load_state_dict(torch.load(args.model_weights), strict=False)
+    model.eval()
+
+    train_loader = torch.utils.data.DataLoader(PSDataset(X_train, y_train, args.dataset, tag_data), batch_size=1, shuffle=False, num_workers=args.workers)
+    val_loader = torch.utils.data.DataLoader(PSDataset(X_val, y_val, args.dataset, tag_data), batch_size=1, shuffle=False, num_workers=args.workers)
+    test_loader = torch.utils.data.DataLoader(PSDataset(X_test, y_test, args.dataset, tag_data), batch_size=1, shuffle=False, num_workers=args.workers)
     
-class_names = sorted(os.listdir(root_dir)) 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-learning_rate = 0.001
-training_epochs = 500
-batch_size = 16
+    print(f"--------- CHAR: {char} ({i+1} / {len(selected_tags)}) ")
 
-model = ExMeshCNN(len(class_names)).to(device)
+    # Get heatmaps of training meshes
+    print("------- TRAINING SPLIT ")
+    grad_cam_inference(train_loader, "train", tag_data, model, args.obj_data, out_mesh_train)
+    save_metadata("train", out_mesh_train, char, tag_data)
 
-model.load_state_dict(torch.load("./model_save.pt"))
-model.eval();
+    # Get heatmaps of validation meshes
+    print("------- VALIDATION SPLIT")
+    grad_cam_inference(val_loader, "val", tag_data, model, args.obj_data, out_mesh_val)
+    save_metadata("val", out_mesh_val, char, tag_data)
 
-val_dataset = SingleImgDataset(root_dir, 'test')
-val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=0)
+    # Get heatmaps of test meshes
+    print("------- TEST SPLIT")
+    grad_cam_inference(test_loader, "test", tag_data, model, args.obj_data, out_mesh_test)
+    save_metadata("test", out_mesh_test, char, tag_data)
 
-for k, data in enumerate(val_loader):
-    print("({}/{})".format(len(val_loader), k+1))
-    Y = data[0].to(device)
-    X1 = data[1].to(device)
-    X2 = data[2].to(device)
-    X3 = data[3].to(device)
-    pred = model(X1, X2, X3)
-    hc = pred.argmax()
+    del model
+    torch.cuda.empty_cache()
+    tag_data.clear()
 
-    pred[:,hc].backward()
-    gradients = model.get_activations_gradient()
-    pooled_gradients = torch.mean(gradients, dim=[0, 2])
-    activations = model.get_activations()
-    for i in range(activations.shape[1]):
-        activations[:,i,:] *= pooled_gradients[i]
-    heatmap = torch.mean(activations, dim=1).squeeze()
-    heatmap -= heatmap.mean()
-    heatmap = torch.relu(heatmap)
-    heatmap /= torch.max(heatmap)
-    heatmap = heatmap.detach().cpu()
-    path = data[4][0][:-4]
-    path = path.replace(root_dir, original_dataset)
-    ccmp = plt.get_cmap('Reds')
-    cNorm  = colors.Normalize(vmin=0, vmax=1)
-    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=ccmp)
-
-    mesh = om.read_trimesh(path)
-    for i,face in enumerate(mesh.faces()):
-        mesh.set_color(face, scalarMap.to_rgba(heatmap[i]))
-        
-    new_path = path.replace(original_dataset, "Explain")
-    path_ = new_path.split("/")[:-1]
-    path_dir = ""
-    for p in path_:
-        path_dir = os.path.join(path_dir,p)
-    path_dir
-    os.makedirs(path_dir, exist_ok=True)
-    
-    om.write_mesh(new_path, mesh, face_color=True)
-
-
+print("Done!")

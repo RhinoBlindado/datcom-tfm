@@ -467,6 +467,8 @@ if args.train_val_test_split is None:
 
     # Split the data
     if len(selected_tags) > 1:
+        y_tags = y_tags.astype("int64")
+
         X_train_val, y_train_val, X_test, y_test = iterative_train_test_split(x_names, y_tags, test_size = 0.2)
         X_train, y_train, X_val, y_val =  iterative_train_test_split(X_train_val, y_train_val, test_size = 0.2)
     else:

@@ -231,7 +231,7 @@ class HyperParamOptimizer():
             trial_path = os.path.join(self.output_f, f"trial_{trial.number}")
             os.mkdir(trial_path)
 
-            with open(os.path.join(trial_path, "gpu_oom_err.txt"), mode="w", encoding="utf-8") as f_err:
+            with open(os.path.join(trial_path, "trial_err.txt"), mode="w", encoding="utf-8") as f_err:
                 f_err.write(str(e))
 
         else:

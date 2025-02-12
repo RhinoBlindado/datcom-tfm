@@ -111,6 +111,9 @@ def model_step(mode : str,
             # ... calculate its own loss with its own loss function.
             act_loss = tag_data[act_tag]["loss_fn"](act_y_pred_logit,
                                                     act_y.to(device))
+            
+            if np.isnan(act_loss.tolist()):
+                raise RuntimeError(f"NaN encountered at loss function used by {act_tag}")
 
             # Save the actual loss, prediction and correct tags
             tag_data[act_tag][mode]["y"].extend(act_y.tolist())

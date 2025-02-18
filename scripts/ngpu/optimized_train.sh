@@ -4,7 +4,7 @@
 #SBATCH --job-name=OP-TRAIN
 
 # Assign job to a queue
-#SBATCH --partition=dgx,dgx2
+#SBATCH --partition=dgx2
 
 # Use GPU
 #SBATCH --gres=gpu:1

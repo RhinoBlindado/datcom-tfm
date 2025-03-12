@@ -108,7 +108,7 @@ bbox_mesh.name = "bbox_mesh__base"
 create_bbox(bbox_obj)
 
 ## Apply boolean operator
-# - Load the mesh again, now its the mesh to cut.
+# - Load the mesh again, now it's the mesh to cut.
 bpy.ops.wm.obj_import(filepath=obj_path)
 
 ps_obj = bpy.context.selected_objects[0]

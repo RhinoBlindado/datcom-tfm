@@ -182,6 +182,23 @@ def testing(model: torch.nn.Module, test_data, tag_data, device = "cuda"):
 
     return testing_stats
 
+def clear_tag_data(tag_data : dict):
+    
+    for tag, values in tag_data.items():
+        values["train"]["loss"] = 0
+        values["train"]["x"].clear()
+        values["train"]["y"].clear()
+        values["train"]["y_pred"].clear()
+        values["train"]["class_report"] = None
+        values["train"]["cm"] = None
+
+        values["val"]["loss"] = 0
+        values["val"]["x"].clear()
+        values["val"]["y"].clear()
+        values["val"]["y_pred"].clear()
+        values["val"]["class_report"] = None
+        values["val"]["cm"] = None
+
 def training(model: torch.nn.Module, train_data, validation_data, tag_data : dict, optimizer, epochs, device, epoch_begin = 0, best = False, es_watch : EarlyStopper = None):
 
     training_stats = {}
@@ -196,6 +213,8 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
     best_model["*mean*"] = {"epoch" : -1, "f1" : -1, "model" : None}
 
     for epoch in range(epochs):
+        clear_tag_data(tag_data)
+
         init_t = time.time()
         model_step("train", model, train_data, tag_data, optimizer=optimizer, device=device)
         model_step("val", model, validation_data, tag_data, device=device)
@@ -249,20 +268,6 @@ def training(model: torch.nn.Module, train_data, validation_data, tag_data : dic
             validation_stats[tag]["x"].append(copy.deepcopy(values["val"]["x"]))
             validation_stats[tag]["y"].append(copy.deepcopy(values["val"]["y"]))
             validation_stats[tag]["y_pred"].append(copy.deepcopy(values["val"]["y_pred"]))
-
-            values["train"]["loss"] = 0
-            values["train"]["x"].clear()
-            values["train"]["y"].clear()
-            values["train"]["y_pred"].clear()
-            values["train"]["class_report"] = None
-            values["train"]["cm"] = None
-
-            values["val"]["loss"] = 0
-            values["val"]["x"].clear()
-            values["val"]["y"].clear()
-            values["val"]["y_pred"].clear()
-            values["val"]["class_report"] = None
-            values["val"]["cm"] = None
 
         if np.mean(mean_tag_stats["v_f1"]) > best_model["*mean*"]["f1"]:
             best_model["*mean*"]["f1"] = np.mean(mean_tag_stats["v_f1"])

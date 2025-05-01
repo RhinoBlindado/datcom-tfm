@@ -120,6 +120,7 @@ Las representaciones volumétricas, como los vóxeles, permiten describir el vol
 La representación seleccionada en este trabajo es la de mallas poligonales tridimensionales. Estas son ampliamente utilizadas en el ámbito de la informática gráfica, lo que ha dado lugar a una gran variedad de herramientas y algoritmos para su procesamiento y análisis. Además, la mayoría de escáneres 3D empleados en AF generan directamente este tipo de representación, lo que facilita el flujo de trabajo. Las mallas son una representación eficiente y precisa: en zonas lisas y planas se utilizan pocos polígonos, mientras que en zonas con geometría compleja la densidad de polígonos aumenta, permitiendo capturar detalles intrincados. Desde el punto de vista del procesamiento mediante CNNs, las mallas ofrecen una ventaja adicional, ya que proporcionan información explícita sobre la conectividad entre vértices, lo que permite definir vecindarios locales de forma natural y estructurada.
 
 \subsection{Mallas poligonales}
+\label{section3:meshes}
 
 En el trabajo pionero de Feng et al. \cite{feng2019meshnet} se propone MeshNet, el primer \textit{framework} basado en CNNs diseñado para procesar directamente mallas 3D. En este enfoque, la unidad básica de procesamiento no son los vértices ni los vóxeles, sino las caras triangulares de la malla, las cuales permiten mantener la conectividad topológica y facilitan la definición de operaciones análogas a las convoluciones en imágenes, donde los píxeles tienen vecindarios bien definidos.
 

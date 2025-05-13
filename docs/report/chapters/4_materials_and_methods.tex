@@ -1,6 +1,7 @@
 \chapter{Materiales, Métodos e Implementación}
 
 \section{Materiales}
+\label{section4:materials}
 Para la realización de este TFM se dispone de una colección de 497 modelos 3D de la sínfisis del pubis, correspondientes tanto al lado izquierdo como derecho, en formato de malla OBJ. Estos modelos fueron escaneados por el personal del Laboratorio de Antropología Física del Departamento de Medicina Legal, Toxicología y Antropología Física de la Universidad de Granada. Además de la digitalización tridimensional, el equipo del laboratorio examinó cuidadosamente cada una de las muestras y etiquetó manualmente los atributos correspondientes a las características morfológicas observables en la superficie de la sínfisis del pubis así como la edad real de fallecimiento de los individuos, datos que también han sido provistos dentro de un fichero de Microsoft Excel.
 
 \begin{figure}[h]
@@ -72,7 +73,7 @@ Del análisis se concluye que las características LSE, AF y VM son, en general,
     VB & \multicolumn{1}{c|}{LSE, VM, AF} & LSE, VM, AF \\
     VM & \multicolumn{1}{c|}{\textbf{LSE, USE, DM}} & \textbf{LSE, DM, AF} \\ \hline
     \end{tabular}
-    \caption{Cuadro resumen de las correlaciones más fuertes entre cada característica de Todd}
+    \caption[Cuadro resumen de las correlaciones más fuertes entre características de Todd]{Cuadro resumen de las correlaciones más fuertes entre cada característica de Todd. Las filas en negrita indican que las características más correladas son diferentes dependiendo del método.}
     \label{table4:corr}
 \end{table}
 
@@ -153,15 +154,126 @@ Cabe destacar que, en el caso de la característica Plataforma Dorsal (Subfigura
 
 Las 970 mallas presentan una resolución media de 994,601 triángulos, con un mínimo de 329,438 y un máximo de 1,688,348 triángulos. Para poder aplicar el método ExMeshCNN, descrito en la Sección \ref{section4:methods}, es necesario que todas las mallas tengan una resolución uniforme. Una opción inicial considerada fue remuestrear las mallas al número medio de triángulos; sin embargo, este tamaño resulta inviable computacionalmente con el hardware disponible.
 
-Por esta razón, se ha procedido a reducir la resolución de las mallas a 100,000, 50,000 y 25,000 triángulos, empleando las técnicas detalladas en la Sección \ref{???}. Tal como se demuestra en los experimentos descritos en la Sección \ref{???}, esta reducción no compromete significativamente la fidelidad de la superficie original. La variación entre las superficies del modelo original y las versiones reducidas es mínima, lo que permite afirmar que las mallas simplificadas conservan en mayor o menor grado parte de la información morfológica relevante para los experimentos.
+Por esta razón, se ha procedido a reducir la resolución de las mallas a 100,000, 50,000 y 25,000 triángulos, empleando las técnicas detalladas en la Sección \ref{section4:data_reduction}. Tal como se demuestra en los experimentos descritos en la Sección \ref{???}, esta reducción no compromete significativamente la fidelidad de la superficie original. La variación entre las superficies del modelo original y las versiones reducidas es mínima, lo que permite afirmar que las mallas simplificadas conservan en mayor o menor grado parte de la información morfológica relevante para los experimentos.
 
-Adicionalmente, el método requiere que las mallas no contengan geometría degenerada y que estén completamente selladas (es decir, que no exista geometría \textit{non-manifold} y que sea \textit{watertight}, según la terminología en gráficos por ordenador). Dado que estas mallas provienen de escaneos de objetos anatómicos reales, es esperable que algunas presenten incompletitud o defectos estructurales, lo que impide su uso directo con ExMeshCNN. Para solventar estos problemas, se aplicaron técnicas de reparación y sellado descritas en la Sección \ref{???}, con el objetivo de restaurar la geometría y garantizar la integridad topológica de cada modelo antes de ser procesado por la red neuronal.
+Adicionalmente, el método requiere que las mallas no contengan geometría degenerada y que estén completamente selladas (es decir, que no exista geometría \textit{non-manifold} y que sea \textit{watertight}, según la terminología en gráficos por ordenador). Dado que estas mallas provienen de escaneos de objetos anatómicos reales, es esperable que algunas presenten incompletitud o defectos estructurales, lo que impide su uso directo con ExMeshCNN. Para solventar estos problemas, se aplicaron técnicas de reparación y sellado descritas en la Sección \ref{section4:data_repair}, con el objetivo de restaurar la geometría y garantizar la integridad topológica de cada modelo antes de ser procesado por la red neuronal.
 
 \section{Métodos}
 \label{section4:methods}
-Como se ha mencionado previamente en la Sección \ref{section3:meshes}, ExMeshCNN \cite{kim_exmeshcnn_2022} representa el estado del arte en el procesamiento de mallas poligonales mediante redes neuronales profundas. A continuación, se detalla cómo este \textit{framework} adapta el concepto de convolución para que pueda aplicarse de manera efectiva sobre datos tridimensionales.
+Como se ha mencionado previamente en la Sección \ref{section3:meshes}, ExMeshCNN \cite{kim_exmeshcnn_2022} representa el estado del arte en el procesamiento de mallas poligonales mediante DL y por lo tanto ha sido el método elegido para realizar los experimentos. A continuación se describe de qué forma el \textit{framework} adapta los datos para poder ser utilizados con convoluciones.
+
+\subsection{Capa de descriptores}
+Las representaciones en cuadrícula, como en el caso de imágenes, resultan convenientes porque encapsulan tanto la información de conectividad (es decir, la vecindad local entre píxeles) como las características asociadas (como los valores RGB) en una única estructura matricial. Sin embargo, esta estrategia no puede trasladarse directamente a las mallas tridimensionales debido a su naturaleza irregular y a la ausencia de un orden canónico entre sus elementos.
+
+Para abordar esta limitación, se introducen dos capas iniciales en la red, denominadas descriptores, las cuales contienen parámetros entrenables. El propósito de estas capas es extraer características directamente desde la malla, independientemente del orden de sus triángulos. Estos descriptores transforman la información de la malla a un formato compatible con operaciones de convolución 1D, permitiendo que el modelo aprenda efectivamente a partir de la estructura tridimensional sin requerir una representación regular.
+
+\subsubsection{Descriptor geodésico basado en aristas}
+El objetivo de este descriptor es capturar características geodésicas locales asociadas a los triángulos de la malla, características que han sido mayoritariamente ignoradas en la literatura actual. 
+
+Se parte del concepto de distancia geodésica entre caras, definida como el camino más corto a través de aristas que conecta el centro de un triángulo objetivo con un vértice de un triángulo adyacente, pasando por uno de los vértices del triángulo objetivo. No obstante, en mallas triangulares esta métrica resulta limitada, ya que la cantidad de aristas involucradas en dichos caminos es siempre dos, lo cual no aporta mucha información.
+
+Para enriquecer esta representación, se incorporan ideas provenientes de la convolución geodésica propuesta por Schult et al. \cite{schult_dualconvmesh-net_2020}, que toma en cuenta no solo la longitud del camino, sino también su curvatura. De este modo, dos caminos con la misma longitud, pero distinta curvatura permiten ser diferenciados.
+
+Sin embargo, dicha convolución geodésica presenta una limitación importante: la ambigüedad en el orden de los caminos posibles. Dado que estos no poseen una estructura de vecindad ordenada, una misma operación de convolución puede producir diferentes resultados dependiendo del orden de los elementos procesados, comprometiendo así la consistencia del aprendizaje.
+
+Partiendo de estas ideas, se propone el siguiente descriptor $\mathcal{K}$, definido en la Ecuación \ref{eq4:geodesic}:
+\begin{equation}
+\label{eq4:geodesic}
+    \mathcal{K}
+(\bar{\textbf{a}_{t}}) = \theta_{0} \sum_{j}^{3} \textbf{u}_{t}^{j} + \theta_{1} \sum_{j}^{3}  \overrightarrow{\textbf{n}}_{t}^{j} + \theta_{2} \sum_{j}^{3} |\textbf{e}_{n(t)}^{j,1} - \textbf{e}_{n(t)}^{j,2}|
+\end{equation}
+Donde: 
+\begin{itemize}
+    \item $\bar{\textbf{a}_{t}}$ representa el conjunto conformado por un triángulo objetivo $f_{t}$ y sus tres triángulos vecinos topológicos $f_{n(t)_j}$, con $j \in \left\{1,2,3\right\}$.
+    \item $\textbf{u}_{t}^{j}$ describe la relación entre el centro del triángulo $\textbf{c}_t$ y el vértice $j$-ésimo $\textbf{v}_{t}^j$ definido como  $\textbf{u}_{t}^{j} = \textbf{c}_t - \textbf{v}_t^j$ con $j \in \left\{1,2,3\right\}$.
+    \item $\overrightarrow{\textbf{n}}_{t}^{j}$ es la normal del vértice $\textbf{v}_t^j$, calculada como la media de las normales de los triángulos que rodean dicho vértice.
+    \item $\textbf{e}_{n(t)}^{j,k}$ representa la arista entre el vértice $\textbf{v}_{t}^j$ del triángulo objetivo y un vértice $\textbf{v}_{n(t)}^{j,k}$ del triángulo vecino, donde $k \in \left\{1,2\right\}$. Dado que solo existen dos caminos posibles desde un vértice $\textbf{v}_t^j$ hacia vértices de triángulos vecinos a través de una arista común, la diferencia $|\textbf{e}_{n(t)}^{j,1} - \textbf{e}_{n(t)}^{j,2}|$ captura una característica invariante al orden debido al valor absoluto.
+    \item Los términos $\theta_0, \theta_1 $ y $\theta_2$ son parámetros entrenables por la red.
+\end{itemize}
+Para una mejor comprensión de estos términos, se recomienda consultar la Figura ???.
+
+En esencia, lo que se realiza es un mapeo del triángulo objetivo y su vecindario topológico a un espacio de características geodésicas capturando las siguientes propiedades:
+\begin{itemize}
+    \item Forma local del triángulo, mediante el término $\textbf{u}_{t}^{j}$, que describe cómo se distribuyen espacialmente los vértices con respecto al centroide.
+    \item Orientación local, reflejada en $\overrightarrow{\textbf{n}}_{t}^{j}$, que aporta información sobre la dirección normal de la superficie.
+    \item Relaciones geodésicas entre triángulos vecinos, a través del término $|\textbf{e}_{n(t)}^{j,1} - \textbf{e}_{n(t)}^{j,2}|$, que captura la variación entre las conexiones posible
+\end{itemize}
+
+Además, el descriptor actúa funcionalmente como un filtro de convolución 1D de tamaño 3, ya que posee parámetros entrenables. Esto permite realizar subsiguientes convoluciones 1D sobre el vector de características obtenido.
+
+\subsubsection{Descriptor geométrico basado en caras}
+En la literatura, las características geométricas más comúnmente empleadas para describir las caras triangulares incluyen el vector normal de la misma, su centroide y el ángulo que forma con las caras vecinas. Dado que estas características son de bajo nivel y, en cierta medida, de naturaleza heurística, se propone el descriptor $\mathcal{G}$, definido en la Ecuación \ref{eq4:geometric}, con el objetivo de capturar representaciones de alto nivel que integren dicha información geométrica.
+
+\begin{equation}
+\label{eq4:geometric}
+    \mathcal{G}(\bar{\textbf{a}_{t}}) = \phi_{0} \textbf{c}_{t} + \phi_{1} \overrightarrow{\textbf{n}}_{t} + \phi_{2} \sum_{j}^{3} | \textbf{c}_{t} - \textbf{c}_{n(t)}^{j} | + \phi_{3} | \overrightarrow{\textbf{n}}_{t} \times \overrightarrow{\textbf{n}}_{n(t)}^j |
+\end{equation}
+Donde:
+\begin{itemize}
+    \item Los términos $\textbf{c}_{t}$ y $\overrightarrow{\textbf{n}}_{t}$ capturan la información relativa a la posición y orientación de la cara triangular $f_t$ en el espacio.
+    \item Los términos $| \textbf{c}_{t} - \textbf{c}_{n(t)}^{j} |$ y $| \overrightarrow{\textbf{n}}_{t} \times \overrightarrow{\textbf{n}}_{n(t)}^j |$ capturan la relación que tiene el triángulo objetivo con su vecindario local respecto a la distancia entre sí y el ángulo que forman.
+    \item Los términos $\phi_{0}, \phi_{1}, \phi_{2} $ y $\phi_{3}$ son parámetros entrenables por la red.
+\end{itemize}
+
+De esta forma, se logra realizar otro mapeo de las caras triangulares junto a su vecindario topológico a un espacio de características geométricas y, al igual que sucede con el descriptor de aristas, se tiene esencialmente una capa entrenable por la red y que su resultado es factible realizarle convoluciones 1D.
 
 
+En resumen, la primera capa de cualquier red construida con ExMeshCNN se compone de los dos descriptores $\mathcal{K}(\bar{\textbf{a}}_t)$ y $\mathcal{G}(\bar{\textbf{a}}_t)$, que funcionalmente actúan como capas convolucionales 1D pues poseen parámetros entrenables, pero que están realizando un mapeo de cada triángulo a un espacio de características geométricas y geodésicas. El resultado de los descriptores es concatenado como se observa en la Ecuación \ref{eq4:concat} para ser utilizado por las capas verdaderamente convolucionales.
+\begin{equation}
+    \label{eq4:concat}
+    \mathcal{F}_{t} = \left[\mathcal{K}(\bar{\textbf{a}}), \mathcal{G}(\bar{\textbf{a}}) \right]
+\end{equation}
+Donde $\mathcal{F}_{t}$ es el vector de características de cada cara triangular.
+
+\subsection{Capas convolucionales}
+Dado que las mallas no poseen un orden canónico en sus triángulos, es necesario realizar un preprocesamiento antes de aplicar una operación de convolución 1D. Para ello, se expande el vector de características de cada triángulo $f_i$ de la siguiente manera:
+\begin{align}
+    \alpha_i &= \mathcal{F_i} \\
+    \beta_i &= \sum_{j}^{3} | \mathcal{F}_{i} - \mathcal{F}_{n(i)}^{j}| 
+\end{align}
+Donde:
+\begin{itemize}
+    \item $\alpha_i$ representa las características propias del triángulo $f_i$.
+    \item $\beta_i$ representa un agregado de las diferencias absolutas entre las características de $f_i$ y las de sus tres triángulos vecinos topológicos $f_{n(i)}^{j}$, con $j \in {1, 2, 3}$.
+\end{itemize}
+
+Este paso expande temporalmente el conjunto de datos, duplicando la cantidad de triángulos al generar dos entradas por triángulo: $\alpha_i$ y $\beta_i$.
+
+Posteriormente, se aplica una convolución 1D con un kernel de tamaño 2 y un \textit{stride} de 2. Esta configuración permite que cada operación de convolución combine la información de $\alpha_i$ y $\beta_i$, de manera que la operación es invariante al orden de los triángulos en la malla. Al mismo tiempo, el uso de \textit{stride} 2 permite recuperar la dimensionalidad original del conjunto de datos.
+
+A diferencia de otros enfoques, ExMeshCNN mantiene fijo el tamaño del filtro de convolución entre capas y controla la capacidad de la red a través de la densidad (profundidad) de las mismas. Esta arquitectura facilita el uso de técnicas de interpretabilidad como Grad-CAM, permitiendo identificar los triángulos que más contribuyen al resultado final del modelo.
 
 \section{Implementación}
 \label{section4:implementation}
+\subsection{Entorno de desarrollo}
+\subsubsection{Software}
+Debido a su amplio uso en el ámbito de la IA y la Ciencia de Datos, y siendo el lenguaje de programación utilizado para la implementación de ExMeshCNN, este TFM ha sido desarrollado íntegramente en Python 3. Para la construcción de las redes neuronales se ha empleado de forma predominante la librería PyTorch junto con la librería de optimización de parámetros Optuna, complementada por otras bibliotecas ampliamente utilizadas en ML como NumPy, SciPy, Scikit-Learn y Pandas.
+
+Dado que los datos tratados son de naturaleza tridimensional, se ha recurrido extensivamente a herramientas especializadas para la manipulación de mallas 3D. Entre ellas destacan el software de código abierto Blender y su API para Python, así como las librerías PyMeshLab, Trimesh y OpenMesh.
+
+La gestión del control de versiones se ha llevado a cabo mediante Git y GitHub. Por otro lado, la gestión de dependencias del entorno Python se ha realizado mediante un entorno virtual (\textit{Virtual Environment}) específico para este proyecto.
+
+El código desarrollado en el presente trabajo se encuentra disponible en el siguiente repositorio: \url{https://github.com/RhinoBlindado/datcom-tfm}.
+
+\subsubsection{Hardware}
+La ejecución de este TFM se ha llevado a cabo en dos entornos diferenciados: uno local y otro remoto.
+
+El entorno local consistió en un ordenador portátil Asus FX505DT equipado con un procesador AMD Ryzen 7 3750H, 16 GB de memoria RAM y una GPU Nvidia GeForce GTX 1650 con 4 GB de VRAM. En este entorno se desarrolló el código fuente, así como las tareas de preprocesamiento de datos y pruebas a pequeña escala, dada la capacidad limitada de procesamiento gráfico.
+
+El entorno remoto correspondió al clúster de servidores GPU de la Universidad de Granada, denominado NGPU, ubicado en el CPD Santa Lucía. En particular, se utilizó preferentemente el nodo denominado Talos, que dispone de dos procesadores AMD EPYC 7742, 1 TB de memoria RAM y 8 GPUs Nvidia Tesla A100, cada una con 40 GB de VRAM. En este entorno se ejecutaron la totalidad de los experimentos a gran escala, gestionados mediante acceso remoto vía SSH y utilizando el sistema de planificación de tareas SLURM.
+
+\subsection{Preprocesamiento de datos}
+Como se ha mencionado en la Sección \ref{section4:materials}, los datos obtenidos para este proyecto provienen de escaneos en 3D de piezas anatómicas reales. Las mallas generadas a través de estos procesos resultan en geometrías incompletas, degeneradas y con gran variabilidad de resolución. Estos factores impiden su uso directo por el \textit{framework} de ExMeshCNN.
+
+\subsubsection{Reparación de datos y estandarización}
+\label{section4:data_repair}
+El primer paso del preprocesamiento es la reparación de las mallas, esto implica:
+\begin{itemize}
+    \item Sellar los huecos en las mallas, para que las mismas sean \textit{watertight}.
+    \item Eliminar geometría desconectada de la componente principal.
+    \item Eliminar geometría degenerada.
+\end{itemize}
+
+
+\subsubsection{Reducción de resolución}
+\label{section4:data_reduction}

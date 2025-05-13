@@ -63,6 +63,7 @@
 
 %   Código
     \newcommand{\code}{\lstinline}
+    \renewcommand{\lstlistingname}{Código}
 
 %   Configuración del paquete listings
 \definecolor{gray97}{gray}{.97}
@@ -237,13 +238,13 @@ pdfproducer = {pdflatex}
 
 %   Inicio del Documento
 \begin{document}
-    \frontmatter
-    \input{portada/portada}
-    \input{prefacios/prefacio}
-    \mainmatter
-    \tableofcontents
-    \listoffigures
-    \listoftables
+   %  \frontmatter
+   %  \input{portada/portada}
+   %  \input{prefacios/prefacio}
+   %  \mainmatter
+   %  \tableofcontents
+   %  \listoffigures
+   %  \listoftables
 
     %\setlength{\parskip}{5pt}
     
@@ -259,11 +260,11 @@ pdfproducer = {pdflatex}
     % Metodología
     \input{chapters/4_materials_and_methods}
     
-    % Experimentos
-    \input{chapters/5_experiments}
+   %  % Experimentos
+   %  \input{chapters/5_experiments}
     
-    % Conclusiones
-    \input{chapters/6_conclusion}
+   %  % Conclusiones
+   %  \input{chapters/6_conclusion}
 
     % Bibliografía
     \chapter{Bibliografía}

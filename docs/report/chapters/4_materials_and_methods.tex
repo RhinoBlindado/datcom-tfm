@@ -27,57 +27,7 @@ Continuando con el EDA enfocado en las nueve características del método de Tod
 
 Desde la perspectiva del balance de datos, las características de Borde Dorsal (Subfigura \ref{fig4:todd_chars__use}), Nódulo Óseo (Subfigura \ref{fig4:todd_chars__bn}), Plataforma Dorsal (Subfigura \ref{fig4:todd_chars__dp}) y Borde Inferior (Subfigura \ref{fig4:todd_chars__lse}) presentan un desbalance particularmente acentuado, con aproximadamente 95\%, 91\%, 90\% y 90\% de las muestras concentradas en una sola clase, respectivamente. Este fuerte desbalance sugiere que estas características podrían tener un rendimiento limitado al ser utilizadas para el entrenamiento de modelos de DL.
 
-El resto de las características muestra un desbalance menos extremo, con entre el 60\% y el 70\% de los datos agrupados en una única clase. La característica con mayor equilibrio en su distribución es el Bisel Ventral (Subfigura \ref{fig4:todd_chars__vb}), en la que los datos se reparten aproximadamente en un 33\% por clase, dado que esta posee tres clases distintas. Se espera que esta característica, junto con aquellas que presenten menos desbalance, proveerán mejores resultados al ser entrenadas por la red.
-
-\subsubsection{Correlaciones}
-
-\begin{figure}
-    \centering
-    \begin{subfigure}{\textwidth}
-        \centering
-        \includegraphics[width=0.7\linewidth]{../../scripts/eda/assoc_plot_cramersv.pdf}
-        \caption{Correlograma usando la V de Cramér}
-        \label{fig4:todd_chars__cramersv}
-    \end{subfigure}
-    \begin{subfigure}{\textwidth}
-        \centering
-        \includegraphics[width=0.7\linewidth]{../../scripts/eda/assoc_plot_tschuprow.pdf}
-        \caption{Correlograma usando la T de Tschuprow}
-        \label{fig4:todd_chars__tschuprow}
-    \end{subfigure}
-    \caption[Correlogramas entre características de Todd]{Correlogramas entre las características de Todd}
-    \label{fig4:todd_chars_correlogram}
-\end{figure}
-
-Si bien los datos empleados en este estudio no son de naturaleza tabular y se utilizan técnicas de DL que no requieren una extracción manual de características, resulta igualmente útil de cara a los experimentos analizar las correlaciones existentes entre las nueve características de Todd. Dado que dichas variables son categóricas, se ha optado por utilizar la V de Cramér, una medida estadística que cuantifica el grado de asociación entre dos variables categóricas. Además, para corregir el sesgo que puede surgir al trabajar con tablas de contingencia no cuadradas, se ha complementado el análisis con la T de Tschuprow, la cual atenúa dicho efecto y permite una interpretación más equilibrada de la asociación entre las variables.
-
-Ambos correlogramas se presentan en la Figura \ref{fig4:todd_chars_correlogram}, donde puede apreciarse que las correlaciones entre las características de Todd varían significativamente entre sí. Como era de esperarse, existen discrepancias entre los valores obtenidos mediante la V de Cramér y la T de Tschuprow, siendo esta última más conservadora en presencia de tablas de contingencia no cuadradas. Para facilitar la interpretación de estos resultados, se ha incluido la Tabla \ref{table4:corr}, en la que se listan las tres características con mayor correlación para cada una.
-
-Del análisis se concluye que las características LSE, AF y VM son, en general, las que presentan los mayores niveles de correlación con el resto, lo que sugiere una mayor dependencia entre ellas. En contraste, la característica IP muestra los niveles más bajos de correlación con las demás, seguida de BN, lo cual puede indicar un comportamiento más independiente. Este conocimiento será especialmente relevante en los experimentos de entrenamiento en modo multietiqueta, ya que incorporar características correlacionadas entre sí podría favorecer el aprendizaje del modelo y mejorar su rendimiento.
-
-\begin{table}[h]
-    \centering
-    \begin{tabular}{|c|cc|}
-    \hline
-    \rowcolor[HTML]{D33333} 
-    \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} } & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} Características con mayor asociación}} \\ \cline{2-3} 
-    \rowcolor[HTML]{D33333} 
-    \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} Característica}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} V de Cramér}} & {\color[HTML]{FFFFFF} T de Tschuprow} \\ \hline
-    AF & \multicolumn{1}{c|}{LSE, USE, DM} & LSE, DM, USE \\
-    BN & \multicolumn{1}{c|}{\textbf{VM, AF, DP}} & \textbf{DP, LSE, VM} \\
-    DM & \multicolumn{1}{c|}{LSE, USE, AF} & LSE, USE, AF \\
-    DP & \multicolumn{1}{c|}{\textbf{AF, VM, LSE}} & \textbf{LSE, AF, BN} \\
-    IP & \multicolumn{1}{c|}{\textbf{VM, AF, LSE}} & \textbf{VM, DM, AF} \\
-    LSE & \multicolumn{1}{c|}{\textbf{VM, AF, DM}} & \textbf{DM, USE, VM} \\
-    USE & \multicolumn{1}{c|}{AF, DM, LSE} & LSE, DM, AF \\
-    VB & \multicolumn{1}{c|}{LSE, VM, AF} & LSE, VM, AF \\
-    VM & \multicolumn{1}{c|}{\textbf{LSE, USE, DM}} & \textbf{LSE, DM, AF} \\ \hline
-    \end{tabular}
-    \caption[Cuadro resumen de las correlaciones más fuertes entre características de Todd]{Cuadro resumen de las correlaciones más fuertes entre cada característica de Todd. Las filas en negrita indican que las características más correladas son diferentes dependiendo del método.}
-    \label{table4:corr}
-\end{table}
-
-\begin{figure}[h]
+\begin{figure}[p]
     \centering
     \begin{subfigure}{\textwidth}
         \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_af_distr.pdf}
@@ -99,7 +49,7 @@ Del análisis se concluye que las características LSE, AF y VM son, en general,
     \phantomcaption
 
 \end{figure}
-\begin{figure}
+\begin{figure}[p]
     \ContinuedFloat
 
     \begin{subfigure}{\textwidth}
@@ -123,7 +73,7 @@ Del análisis se concluye que las características LSE, AF y VM son, en general,
     \phantomcaption
     \label{fig4:todd_chars}
 \end{figure}
-\begin{figure}
+\begin{figure}[p]
     \ContinuedFloat
 
     \begin{subfigure}{\textwidth}
@@ -147,14 +97,65 @@ Del análisis se concluye que las características LSE, AF y VM son, en general,
 
 \end{figure}
 
+El resto de las características muestra un desbalance menos extremo, con entre el 60\% y el 70\% de los datos agrupados en una única clase. La característica con mayor equilibrio en su distribución es el Bisel Ventral (Subfigura \ref{fig4:todd_chars__vb}), en la que los datos se reparten aproximadamente en un 33\% por clase, dado que esta posee tres clases distintas. Se espera que esta característica, junto con aquellas que presenten menos desbalance, proveerán mejores resultados al ser entrenadas por la red.
+
+\subsubsection{Correlaciones}
+
+\begin{figure}[p]
+    \centering
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.7\linewidth]{../../scripts/eda/assoc_plot_cramersv.pdf}
+        \caption{Correlograma usando la V de Cramér}
+        \label{fig4:todd_chars__cramersv}
+    \end{subfigure}
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.7\linewidth]{../../scripts/eda/assoc_plot_tschuprow.pdf}
+        \caption{Correlograma usando la T de Tschuprow}
+        \label{fig4:todd_chars__tschuprow}
+    \end{subfigure}
+    \caption[Correlogramas entre características de Todd]{Correlogramas entre las características de Todd}
+    \label{fig4:todd_chars_correlogram}
+\end{figure}
+
+Si bien los datos empleados en este estudio no son de naturaleza tabular y se utilizan técnicas de DL que no requieren una extracción manual de características, resulta igualmente útil de cara a los experimentos analizar las correlaciones existentes entre las nueve características de Todd. Dado que dichas variables son categóricas, se ha optado por utilizar la V de Cramér, una medida estadística que cuantifica el grado de asociación entre dos variables categóricas. Además, para corregir el sesgo que puede surgir al trabajar con tablas de contingencia no cuadradas, se ha complementado el análisis con la T de Tschuprow, la cual atenúa dicho efecto y permite una interpretación más equilibrada de la asociación entre las variables.
+
+Ambos correlogramas se presentan en la Figura \ref{fig4:todd_chars_correlogram}, donde puede apreciarse que las correlaciones entre las características de Todd varían significativamente entre sí. Como era de esperarse, existen discrepancias entre los valores obtenidos mediante la V de Cramér y la T de Tschuprow, siendo esta última más conservadora en presencia de tablas de contingencia no cuadradas. Para facilitar la interpretación de estos resultados, se ha incluido la Tabla \ref{table4:corr}, en la que se listan las tres características con mayor correlación para cada una.
+
+Del análisis se concluye que las características LSE, AF y VM son, en general, las que presentan los mayores niveles de correlación con el resto, lo que sugiere una mayor dependencia entre ellas. En contraste, la característica IP muestra los niveles más bajos de correlación con las demás, seguida de BN, lo cual puede indicar un comportamiento más independiente. Este conocimiento será especialmente relevante en los experimentos de entrenamiento en modo multietiqueta, ya que incorporar características correlacionadas entre sí podría favorecer el aprendizaje del modelo y mejorar su rendimiento.
+
+\begin{table}[t]
+    \centering
+    \begin{tabular}{|c|cc|}
+    \hline
+    \rowcolor[HTML]{D33333} 
+    \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} } & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} Características con mayor asociación}} \\ \cline{2-3} 
+    \rowcolor[HTML]{D33333} 
+    \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} Característica}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} V de Cramér}} & {\color[HTML]{FFFFFF} T de Tschuprow} \\ \hline
+    AF & \multicolumn{1}{c|}{LSE, USE, DM} & LSE, DM, USE \\
+    BN & \multicolumn{1}{c|}{\textbf{VM, AF, DP}} & \textbf{DP, LSE, VM} \\
+    DM & \multicolumn{1}{c|}{LSE, USE, AF} & LSE, USE, AF \\
+    DP & \multicolumn{1}{c|}{\textbf{AF, VM, LSE}} & \textbf{LSE, AF, BN} \\
+    IP & \multicolumn{1}{c|}{\textbf{VM, AF, LSE}} & \textbf{VM, DM, AF} \\
+    LSE & \multicolumn{1}{c|}{\textbf{VM, AF, DM}} & \textbf{DM, USE, VM} \\
+    USE & \multicolumn{1}{c|}{AF, DM, LSE} & LSE, DM, AF \\
+    VB & \multicolumn{1}{c|}{LSE, VM, AF} & LSE, VM, AF \\
+    VM & \multicolumn{1}{c|}{\textbf{LSE, USE, DM}} & \textbf{LSE, DM, AF} \\ \hline
+    \end{tabular}
+    \caption[Cuadro resumen de las correlaciones más fuertes entre características de Todd]{Cuadro resumen de las correlaciones más fuertes entre cada característica de Todd. Las filas en negrita indican que las características más correladas son diferentes dependiendo del método.}
+    \label{table4:corr}
+\end{table}
+
 \subsubsection{Preparación de los datos}
+\label{section4:data_preparation}
 De la muestra original de 497 individuos, es decir, un total de 986 huesos correspondientes a las sínfisis del pubis izquierda y derecha, fue necesario eliminar 16 muestras por diversos motivos: presencia de deformidades anatómicas, ausencia del archivo OBJ asociado o falta de correspondencia entre el modelo 3D y los datos etiquetados provistos. Se opta por utilizar las 970 muestras restantes en su totalidad, ya que en problemas de DL es fundamental contar con un volumen de datos considerable, aunque estos estén altamente desbalanceados, pues se pueden utilizar diversas técnicas para mitigar el efecto que produce esto al rendimiento de un modelo. 
 
 Cabe destacar que, en el caso de la característica Plataforma Dorsal (Subfigura \ref{fig4:todd_chars__dp}), la clase 3 (\say{Presente}) cuenta con solo una muestra, lo cual impide que el modelo pueda aprender representaciones significativas para dicha clase. Por tanto, esta muestra será eliminada durante el entrenamiento de modelos de DL que hagan uso de dicha característica. Además, la Clase 2 originalmente denominada \say{En Formación} será renombrada a \say{Presente}, con el objetivo de mantener la consistencia semántica.
 
 Las 970 mallas presentan una resolución media de 994,601 triángulos, con un mínimo de 329,438 y un máximo de 1,688,348 triángulos. Para poder aplicar el método ExMeshCNN, descrito en la Sección \ref{section4:methods}, es necesario que todas las mallas tengan una resolución uniforme. Una opción inicial considerada fue remuestrear las mallas al número medio de triángulos; sin embargo, este tamaño resulta inviable computacionalmente con el hardware disponible.
 
-Por esta razón, se ha procedido a reducir la resolución de las mallas a 100,000, 50,000 y 25,000 triángulos, empleando las técnicas detalladas en la Sección \ref{section4:data_reduction}. Tal como se demuestra en los experimentos descritos en la Sección \ref{???}, esta reducción no compromete significativamente la fidelidad de la superficie original. La variación entre las superficies del modelo original y las versiones reducidas es mínima, lo que permite afirmar que las mallas simplificadas conservan en mayor o menor grado parte de la información morfológica relevante para los experimentos.
+Por esta razón, se ha procedido a reducir la resolución de las mallas a 100,000, 50,000 y 25,000 triángulos, empleando las técnicas detalladas en la Sección \ref{section4:data_reduction}. Tal como se demuestra en los experimentos descritos en la Sección \ref{section5:experiment_edge_collapse}, esta reducción no compromete significativamente la fidelidad de la superficie original. La variación entre las superficies del modelo original y las versiones reducidas es mínima, lo que permite afirmar que las mallas simplificadas conservan en mayor o menor grado parte de la información morfológica relevante para los experimentos.
 
 Adicionalmente, el método requiere que las mallas no contengan geometría degenerada y que estén completamente selladas (es decir, que no exista geometría \textit{non-manifold} y que sea \textit{watertight}, según la terminología en gráficos por ordenador). Dado que estas mallas provienen de escaneos de objetos anatómicos reales, es esperable que algunas presenten incompletitud o defectos estructurales, lo que impide su uso directo con ExMeshCNN. Para solventar estos problemas, se aplicaron técnicas de reparación y sellado descritas en la Sección \ref{section4:data_repair}, con el objetivo de restaurar la geometría y garantizar la integridad topológica de cada modelo antes de ser procesado por la red neuronal.
 
@@ -223,7 +224,7 @@ En resumen, la primera capa de cualquier red construida con ExMeshCNN se compone
     \label{eq4:concat}
     \mathcal{F}_{t} = \left[\mathcal{K}(\bar{\textbf{a}}), \mathcal{G}(\bar{\textbf{a}}) \right]
 \end{equation}
-Donde $\mathcal{F}_{t}$ es el vector de características de cada cara triangular.
+Donde $\mathcal{F}_{t}$ es el vector de características de cada cara triangular. Para que estos descriptores funcionen correctamente, es necesario que las mallas estén exentas de geometría \textit{non-manifold} y sean \textit{watertight}: esto garantiza que una cara triangular siempre tendrá 3 vecinos a su alrededor, un requisito necesario para poder realizar el mapeo entre las caras triangulares y las características extraídas por los descriptores. 
 
 \subsection{Capas convolucionales}
 Dado que las mallas no poseen un orden canónico en sus triángulos, es necesario realizar un preprocesamiento antes de aplicar una operación de convolución 1D. Para ello, se expande el vector de características de cada triángulo $f_i$ de la siguiente manera:
@@ -241,7 +242,7 @@ Este paso expande temporalmente el conjunto de datos, duplicando la cantidad de 
 
 Posteriormente, se aplica una convolución 1D con un kernel de tamaño 2 y un \textit{stride} de 2. Esta configuración permite que cada operación de convolución combine la información de $\alpha_i$ y $\beta_i$, de manera que la operación es invariante al orden de los triángulos en la malla. Al mismo tiempo, el uso de \textit{stride} 2 permite recuperar la dimensionalidad original del conjunto de datos.
 
-A diferencia de otros enfoques, ExMeshCNN mantiene fijo el tamaño del filtro de convolución entre capas y controla la capacidad de la red a través de la densidad (profundidad) de las mismas. Esta arquitectura facilita el uso de técnicas de interpretabilidad como Grad-CAM, permitiendo identificar los triángulos que más contribuyen al resultado final del modelo.
+A diferencia de otros enfoques, ExMeshCNN mantiene fijo el tamaño del filtro de convolución entre capas y controla la capacidad de la red a través de la densidad (profundidad) de las mismas. Esta arquitectura facilita el uso de técnicas de interpretabilidad como Grad-CAM, permitiendo identificar los triángulos que más contribuyen al resultado final del modelo. Adicionalmente, esta es la razón por la cual se requiere un número idéntico de caras triangulares en las mallas 3D: no se puede variar el tamaño de una capa convolucional, por lo que tiene que fijarse a un valor ya conocido de antemano.
 
 \section{Implementación}
 \label{section4:implementation}
@@ -265,15 +266,38 @@ El entorno remoto correspondió al clúster de servidores GPU de la Universidad 
 \subsection{Preprocesamiento de datos}
 Como se ha mencionado en la Sección \ref{section4:materials}, los datos obtenidos para este proyecto provienen de escaneos en 3D de piezas anatómicas reales. Las mallas generadas a través de estos procesos resultan en geometrías incompletas, degeneradas y con gran variabilidad de resolución. Estos factores impiden su uso directo por el \textit{framework} de ExMeshCNN.
 
-\subsubsection{Reparación de datos y estandarización}
-\label{section4:data_repair}
-El primer paso del preprocesamiento es la reparación de las mallas, esto implica:
-\begin{itemize}
-    \item Sellar los huecos en las mallas, para que las mismas sean \textit{watertight}.
-    \item Eliminar geometría desconectada de la componente principal.
-    \item Eliminar geometría degenerada.
-\end{itemize}
+Antes de llevar a cabo los procesos de reparación, remuestreo y reducción de resolución, se consideró necesario unificar la orientación de las muestras, dado que el conjunto de datos incluye tanto pubis izquierdas como derechas. Con el fin de mantener la consistencia geométrica en los datos, se desarrolló un script en Blender que aplica el modificador de espejo sobre las mallas 3D correspondientes a las pubis derechas. Este proceso refleja las mallas respecto al eje principal de simetría de la cara anatómica, transformándolas efectivamente en pubis izquierdas. De este modo, se garantiza que todas las muestras procesadas posean una orientación uniforme, realizado con el fin de eliminar posibles fuentes de ruido para el modelo.
 
+\subsubsection{Reparación y remuestreo de datos}
+\label{section4:data_repair}
+
+La reparación de las mallas tridimensionales implica tres pasos fundamentales: (1) sellado de los huecos para garantizar que sean estructuras \textit{watertight} (herméticas), (2) eliminación de geometría degenerada, como triángulos solapados, caras conectadas por un único vértice o aristas que se interceptan, y (3) supresión de geometría disconexa perteneciente a componentes menores, generada usualmente por errores en la captura mediante escáner 3D, y que no aporta información relevante.
+
+Para abordar este proceso, se emplearon de forma intensiva las funcionalidades de la API de Blender y de PyMeshLab, desarrollando una serie de scripts personalizados para automatizar la limpieza y normalización de las mallas.
+
+En primer lugar, se parte de la malla cruda obtenida del escaneo, denominada \code{raw}. Utilizando PyMeshLab, se aplican métodos predefinidos para eliminar componentes desconectadas, caras duplicadas y geometría \textit{non-manifold}. El resultado de esta etapa es una malla depurada, sin degeneraciones geométricas, denominada \code{raw_clean}.
+
+Sin embargo, esta malla aún puede contener huecos, por lo que no está lista para ser procesada por ExMeshCNN. El cierre de huecos en mallas 3D es una tarea compleja, pero puede abordarse de forma eficaz mediante una técnica alternativa: el remuestreo. Esta técnica genera una nueva topología manteniendo la forma superficial original de la malla. El proceso se basa en una aproximación iterativa mediante vóxeles, que reconstruye la superficie al tiempo que genera la conectividad necesaria para cerrar los huecos.
+
+Para ello, se empleó Blender, que dispone de un operador de remuestreo robusto. Se desarrolló un segundo script que toma como entrada la malla \code{raw_clean} y aplica el operador de remuestreo en modo \code{SHARP}, con una profundidad del árbol octal de 10 (para preservar la fidelidad geométrica) y una escala de 1. El resultado es una malla libre de huecos, aunque este proceso puede reintroducir geometría \textit{non-manifold}.
+
+Por lo tanto, en el mismo script se implementó un procedimiento iterativo para eliminar dicha geometría no válida. Este procedimiento incluye:
+
+\begin{enumerate}
+    \item Selección y eliminación de vértices \textit{non-manifold} duplicados.
+    \item Nueva selección de vértices \textit{non-manifold} y colapso de aristas entre los vértices afectados.
+    \item Nueva selección y eliminación directa de todos los vértices \textit{non-manifold}.
+\end{enumerate}
+Este ciclo entero se repite hasta que no se detectan más vértices \textit{non-manifold} al final de proceso. Se comprobó empíricamente que este procedimiento converge, generando finalmente mallas completamente selladas y con una topología coherente. A las mallas resultantes se les denomina \code{clean_remesh}.
 
 \subsubsection{Reducción de resolución}
 \label{section4:data_reduction}
+Una vez obtenidas las mallas \code{clean_remesh}, que presentan una geometría adecuada y sin defectos topológicos, persiste una variabilidad importante: el número de triángulos varía entre mallas. Para normalizar esta característica, se diseñaron dos procesos distintos que permiten obtener versiones reducidas y estandarizadas de las mallas, generando dos conjuntos de datos derivados a partir de cada una.
+
+En el primer proceso, se aplica una reducción global de resolución a la malla \code{clean_remesh} mediante colapso de aristas. Esta técnica, implementada en un script de Blender, permite reducir de forma progresiva el número de triángulos, preservando en la medida de lo posible la topología general y los detalles relevantes. El resultado son mallas con un número fijo de triángulos especificado por el usuario. Estas versiones se nombran como \code{clean_remesh_<x>K}, donde \code{<x>} representa la cantidad de triángulos en miles. Por ejemplo, una malla con 50,000 triángulos tendría el sufijo \code{clean_remesh_50K}.
+
+No obstante, esta reducción uniforme afecta por igual a todas las regiones de la malla, incluyendo zonas anatómicamente poco relevantes para el análisis forense, como la parte posterior del hueso. Para maximizar la preservación de detalles en las regiones de interés, se implementó un segundo proceso complementario. Este consiste en realizar un recorte anatómico antes de la reducción de resolución, eliminando aquellas partes que los expertos forenses no consideran durante el análisis.
+
+Este procedimiento, también automatizado mediante Blender, consiste en generar un cubo con las dimensiones de la malla y reducirlo proporcionalmente para definir una región de interés. A continuación, se aplica un operador booleano para recortar las partes externas no deseadas, lo cual es posible gracias a que todas las mallas están previamente alineadas en la misma orientación. Una vez realizado el recorte, se procede a aplicar la reducción de resolución por colapso de aristas. Las mallas obtenidas por este procedimiento se nombran como \code{clean_remesh_<x>K_cut}, indicando que son versiones recortadas y reducidas de las mallas originales.
+
+Este doble enfoque permite disponer tanto de versiones completas como de versiones enfocadas anatómicamente, facilitando comparativas experimentales entre ambas modalidades de entrada.

@@ -1,1 +1,97 @@
-\chapter{Implementación y Experimentos}
+\chapter{Experimentos}
+\section{Protocolo de validación experimental}
+Para el entrenamiento de los modelos se empleó la técnica de \textit{hold-out}, que consiste en dividir el conjunto de datos en dos subconjuntos principales: uno de entrenamiento y otro de test. A su vez, el conjunto de entrenamiento se subdivide para obtener un subconjunto adicional de validación. Durante el proceso de entrenamiento, el modelo es ajustado utilizando únicamente los datos del conjunto de entrenamiento, mientras que el conjunto de validación se utiliza para monitorizar el rendimiento del modelo en cada época, permitiendo detectar fenómenos como el sobreajuste y orientar procesos como el ajuste de hiperparámetros.
+
+Una vez completado el entrenamiento, el modelo final se evalúa utilizando el conjunto de test, que se ha mantenido completamente aislado durante todo el proceso de ajuste, proporcionando así una estimación objetiva del rendimiento general del modelo sobre datos no vistos.
+
+Como se ha descrito en la Sección \ref{section4:data_preparation} se utilizan tanto huesos izquierdos como derechos de los individuos. Dado que, desde el punto de vista anatómico, estos huesos presentan una alta similitud morfológica, realizar la partición del conjunto de datos a nivel de muestra podría derivar en una fuga de información (\textit{data leakage}). Para evitar este problema, la división del conjunto de datos se ha realizado a nivel de individuo: los huesos de un mismo sujeto se incluyen exclusivamente en uno de los subconjuntos (entrenamiento, validación o test) sin solapamiento entre ellos. De este modo, se garantiza que el modelo no memoriza las características particulares de un individuo, sino que generaliza adecuadamente aprendiendo patrones estructurales relevantes.
+
+Este esquema de partición se ilustra en la Figura ???.
+\section{Métricas}
+Dado que se trata de un problema de clasificación, se emplea la función de pérdida de entropía cruzada (\textit{cross-entropy loss}) para ajustar los pesos y sesgos de las neuronas del modelo, tal como se explicó en la Sección \ref{section:DL}. Esta función se define de la siguiente forma:
+
+\begin{equation}
+L_{CE} = -\sum_i^n t_i \log(p_i)
+\end{equation}
+
+Donde $n$ es el número de clases, $t_i$ es la etiqueta verdadera (1 si la clase es la correcta, 0 en caso contrario) y $p_i$ es la probabilidad predicha para la $i$-ésima clase. Esta función penaliza con mayor intensidad aquellas predicciones que se alejan de la clase verdadera, incentivando al modelo a asignar una alta probabilidad a la clase correcta. Cuando la predicción es certera, el valor de la función tiende a cero; en cambio, si el modelo asigna baja probabilidad a la clase correcta, la función tiende a valores grandes positivos.
+
+Adicionalmente, dado que el problema presenta un desbalance de clases, se han incorporado funciones de pérdida específicamente diseñadas para afrontar esta problemática. En particular, se han utilizado: la versión ponderada de la entropía cruzada (\textit{Weighted Cross Entropy}, WCE), la pérdida \textit{Focal} (FL) y la pérdida \textit{Class Balanced} (CB).
+
+\begin{align}
+    L_{WCE} &= -\sum_i^n \alpha_{i} t_i \log(p_i) \\
+    L_{FL} &= -\sum_i^n (1-p_i)^{\gamma} t_i \log(p_i) \\
+    L_{CB}(\textbf{p},y) &= \frac{1-\beta}{1-\beta^{n_{y}}} \mathcal{L}(\textbf{p},y)
+\end{align}
+
+En la WCE, el término $\alpha_i$ representa un peso específico para cada clase $i$, utilizado para reescalar la contribución de cada término de la pérdida. En este trabajo, se ha calculado $\alpha_i$ como el inverso de la frecuencia de la clase correspondiente, de modo que las clases menos representadas obtienen mayor peso, contrarrestando el sesgo del modelo hacia las clases mayoritarias.
+
+Por su parte, la pérdida Focal (FL) extiende este enfoque mediante la incorporación del término $(1 - p_i)^\gamma$, donde $\gamma$ es un parámetro ajustable denominado factor de enfoque. Esta formulación reduce el impacto de las muestras correctamente clasificadas, es decir, aquellas con alta probabilidad en la clase verdadera y amplifica el efecto de aquellas muestras más difíciles de clasificar. Al hacerlo, se logra que el modelo se concentre en los casos menos representados.
+
+La pérdida Class-Balanced (CB), en cambio, introduce una formulación más refinada del peso por clase, basada en el número efectivo de muestras. En lugar de utilizar directamente la frecuencia inversa de las clases, CB calcula un factor de corrección con el parámetro $\beta$ que refleja mejor la cantidad de información aportada por cada clase. Esta técnica puede aplicarse como un prefactor sobre diferentes funciones de pérdida $\mathcal{L}(\mathbf{p}, y)$, siendo compatible tanto con WCE como con FL, entre otras.
+
+Aunque estas funciones de pérdida son fundamentales para guiar el proceso de entrenamiento y seleccionar el mejor modelo, no ofrecen información directa sobre el rendimiento del clasificador en términos de aciertos y errores. Para ello, se emplea la métrica de \textit{accuracy}, que cuantifica la proporción de muestras clasificadas correctamente. Esta métrica se define como:
+
+\begin{equation}
+\text{Accuracy} = \frac{TP + TN}{TP + TN + FP + FN}
+\end{equation}
+
+donde $TP$ (verdaderos positivos) y $TN$ (verdaderos negativos) representan las predicciones correctas, mientras que $FP$ (falsos positivos) y $FN$ (falsos negativos) corresponden a errores de clasificación.
+
+A pesar de su carácter intuitivo y simplicidad, el \textit{accuracy} puede inducir a interpretaciones erróneas cuando se trabaja con conjuntos de datos desbalanceados, ya que no distingue entre los distintos tipos de errores y puede sobreestimar el rendimiento del modelo en clases mayoritarias.
+
+Por ello, la métrica que se utilizará como criterio principal para emitir un veredicto final sobre la calidad del aprendizaje es el valor F1, definido como:
+
+\begin{equation}
+    \text{F1} = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}
+    \end{equation}
+
+donde las métricas de \textit{precision} y \textit{recall}, en el contexto binario, se definen como:
+\begin{align}
+    \text{Precision} &= \frac{TP}{TP + FP} \\
+    \text{Recall} &= \frac{TP}{TP + FN}
+\end{align}
+
+La \textit{precision} indica qué proporción de las predicciones positivas realizadas por el modelo son correctas, mientras que \textit{recall} mide la proporción de muestras realmente positivas que fueron correctamente identificadas. Estas métricas permiten detectar posibles sesgos en el comportamiento del modelo, tales como una mayor propensión a cometer falsos positivos o falsos negativos.
+
+Dado que en este proyecto se busca una clasificación lo más equilibrada posible entre clases, se opta por utilizar la métrica F1, que representa un balance armónico entre \textit{precision} y \textit{recall}. En particular, se utiliza la media macro del F1, la cual considera por igual todas las clases, sin ponderarlas según su frecuencia. Este enfoque es especialmente adecuado en contextos con desbalance de clases, ya que asegura que cada clase contribuya equitativamente a la métrica. Su cálculo se basa en las versiones multiclase de \textit{precision} y \textit{recall}, definidas como:
+
+\begin{align}
+    \text{Precision}_{\text{Macro}} &= \frac{\text{Precision}_{\text{Clase A}}+\text{Precision}_{\text{Clase B}}+\dots+\text{Precision}_{\text{Clase N}}}{N} \\
+    \text{Recall}_{\text{Macro}} &= \frac{\text{Recall}_{\text{Clase A}}+\text{Recall}_{\text{Clase B}}+\dots+\text{Recall}_{\text{Clase N}}}{N}
+\end{align}
+
+Durante el proceso de ajuste de hiperparámetros y búsqueda automática de arquitectura (NAS), llevado a cabo mediante Optuna, como se detalla en la Sección ???, fue necesario definir una función objetivo (\textit{fitness}) que guiara la optimización. Dada la naturaleza desbalanceada del problema, se eligió la métrica F1 macro como base para esta función. El valor de fitness se define como:
+
+\begin{equation}
+    \text{Fitness} = \text{F1}_{\text{Validación}} \cdot (1 - | \text{F1}_{\text{Validación}} -  \text{F1}_{\text{Entrenamiento}}|)
+\end{equation}
+
+La intuición detrás de esta formulación es doble: por un lado, se favorecen modelos con un alto rendimiento en el conjunto de validación, y por otro, se penaliza la discrepancia entre el rendimiento en entrenamiento y validación, lo cual es indicativo de sobreajuste. De este modo, se priorizan aquellos modelos que generalizan bien y no simplemente memorizan los datos de entrenamiento.
+
+Por último, se incorpora una métrica adicional, la distancia de Hausdorff, que no evalúa directamente el rendimiento del modelo, sino la calidad geométrica de las mallas poligonales. Formalmente, esta distancia se define como:
+
+\begin{equation}
+d_H = \max\left\{\sup_{x\in X} \inf_{y \in Y} d(x,y), \sup_{y\in Y} \inf_{x \in X} d(x,y) \right\}
+\end{equation}
+
+donde $X$ e $Y$ son subconjuntos del espacio métrico, y $d(x,y)$ representa la distancia entre los puntos $x$ e $y$. En el contexto de las mallas 3D \cite{cignoni1998metro}, se evalúa esta métrica entre triángulos de dos mallas distintas, permitiendo cuantificar la similitud o diferencia entre sus superficies. Para su cálculo se ha empleado PyMeshLab, el cual proporciona tanto la distancia máxima como la distancia media entre las superficies comparadas, expresadas en unidades absolutas (metros, centímetros, etc.) o como un porcentaje relativo.
+
+\section{Experimentos preliminares}
+\subsection{Análisis de pérdida de calidad de mallas 3D al reducir el número de triángulos}
+\label{section5:experiment_edge_collapse}
+Como se ha explicado en la Sección \ref{section4:methods}, el método ExMeshCNN requiere que todas las mallas tengan un número idéntico de caras triangulares para poder procesarlas correctamente. Sin embargo, como se mencionó en la Sección \ref{section4:data_preparation}, las mallas del conjunto de datos original presentan un número variable de triángulos, y además, muchas de ellas contienen una cantidad excesiva de caras que supera las capacidades del hardware disponible.
+
+Por este motivo, es importante evaluar el impacto que tiene la reducción del número de triángulos sobre la calidad topológica de las mallas. En particular, se busca responder la siguiente pregunta: ¿en qué medida se ve afectada la topología de una malla al aplicar técnicas de simplificación por colapso de aristas?
+
+Para abordar esta cuestión, se diseñó un experimento en el que se toma una malla original y se generan versiones reducidas conservando distintas proporciones del número de triángulos originales (por ejemplo, 75\%, 50\%, 25\%, etc.). Posteriormente, estas versiones simplificadas se comparan con la malla original utilizando la distancia de Hausdorff, con el fin de cuantificar la desviación de la superficie resultante respecto de la original.
+
+\begin{figure}
+    
+\end{figure}
+
+
+\section{Experimentos con hueso entero}
+\section{Experimentos con hueso recortado}
+\section{Experimentos multietiqueta}
+\section{Interpretación con Grad-CAM}

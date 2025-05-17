@@ -77,21 +77,67 @@ d_H = \max\left\{\sup_{x\in X} \inf_{y \in Y} d(x,y), \sup_{y\in Y} \inf_{x \in 
 
 donde $X$ e $Y$ son subconjuntos del espacio métrico, y $d(x,y)$ representa la distancia entre los puntos $x$ e $y$. En el contexto de las mallas 3D \cite{cignoni1998metro}, se evalúa esta métrica entre triángulos de dos mallas distintas, permitiendo cuantificar la similitud o diferencia entre sus superficies. Para su cálculo se ha empleado PyMeshLab, el cual proporciona tanto la distancia máxima como la distancia media entre las superficies comparadas, expresadas en unidades absolutas (metros, centímetros, etc.) o como un porcentaje relativo.
 
-\section{Experimentos preliminares}
-\subsection{Análisis de pérdida de calidad de mallas 3D al reducir el número de triángulos}
+\section{Análisis de pérdida de calidad de mallas 3D al reducir el número de triángulos}
 \label{section5:experiment_edge_collapse}
 Como se ha explicado en la Sección \ref{section4:methods}, el método ExMeshCNN requiere que todas las mallas tengan un número idéntico de caras triangulares para poder procesarlas correctamente. Sin embargo, como se mencionó en la Sección \ref{section4:data_preparation}, las mallas del conjunto de datos original presentan un número variable de triángulos, y además, muchas de ellas contienen una cantidad excesiva de caras que supera las capacidades del hardware disponible.
 
 Por este motivo, es importante evaluar el impacto que tiene la reducción del número de triángulos sobre la calidad topológica de las mallas. En particular, se busca responder la siguiente pregunta: ¿en qué medida se ve afectada la topología de una malla al aplicar técnicas de simplificación por colapso de aristas?
 
-Para abordar esta cuestión, se diseñó un experimento en el que se toma una malla original y se generan versiones reducidas conservando distintas proporciones del número de triángulos originales (por ejemplo, 75\%, 50\%, 25\%, etc.). Posteriormente, estas versiones simplificadas se comparan con la malla original utilizando la distancia de Hausdorff, con el fin de cuantificar la desviación de la superficie resultante respecto de la original.
-
-\begin{figure}
-    
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{figures/4_experiments/mesh_redux_study.pdf}
+    \caption[Estudio de reducción de mallas]{Distancia Hausdorff normalizada entre las mallas originales y sus versiones reducidas a distintos porcentajes del número original de triángulos. En este experimento, la reducción se realizó en incrementos del 1\%.}
+    \label{fig5:redux_study}
 \end{figure}
 
+Para abordar esta cuestión, se diseñó un experimento en el que se toma una malla original y se generan versiones reducidas conservando distintas proporciones del número de triángulos originales (por ejemplo, 75\%, 50\%, 25\%, etc.). Posteriormente, estas versiones simplificadas se comparan con la malla original utilizando la distancia de Hausdorff, con el fin de cuantificar la desviación de la superficie resultante respecto de la original.
 
-\section{Experimentos con hueso entero}
-\section{Experimentos con hueso recortado}
+En la Figura \ref{fig5:redux_study} se presenta la evolución de la distancia Hausdorff normalizada al reducir progresivamente el número de triángulos de las mallas. Esta distancia ha sido normalizada respecto a la diagonal de la \textit{bounding box} de cada malla original, lo que permite comparar directamente las deformaciones relativas entre mallas de diferentes tamaños y complejidades geométricas. Además, esta normalización facilita el cálculo de promedios globales entre las distintas muestras evaluadas.
+
+Como puede observarse, hasta una reducción del 75\% del número de triángulos, el error promedio permanece esencialmente cercano a cero, lo que sugiere una alta fidelidad en la preservación de la geometría original. Durante este mismo rango, el error máximo crece lentamente, manteniéndose al rededor del 0.2\% de variación con respecto a la malla original. Es únicamente a partir de reducciones superiores al 90\% cuando se observa un incremento más pronunciado del error máximo, aunque el error promedio aún se mantiene relativamente controlado.
+
+Estos resultados apuntan a que es posible aplicar reducciones agresivas en la cantidad de triángulos sin comprometer significativamente la calidad topológica de las mallas. En consecuencia, se valida la viabilidad de utilizar versiones simplificadas de las mallas para el entrenamiento por medio de ExMeshCNN.
+
+\section{Experimentos con etiqueta única}
+Una vez validado que es factible utilizar versiones reducidas de las mallas sin pérdida significativa de información, y habiendo preparado los datos para su uso con el modelo ExMeshCNN, tal como se describe en la Sección \ref{section4:data_preparation}, se procedió a diseñar la estrategia para la generación automática de arquitecturas, explicada en profundidad en la Sección \ref{section4:architecture_search}.
+
+En esta fase, se llevaron a cabo los denominados experimentos de etiqueta única, donde se entrena un modelo independiente para cada una de las características de Todd, sin considerar la influencia de las demás características.
+
+Para cada tipo de hueso, se realizaron 6 ejecuciones distintas resultantes de las combinaciones de los siguientes parámetros:
+
+\begin{itemize}
+\item \textbf{Resolución de la malla}: 100,000; 50,000 y 25,000 triángulos
+\item \textbf{Región del hueso}: Malla completa o malla recortada
+\end{itemize}
+
+Cada ejecución implicó la realización de 200 entrenamientos utilizando Optuna para la búsqueda de arquitectura neuronal y optimización de hiperparámetros, con el fin de obtener el modelo más adecuado para predecir cada característica de forma individual.
+
+Dado que se tienen 9 características de Todd, y para cada una se ejecutaron 6 combinaciones con 200 entrenamientos, el número total de entrenamientos realizados asciende a $9\times6\times200=10,800$ entrenamientos totales.
+
+Esto equivale a $1,800$ entrenamientos por característica, lo que refleja el alto grado de exploración llevado a cabo para asegurar un modelo óptimo en cada caso.
+
+
+
 \section{Experimentos multietiqueta}
+
+\subsection{AF}
+\subsection{BN}
+\subsection{DM}
+\subsection{DP}
+\subsection{IP}
+\subsection{LSE}
+\subsection{USE}
+\subsection{VB}
+\subsection{VM}
+
 \section{Interpretación con Grad-CAM}
+
+\subsection{AF}
+\subsection{BN}
+\subsection{DM}
+\subsection{DP}
+\subsection{IP}
+\subsection{LSE}
+\subsection{USE}
+\subsection{VB}
+\subsection{VM}

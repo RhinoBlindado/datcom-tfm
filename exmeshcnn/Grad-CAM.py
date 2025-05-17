@@ -96,6 +96,7 @@ def grad_cam_inference(dataloader, split, tag_data, model, mesh_folder, out_fold
             os.makedirs(act_mesh_folder)
             
         om.write_mesh(os.path.join(act_mesh_folder, f"{batch[4][0]}_{act_tag}.obj"), mesh, face_color=True)
+        del mesh
         pbar.update(1)
 
     pbar.close()
@@ -106,17 +107,24 @@ def grad_cam_inference(dataloader, split, tag_data, model, mesh_folder, out_fold
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--dataset")
+# Data input
+parser.add_argument("--dataset", type=str, help="Path to the Dataset")
 parser.add_argument("--npy-name", type=str, help="Name of the NPY folder to be used. Must be inside the dataset folder.")
-parser.add_argument("--obj-data")
-
-parser.add_argument("--train-val-test", type=str, help="")
+parser.add_argument("--obj-data", type=str, help="Path to the OBJ folder holding the original NPY data.")
 parser.add_argument("--tag-yaml", type=str, default="./src/todd_characteristics.yaml", help="YAML file containing the number of categories per characteristic and their names. Default is located at '/src/todd_characteristics.yaml'")
 parser.add_argument("-t", "--tags", type=str, required=True, nargs="+") # choices=["af", "ip", "use", "bn", "lse", "dm", "dp", "vb", "vm", "all"]
-parser.add_argument("--model")
-parser.add_argument("--model-struct")
-parser.add_argument("--model-weights")
 
+# Experiment selection
+parser.add_argument("--exp-path", type=str, help="Path to the experiment path")
+parser.add_argument("--trial", type=int, default=None, help="If using Optuna Trials, the number of the trial to use.")
+
+# Model selection
+parser.add_argument("--model", type=str, help="Type of model to use.")
+parser.add_argument("--model-struct", type=str, default="params.yaml")
+parser.add_argument("--model-weights", type=str, default="best_mean_model_state_dict.pth")
+
+# Data
+parser.add_argument("--override-splits", type=str, default=None)
 parser.add_argument("--workers", type=int, default=4)
 
 # Output parameters
@@ -167,9 +175,20 @@ if "all" in args.tags:
 else:
     selected_tags = list(set(args.tags))
 
-act_training_set = pd.read_csv(os.path.join(args.train_val_test, "train.csv"))
-act_validation_set = pd.read_csv(os.path.join(args.train_val_test, "validation.csv"))
-act_test_set = pd.read_csv(os.path.join(args.train_val_test, "test.csv"))
+
+train_path = os.path.join(args.exp_path, "train.csv")
+val_path = os.path.join(args.exp_path, "validation.csv")
+test_path = os.path.join(args.exp_path, "test.csv")
+
+if args.override_splits is not None:
+
+    train_path = os.path.join(args.override_splits, "train.csv")
+    val_path = os.path.join(args.override_splits, "validation.csv")
+    test_path = os.path.join(args.override_splits, "test.csv")
+
+act_training_set = pd.read_csv(train_path)
+act_validation_set = pd.read_csv(val_path)
+act_test_set = pd.read_csv(test_path)
 
 y_train = pd.DataFrame(act_training_set, columns=selected_tags)
 y_val = pd.DataFrame(act_validation_set, columns=selected_tags)
@@ -188,11 +207,20 @@ os.makedirs(out_mesh_val)
 out_mesh_test = os.path.join(out_folder, "test")
 os.makedirs(out_mesh_test)
 
+model_struct_path = args.model_struct
+
+if args.trial is not None:
+    model_struct_path = os.path.join(args.exp_path, "trials", f"trial_{args.trial}", args.model_struct)
+
+model_weights_path = args.model_weights
+
+if args.trial is not None:
+    model_weights_path = os.path.join(args.exp_path, "trials", f"trial_{args.trial}", args.model_weights)
 
 # Load the given model.
 try:
     model_module = importlib.import_module(f"models.{args.model}")
-    with open(args.model_struct, "r", encoding="utf-8") as f:
+    with open(model_struct_path, "r", encoding="utf-8") as f:
         try:
             model_struct =  yaml.safe_load(f)
         except yaml.YAMLError as exc:
@@ -218,12 +246,12 @@ for i, char in enumerate(selected_tags):
     model = model_module.get_model(tag_data, params=model_struct, gradcam=True)
     model = model.to(device)
 
-    model.load_state_dict(torch.load(args.model_weights), strict=False)
+    model.load_state_dict(torch.load(model_weights_path), strict=False)
     model.eval()
 
-    train_loader = torch.utils.data.DataLoader(PSDataset(X_train, y_train, args.dataset, tag_data), batch_size=1, shuffle=False, num_workers=args.workers)
-    val_loader = torch.utils.data.DataLoader(PSDataset(X_val, y_val, args.dataset, tag_data), batch_size=1, shuffle=False, num_workers=args.workers)
-    test_loader = torch.utils.data.DataLoader(PSDataset(X_test, y_test, args.dataset, tag_data), batch_size=1, shuffle=False, num_workers=args.workers)
+    train_loader = torch.utils.data.DataLoader(PSDataset(X_train, y_train, args.dataset, tag_data, npy_name=args.npy_name), batch_size=1, shuffle=False, num_workers=args.workers)
+    val_loader = torch.utils.data.DataLoader(PSDataset(X_val, y_val, args.dataset, tag_data, npy_name=args.npy_name), batch_size=1, shuffle=False, num_workers=args.workers)
+    test_loader = torch.utils.data.DataLoader(PSDataset(X_test, y_test, args.dataset, tag_data, npy_name=args.npy_name), batch_size=1, shuffle=False, num_workers=args.workers)
     
     print(f"--------- CHAR: {char} ({i+1} / {len(selected_tags)}) ")
 

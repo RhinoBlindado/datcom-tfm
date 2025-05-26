@@ -4,6 +4,28 @@
 \label{section4:materials}
 Para la realización de este TFM se dispone de una colección de 497 modelos 3D de la sínfisis del pubis, correspondientes tanto al lado izquierdo como derecho, en formato de malla OBJ. Estos modelos fueron escaneados por el personal del Laboratorio de Antropología Física del Departamento de Medicina Legal, Toxicología y Antropología Física de la Universidad de Granada. Además de la digitalización tridimensional, el equipo del laboratorio examinó cuidadosamente cada una de las muestras y etiquetó manualmente los atributos correspondientes a las características morfológicas observables en la superficie de la sínfisis del pubis así como la edad real de fallecimiento de los individuos, datos que también han sido provistos dentro de un fichero de Microsoft Excel.
 
+A partir de este punto, se utilizarán las abreviaciones en inglés de las características de Todd con el fin de facilitar legibilidad del texto. La correspondencia entre las abreviaciones y su nombre en castellano puede consultarse en la Tabla \ref{table4:chars_short_names}.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|c|c|c|}
+    \hline
+    \rowcolor[HTML]{D33333} 
+    {\color[HTML]{FFFFFF} Nombre Castellano} & {\color[HTML]{FFFFFF} Nombre Inglés} & {\color[HTML]{FFFFFF} Abreviación} \\ \hline
+    Crestas y Surcos & \textit{Auricular Face} & \textbf{AF} \\ \hline
+    Porosidad Irregular & \textit{Irregular Porosity} & \textbf{IP} \\ \hline
+    Borde Superior & \textit{Upper Symphysial Extremity} & \textbf{USE} \\ \hline
+    Nódulo Óseo & \textit{Bony Nodule} & \textbf{BN} \\ \hline
+    Borde Inferior & \textit{Lower Symphysial Extremity} & \textbf{LSE} \\ \hline
+    Borde Dorsal & \textit{Dorsal Margin} & \textbf{DM} \\ \hline
+    Plataforma Dorsal & \textit{Dorsal Plateau} & \textbf{DP} \\ \hline
+    Bisel Ventral & \textit{Ventral Bevel} & \textbf{VB} \\ \hline
+    Borde Ventral & \textit{Ventral Margin} & \textbf{VM} \\ \hline
+    \end{tabular}
+    \caption{Correpondencia entre nombres de las características de Todd en castellano e inglés junto con sus abreviación.}
+    \label{table4:chars_short_names}
+\end{table}
+
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_age_distr.pdf}
@@ -13,37 +35,38 @@ Para la realización de este TFM se dispone de una colección de 497 modelos 3D 
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_t_phase_distr.pdf}
-    \caption[Distribución de los datos por cada rango de edad]{Distribución de los datos por cada rango de edad del método de Todd. \textbf{1}: 18-19 años, \textbf{2}: 20-21 años, \textbf{3}: 22-24 años, \textbf{4}: 25-26 años, \textbf{5}: 27-30 años, \textbf{6}: 30-35 años, \textbf{7}: 35-39 años, \textbf{8}: 39-44 años, \textbf{9}: 45-50 años, \textbf{10}: 50+ años.}
+    \caption[Distribución de los datos por cada rango de edad]{Distribución de los datos por cada rango de edad del método de Todd. Leyenda: \textbf{1}: 18-19 años, \textbf{2}: 20-21 años, \textbf{3}: 22-24 años, \textbf{4}: 25-26 años, \textbf{5}: 27-30 años, \textbf{6}: 30-35 años, \textbf{7}: 35-39 años, \textbf{8}: 39-44 años, \textbf{9}: 45-50 años, \textbf{10}: 50+ años.}
     \label{fig4:todd_phase}
 \end{figure}
 
 \subsection{Análisis Exploratorio de Datos}
+\label{section4:data_eda}
 Realizando un análisis exploratorio de los datos (\textit{Exploratory Data Analisys}, EDA), se observa que la muestra está compuesta por individuos de entre 18 y 60 años, como se muestra en la Figura \ref{fig4:age}. Además, estos individuos han sido clasificados dentro de las 10 fases del método de Todd, tal como se aprecia en la Figura \ref{fig4:todd_phase}.
 
 De ambos gráficos se aprecia que las edades más representadas corresponden a individuos de mayor edad, lo cual es coherente considerando el origen de los datos. Sin embargo, este patrón también evidencia un desbalance inherente en la muestra, un fenómeno esperado cuando se trabaja con datos reales.
 
 \subsubsection{Análisis Univariable}
-Continuando con el EDA enfocado en las nueve características del método de Todd, se observa un claro desbalance en la distribución de clases, como se muestra en las gráficas correspondientes en la Figura \ref{fig4:todd_chars}. Las clases más representadas son coherentes con las manifestaciones morfológicas que el hueso de la sínfisis del pubis presenta a edades más avanzadas.
+Continuando con el EDA enfocado en las nueve características del método de Todd, se observa un claro desbalance en la distribución de atributos, como se muestra en las gráficas correspondientes en la Figura \ref{fig4:todd_chars}. Los atributos más representados son coherentes con las manifestaciones morfológicas que el hueso de la sínfisis del pubis presenta a edades más avanzadas.
 
-Desde la perspectiva del balance de datos, las características de Borde Dorsal (Subfigura \ref{fig4:todd_chars__use}), Nódulo Óseo (Subfigura \ref{fig4:todd_chars__bn}), Plataforma Dorsal (Subfigura \ref{fig4:todd_chars__dp}) y Borde Inferior (Subfigura \ref{fig4:todd_chars__lse}) presentan un desbalance particularmente acentuado, con aproximadamente 95\%, 91\%, 90\% y 90\% de las muestras concentradas en una sola clase, respectivamente. Este fuerte desbalance sugiere que estas características podrían tener un rendimiento limitado al ser utilizadas para el entrenamiento de modelos de DL.
+Desde la perspectiva del balance de datos, las características de USE (Subfigura \ref{fig4:todd_chars__use}), BN (Subfigura \ref{fig4:todd_chars__bn}),DP (Subfigura \ref{fig4:todd_chars__dp}) y LSE (Subfigura \ref{fig4:todd_chars__lse}) presentan un desbalance particularmente acentuado, con aproximadamente 95\%, 91\%, 90\% y 90\% de las muestras concentradas en un solo atributo, respectivamente. Este fuerte desbalance sugiere que estas características podrían tener un rendimiento limitado al ser utilizadas para el entrenamiento de modelos de DL.
 
 \begin{figure}[p]
     \centering
     \begin{subfigure}{\textwidth}
         \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_af_distr.pdf}
-        \caption{Crestas y Surcos (\textit{Auricular Face}, AF)}
+        \caption{\textbf{AF}. Leyenda: \textbf{0}: Porosidad Regular, \textbf{1}: Muy Definidas, \textbf{2}: Poco Profundas, \textbf{3}: Restos de Surcos, \textbf{4}: No hay surcos.}
         \label{fig4:todd_chars__af}
     \end{subfigure}
 
     \begin{subfigure}{\textwidth}
         \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_bn_distr.pdf}
-        \caption{Nódulo Óseo (\textit{Bony Nodule}, BN)}
+        \caption{\textbf{BN}. Leyenda: \textbf{0}: Ausente, \textbf{1}: Presente.}
         \label{fig4:todd_chars__bn}
     \end{subfigure}
     
     \begin{subfigure}{\textwidth}
         \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_dm_distr.pdf}
-        \caption{Borde Dorsal (\textit{Dorsal Margin}, DM)}
+        \caption{\textbf{DM}. Leyenda: \textbf{0}: No Definido, \textbf{1}: En Formación, \textbf{2}: Definido.}
         \label{fig4:todd_chars__dm}
     \end{subfigure}
     \phantomcaption
@@ -54,19 +77,19 @@ Desde la perspectiva del balance de datos, las características de Borde Dorsal 
 
     \begin{subfigure}{\textwidth}
         \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_dp_distr.pdf}
-        \caption{Plataforma Dorsal (\textit{Dorsal Plateau}, DP)}
+        \caption{\textbf{DP}. Leyenda: \textbf{0}: Ausente, \textbf{1}: En Formación, \textbf{2}: Presente.}
         \label{fig4:todd_chars__dp}
     \end{subfigure}
 
     \begin{subfigure}{\textwidth}
         \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_ip_distr.pdf}
-        \caption{Porosidad Irregular (\textit{Irregular Porosity}, IP)}
+        \caption{\textbf{IP}. Leyenda: \textbf{0}: No,\textbf{1}: Mediana, \textbf{2}: Si.}
         \label{fig4:todd_chars__ip}
     \end{subfigure}
 
     \begin{subfigure}{\textwidth}
         \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_lse_distr.pdf}
-        \caption{Borde Inferior (\textit{Lower Symphysial Extremity}, LSE)}
+        \caption{\textbf{LSE}. Leyenda: \textbf{0}: No Definido, \textbf{1}: Definido.}
         \label{fig4:todd_chars__lse}
     \end{subfigure}
 
@@ -78,26 +101,26 @@ Desde la perspectiva del balance de datos, las características de Borde Dorsal 
 
     \begin{subfigure}{\textwidth}
         \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_use_distr.pdf}
-        \caption{Borde Dorsal (\textit{Upper Symphysial Extremity}, USE)}
+        \caption{\textbf{LSE}. Leyenda: \textbf{0}: No Definido, \textbf{1}: Definido.}
         \label{fig4:todd_chars__use}
     \end{subfigure}
 
     \begin{subfigure}{\textwidth}
         \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_vb_distr.pdf}
-        \caption{Bisel Ventral (\textit{Ventral Bevel}, VB)}
+        \caption{\textbf{VB}. Leyenda: \textbf{0}: Ausente, \textbf{1}: En Formación, \textbf{2}: Presente.}
         \label{fig4:todd_chars__vb}
     \end{subfigure}
 
     \begin{subfigure}{\textwidth}
         \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_vm_distr.pdf}
-        \caption{Borde Ventral (\textit{Ventral Margin}, VM)}
+        \caption{\textbf{VM}. Leyenda: \textbf{0}: Ausente, \textbf{1}: En Formación, \textbf{2}: Formado, Sin Excrecencias, \textbf{3}: Formado, Pocas Excrecencias, \textbf{4}: Formado, Muchas Excrecencias.}
         \label{fig4:todd_chars__vm}
     \end{subfigure}
     \caption[Distribución de las características de Todd]{Distribución de las características de Todd en los datos}
 
 \end{figure}
 
-El resto de las características muestra un desbalance menos extremo, con entre el 60\% y el 70\% de los datos agrupados en una única clase. La característica con mayor equilibrio en su distribución es el Bisel Ventral (Subfigura \ref{fig4:todd_chars__vb}), en la que los datos se reparten aproximadamente en un 33\% por clase, dado que esta posee tres clases distintas. Se espera que esta característica, junto con aquellas que presenten menos desbalance, proveerán mejores resultados al ser entrenadas por la red.
+El resto de las características muestra un desbalance menos extremo, con entre el 60\% y el 70\% de los datos agrupados en una único atributo. La característica con mayor equilibrio en su distribución es el VB (Subfigura \ref{fig4:todd_chars__vb}), en la que los datos se reparten aproximadamente en un 33\% por atributo, dado que esta posee tres atributos distintos. Se espera que esta característica, junto con aquellas que presenten menos desbalance, proveerán mejores resultados al ser entrenadas por la red.
 
 \subsubsection{Correlaciones}
 
@@ -151,7 +174,7 @@ Del análisis se concluye que las características LSE, AF y VM son, en general,
 \label{section4:data_preparation}
 De la muestra original de 497 individuos, es decir, un total de 986 huesos correspondientes a las sínfisis del pubis izquierda y derecha, fue necesario eliminar 16 muestras por diversos motivos: presencia de deformidades anatómicas, ausencia del archivo OBJ asociado o falta de correspondencia entre el modelo 3D y los datos etiquetados provistos. Se opta por utilizar las 970 muestras restantes en su totalidad, ya que en problemas de DL es fundamental contar con un volumen de datos considerable, aunque estos estén altamente desbalanceados, pues se pueden utilizar diversas técnicas para mitigar el efecto que produce esto al rendimiento de un modelo. 
 
-Cabe destacar que, en el caso de la característica Plataforma Dorsal (Subfigura \ref{fig4:todd_chars__dp}), la clase 3 (\say{Presente}) cuenta con solo una muestra, lo cual impide que el modelo pueda aprender representaciones significativas para dicha clase. Por tanto, esta muestra será eliminada durante el entrenamiento de modelos de DL que hagan uso de dicha característica. Además, la Clase 2 originalmente denominada \say{En Formación} será renombrada a \say{Presente}, con el objetivo de mantener la consistencia semántica.
+Cabe destacar que, en el caso de la característica DP (Subfigura \ref{fig4:todd_chars__dp}), el atributo 3 (\say{Presente}) cuenta con solo una muestra, lo cual impide que el modelo pueda aprender representaciones significativas para dicho atributo. Por tanto, esta muestra será eliminada durante el entrenamiento de modelos de DL que hagan uso de dicha característica. Además, el atributo 2 originalmente denominado \say{En Formación} será renombrado a \say{Presente}, con el objetivo de mantener la consistencia semántica.
 
 Las 970 mallas presentan una resolución media de 994,601 triángulos, con un mínimo de 329,438 y un máximo de 1,688,348 triángulos. Para poder aplicar el método ExMeshCNN, descrito en la Sección \ref{section4:methods}, es necesario que todas las mallas tengan una resolución uniforme. Una opción inicial considerada fue remuestrear las mallas al número medio de triángulos; sin embargo, este tamaño resulta inviable computacionalmente con el hardware disponible.
 
@@ -301,3 +324,38 @@ No obstante, esta reducción uniforme afecta por igual a todas las regiones de l
 Este procedimiento, también automatizado mediante Blender, consiste en generar un cubo con las dimensiones de la malla y reducirlo proporcionalmente para definir una región de interés. A continuación, se aplica un operador booleano para recortar las partes externas no deseadas, lo cual es posible gracias a que todas las mallas están previamente alineadas en la misma orientación. Una vez realizado el recorte, se procede a aplicar la reducción de resolución por colapso de aristas. Las mallas obtenidas por este procedimiento se nombran como \code{clean_remesh_<x>K_cut}, indicando que son versiones recortadas y reducidas de las mallas originales.
 
 Este doble enfoque permite disponer tanto de versiones completas como de versiones enfocadas anatómicamente, facilitando comparativas experimentales entre ambas modalidades de entrada.
+
+\section{Búsqueda de Arquitectura Neuronal}
+\label{section4:nas}
+El procesamiento de mallas 3D mediante redes neuronales constituye un campo aún en etapa experimental y en rápida evolución. Debido a su novedad, no existe un consenso establecido sobre cómo tratar estos datos de manera óptima. Como resultado, no se dispone de modelos preentrenados sobre mallas 3D con las características específicas requeridas en este trabajo, particularmente en el contexto de ExMeshCNN y con la resolución necesaria para abordar el presente problema.
+
+Ante esta situación, se recurre a técnicas NAS, descritas con mayor profundidad en la Sección \ref{section2:nas}, con el fin de determinar tanto la estructura como los hiperparámetros óptimos de los modelos a emplear para el aprendizaje de las distintas características del método de Todd.
+
+De entre las diversas herramientas disponibles para realizar NAS, se ha seleccionado Optuna \cite{optuna_2019}, una biblioteca basada en optimización bayesiana, que ha demostrado resultados de alto rendimiento en tareas de generación automática de arquitecturas de red y ajuste de hiperparámetros \cite{pizurica_generic_2024}.
+
+Los hiperparámetros considerados, junto con sus respectivos espacios de búsqueda, se detallan en la Tabla \ref{fig4:optuna_params}.
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \rowcolor[HTML]{D33333} 
+        {\color[HTML]{FFFFFF} Parámetro} & {\color[HTML]{FFFFFF} Valores posibles} & {\color[HTML]{FFFFFF} Tipo} \\ \hline
+        Tasa de Aprendizaje & $\left[1\times 10^{-5}, 1\times10^{-1}\right]$ & Rango \\ \hline
+        Optimizador & \begin{tabular}[c]{@{}c@{}}Adam, AdamW, \\ Radam, SGD\end{tabular} & Categórica \\ \hline
+        Inicialización de Pesos & \begin{tabular}[c]{@{}c@{}}Sin Inicializar, Normal, \\ Xavier, Kaiming, \\ Ortogonal\end{tabular} & Categórica \\ \hline
+        Escalado de Pesos & $\left[1, 10\right]$ & Rango \\ \hline
+        Función de Pérdida & CE, WCE, FL, CB & Categórica \\ \hline
+        Tipo de CBL\textsuperscript{\textdagger} & Softmax, Sigmoide, FL & Categórica \\ \hline
+        $\beta$ de CBL\textsuperscript{\textdagger} & $\left[1, 10\right]$ & Rango \\ \hline
+        \begin{tabular}[c]{@{}l@{}}Descriptor geodésico,\\ densidad de canal intermedio\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
+        \begin{tabular}[c]{@{}l@{}}Descriptor geodésico,\\ densidad de salida\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
+        \begin{tabular}[c]{@{}l@{}}Descriptor geométrico,\\ densidad de canal intermedio\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
+        \begin{tabular}[c]{@{}l@{}}Descriptor geométrico,\\ densidad de salida\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
+        Nº de capas convolucionales & $\left[2, 6\right]$ & Rango \\ \hline
+        \begin{tabular}[c]{@{}l@{}}Densidad capa \\ convolucional $i$-ésima\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
+        Nº de capas densas & $\left[1, 5\right]$ & Rango \\ \hline
+        Densidad capa densa $i$-ésima & $\left[8, 16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
+    \end{tabular}
+    \caption[Hiperparámetros utilizados por Optuna]{Hiperparámetros utilizados en el entrenamiento para la optimización de hiperparámetros y NAS de la red mediante Optuna. \textbf{\textdagger}: Solo se aplica si la función de pérdida es CB.}
+    \label{fig4:optuna_params}
+\end{table}

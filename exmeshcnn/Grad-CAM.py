@@ -80,7 +80,7 @@ def grad_cam_inference(dataloader, split, tag_data, model, mesh_folder, out_fold
         heatmap /= torch.max(heatmap)
         heatmap = heatmap.detach().cpu()
 
-        ccmp = plt.get_cmap('Reds')
+        ccmp = plt.get_cmap('inferno')
         cNorm  = colors.Normalize(vmin=0, vmax=1)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=ccmp)
 
@@ -124,7 +124,8 @@ parser.add_argument("--model-struct", type=str, default="params.yaml")
 parser.add_argument("--model-weights", type=str, default="best_mean_model_state_dict.pth")
 
 # Data
-parser.add_argument("--override-splits", type=str, default=None)
+parser.add_argument("--override-split-csv", type=str, default=None)
+parser.add_argument("--override-split-processing", default="all", choices=["train", "validation", "test", "all"], nargs="+")
 parser.add_argument("--workers", type=int, default=4)
 
 # Output parameters
@@ -180,11 +181,11 @@ train_path = os.path.join(args.exp_path, "train.csv")
 val_path = os.path.join(args.exp_path, "validation.csv")
 test_path = os.path.join(args.exp_path, "test.csv")
 
-if args.override_splits is not None:
+if args.override_split_csv is not None:
 
-    train_path = os.path.join(args.override_splits, "train.csv")
-    val_path = os.path.join(args.override_splits, "validation.csv")
-    test_path = os.path.join(args.override_splits, "test.csv")
+    train_path = os.path.join(args.override_split_csv, "train.csv")
+    val_path = os.path.join(args.override_split_csv, "validation.csv")
+    test_path = os.path.join(args.override_split_csv, "test.csv")
 
 act_training_set = pd.read_csv(train_path)
 act_validation_set = pd.read_csv(val_path)
@@ -229,6 +230,13 @@ except Exception:
     print(f"Model {args.model} not found.")
     sys.exit(-1)
 
+splits_to_process = []
+if args.override_split_processing == "all":
+    splits_to_process = ["train", "val", "test"]
+else:
+    splits_to_process = args.override_split_processing
+
+
 # For each selected tag...
 tag_data = {}
 for i, char in enumerate(selected_tags):
@@ -255,20 +263,23 @@ for i, char in enumerate(selected_tags):
     
     print(f"--------- CHAR: {char} ({i+1} / {len(selected_tags)}) ")
 
-    # Get heatmaps of training meshes
-    print("------- TRAINING SPLIT ")
-    grad_cam_inference(train_loader, "train", tag_data, model, args.obj_data, out_mesh_train)
-    save_metadata("train", out_mesh_train, char, tag_data)
+    if ("train" in splits_to_process):
+        # Get heatmaps of training meshes
+        print("------- TRAINING SPLIT ")
+        grad_cam_inference(train_loader, "train", tag_data, model, args.obj_data, out_mesh_train)
+        save_metadata("train", out_mesh_train, char, tag_data)
 
-    # Get heatmaps of validation meshes
-    print("------- VALIDATION SPLIT")
-    grad_cam_inference(val_loader, "val", tag_data, model, args.obj_data, out_mesh_val)
-    save_metadata("val", out_mesh_val, char, tag_data)
+    if ("val" in splits_to_process):
+        # Get heatmaps of validation meshes
+        print("------- VALIDATION SPLIT")
+        grad_cam_inference(val_loader, "val", tag_data, model, args.obj_data, out_mesh_val)
+        save_metadata("val", out_mesh_val, char, tag_data)
 
-    # Get heatmaps of test meshes
-    print("------- TEST SPLIT")
-    grad_cam_inference(test_loader, "test", tag_data, model, args.obj_data, out_mesh_test)
-    save_metadata("test", out_mesh_test, char, tag_data)
+    if ("test" in splits_to_process):
+        # Get heatmaps of test meshes
+        print("------- TEST SPLIT")
+        grad_cam_inference(test_loader, "test", tag_data, model, args.obj_data, out_mesh_test)
+        save_metadata("test", out_mesh_test, char, tag_data)
 
     del model
     torch.cuda.empty_cache()

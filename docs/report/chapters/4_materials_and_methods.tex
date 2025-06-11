@@ -22,7 +22,7 @@ A partir de este punto, se utilizarán las abreviaciones en inglés de las carac
     Bisel Ventral & \textit{Ventral Bevel} & \textbf{VB} \\ \hline
     Borde Ventral & \textit{Ventral Margin} & \textbf{VM} \\ \hline
     \end{tabular}
-    \caption{Correpondencia entre nombres de las características de Todd en castellano e inglés junto con sus abreviación.}
+    \caption{Correpondencia entre nombres de las características de Todd en castellano e inglés junto con su abreviación.}
     \label{table4:chars_short_names}
 \end{table}
 
@@ -48,7 +48,7 @@ De ambos gráficos se aprecia que las edades más representadas corresponden a i
 \subsubsection{Análisis Univariable}
 Continuando con el EDA enfocado en las nueve características del método de Todd, se observa un claro desbalance en la distribución de atributos, como se muestra en las gráficas correspondientes en la Figura \ref{fig4:todd_chars}. Los atributos más representados son coherentes con las manifestaciones morfológicas que el hueso de la sínfisis del pubis presenta a edades más avanzadas.
 
-Desde la perspectiva del balance de datos, las características de USE (Subfigura \ref{fig4:todd_chars__use}), BN (Subfigura \ref{fig4:todd_chars__bn}),DP (Subfigura \ref{fig4:todd_chars__dp}) y LSE (Subfigura \ref{fig4:todd_chars__lse}) presentan un desbalance particularmente acentuado, con aproximadamente 95\%, 91\%, 90\% y 90\% de las muestras concentradas en un solo atributo, respectivamente. Este fuerte desbalance sugiere que estas características podrían tener un rendimiento limitado al ser utilizadas para el entrenamiento de modelos de DL.
+Desde la perspectiva del balance de datos, las características de USE (Subfigura \ref{fig4:todd_chars__use}), BN (Subfigura \ref{fig4:todd_chars__bn}), DP (Subfigura \ref{fig4:todd_chars__dp}) y LSE (Subfigura \ref{fig4:todd_chars__lse}) presentan un desbalance particularmente acentuado, con aproximadamente 95\%, 91\%, 90\% y 90\% de las muestras concentradas en un solo atributo, respectivamente. Este fuerte desbalance sugiere que estas características podrían tener un rendimiento limitado al ser utilizadas para el entrenamiento de modelos de DL.
 
 \begin{figure}[p]
     \centering
@@ -101,7 +101,7 @@ Desde la perspectiva del balance de datos, las características de USE (Subfigur
 
     \begin{subfigure}{\textwidth}
         \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_use_distr.pdf}
-        \caption{\textbf{LSE}. Leyenda: \textbf{0}: No Definido, \textbf{1}: Definido.}
+        \caption{\textbf{USE}. Leyenda: \textbf{0}: No Definido, \textbf{1}: Definido.}
         \label{fig4:todd_chars__use}
     \end{subfigure}
 
@@ -327,11 +327,11 @@ Este doble enfoque permite disponer tanto de versiones completas como de version
 
 \section{Búsqueda de Arquitectura Neuronal}
 \label{section4:nas}
-El procesamiento de mallas 3D mediante redes neuronales constituye un campo aún en etapa experimental y en rápida evolución. Debido a su novedad, no existe un consenso establecido sobre cómo tratar estos datos de manera óptima. Como resultado, no se dispone de modelos preentrenados sobre mallas 3D con las características específicas requeridas en este trabajo, particularmente en el contexto de ExMeshCNN y con la resolución necesaria para abordar el presente problema.
+El procesamiento de mallas 3D mediante DL, como se ha comentado, constituye un campo aún en etapa experimental y en rápida evolución. Debido a su novedad, no existe un consenso establecido sobre cómo tratar estos datos de manera óptima. Como resultado, no se dispone de modelos preentrenados sobre mallas 3D con las características específicas requeridas en este trabajo, particularmente en el contexto de ExMeshCNN y con la resolución necesaria para abordar el presente problema.
 
 Ante esta situación, se recurre a técnicas NAS, descritas con mayor profundidad en la Sección \ref{section2:nas}, con el fin de determinar tanto la estructura como los hiperparámetros óptimos de los modelos a emplear para el aprendizaje de las distintas características del método de Todd.
 
-De entre las diversas herramientas disponibles para realizar NAS, se ha seleccionado Optuna \cite{optuna_2019}, una biblioteca basada en optimización bayesiana, que ha demostrado resultados de alto rendimiento en tareas de generación automática de arquitecturas de red y ajuste de hiperparámetros \cite{pizurica_generic_2024}.
+De entre las diversas herramientas disponibles para realizar NAS, se ha seleccionado Optuna \cite{optuna_2019}, una biblioteca basada en optimización bayesiana, que ha demostrado resultados de alto rendimiento en tareas de generación automática de arquitecturas de red y ajuste de hiperparámetros \cite{pizurica_generic_2024}. Específicamente, se está utilizando el algoritmo \textit{Tree-structured Parzen Estimator} o TPE internamente.
 
 Los hiperparámetros considerados, junto con sus respectivos espacios de búsqueda, se detallan en la Tabla \ref{fig4:optuna_params}.
 \begin{table}[h]
@@ -339,7 +339,7 @@ Los hiperparámetros considerados, junto con sus respectivos espacios de búsque
     \begin{tabular}{|l|c|c|}
         \hline
         \rowcolor[HTML]{D33333} 
-        {\color[HTML]{FFFFFF} Parámetro} & {\color[HTML]{FFFFFF} Valores posibles} & {\color[HTML]{FFFFFF} Tipo} \\ \hline
+        {\color[HTML]{FFFFFF} Hiperparámetro} & {\color[HTML]{FFFFFF} Espacio de búsqueda} & {\color[HTML]{FFFFFF} Tipo} \\ \hline
         Tasa de Aprendizaje & $\left[1\times 10^{-5}, 1\times10^{-1}\right]$ & Rango \\ \hline
         Optimizador & \begin{tabular}[c]{@{}c@{}}Adam, AdamW, \\ Radam, SGD\end{tabular} & Categórica \\ \hline
         Inicialización de Pesos & \begin{tabular}[c]{@{}c@{}}Sin Inicializar, Normal, \\ Xavier, Kaiming, \\ Ortogonal\end{tabular} & Categórica \\ \hline
@@ -356,6 +356,18 @@ Los hiperparámetros considerados, junto con sus respectivos espacios de búsque
         Nº de capas densas & $\left[1, 5\right]$ & Rango \\ \hline
         Densidad capa densa $i$-ésima & $\left[8, 16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
     \end{tabular}
-    \caption[Hiperparámetros utilizados por Optuna]{Hiperparámetros utilizados en el entrenamiento para la optimización de hiperparámetros y NAS de la red mediante Optuna. \textbf{\textdagger}: Solo se aplica si la función de pérdida es CB.}
+    \caption[Hiperparámetros utilizados por Optuna]{Hiperparámetros utilizados en el entrenamiento con Optuna junto a su espacio de búsqueda. El tipo \say{rango} indica que cualquier valor entre los indicados puede ser utilizado, mientras que el tipo \say{categórico} indica que solamente se pueden emplear los valores listados. Funciones de pérdida: CE: \textit{Cross-Entropy}; WCE: \textit{Weighted Cross-Entropy}; FL: \textit{Focal Loss}; CB: \textit{Class Balanced Loss}. \textbf{\textdagger}: Solo se aplica si la función de pérdida seleccionada es CB.}
     \label{fig4:optuna_params}
 \end{table}
+
+
+La lógica detrás de la selección de estos hiperparámetros se justifica del siguiente modo:
+\begin{itemize}
+    \item \textbf{Optimizadores:} Se consideran variantes ampliamente utilizadas de la familia Adam, incluyendo AdamW y RAdam, que han demostrado mejoras empíricas sobre el algoritmo original en diversos contextos. Asimismo, se incluye el algoritmo clásico de Descenso de Gradiente Estocástico (SGD), dado que en ciertos escenarios puede superar el rendimiento de Adam, especialmente en términos de generalización.
+    \item \textbf{Tasa de aprendizaje:} El rango seleccionado corresponde al intervalo recomendado en la literatura para los optimizadores considerados. Optuna se encarga de explorar combinaciones y descartar automáticamente aquellas que conduzcan a un rendimiento subóptimo. 
+    \item \textbf{Inicialización y escalado de pesos:} Estos parámetros se incluyen debido a su impacto potencial sobre la estabilidad y eficiencia del entrenamiento. Se ha demostrado que en ciertos problemas, la elección adecuada de inicialización puede marcar una diferencia significativa en la calidad del aprendizaje.
+    \item \textbf{Funciones de pérdida:} Dado el fuerte desbalance presente en las etiquetas, se han incorporado varias funciones diseñadas específicamente para tratar este tipo de problemas. Además de la función clásica de entropía cruzada (CE), se incluyen su versión ponderada (WCE), la pérdida focal (FL), y la pérdida balanceada por clase (CB), cada una con ventajas particulares para abordar clases minoritarias. Para una descripción detallada de estas funciones, véase la Sección \ref{section5:metrics}.
+    \item \textbf{Parámetros específicos de CB:} Cuando la función de pérdida seleccionada es CB, se incluyen los hiperparámetros adicionales requeridos, cuyos valores se han establecido siguiendo las recomendaciones de los autores originales de dicha técnica.
+    \item \textbf{Arquitectura de red:} Dado que los descriptores también constituyen capas con parámetros entrenables, se ha considerado su densidad (relación entre tamaño de entrada y salida) como un hiperparámetro a explorar, utilizando valores típicos en capas convolucionales. En cuanto al número total de capas, se optó por arquitecturas compactas, priorizando capas convolucionales sobre totalmente conectadas, con el objetivo de maximizar la eficiencia computacional y la capacidad expresiva dentro de los límites de memoria de la GPU.
+    \item \textbf{Densidades de capas:} Los valores posibles para la densidad de capas se han tomado de configuraciones comúnmente utilizadas en redes profundas, procurando siempre que las configuraciones más grandes posibles puedan ajustarse dentro de la memoria disponible del hardware.
+\end{itemize}

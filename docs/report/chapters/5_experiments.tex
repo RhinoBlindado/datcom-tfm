@@ -219,9 +219,20 @@ Finalmente, se observa que los resultados obtenidos en los experimentos multieti
 Si bien existe más disparidad respecto al \textit{accuracy} entre los experimentos de etiqueta única y multietiqueta, en general se observa que se mantiene un rendimiento alto en ambas configuraciones, con valores muy similares a los obtenidos en los experimentos de etiqueta única.
 
 \section{Análisis de Resultados}
-Durante los experimentos realizados, se ha observado que el modelo ExMeshCNN es capaz de aprender patrones topológicos relevantes en las mallas óseas para predecir las características de Todd. Los resultados obtenidos en los experimentos de etiqueta única y multietiqueta muestran un rendimiento prometedor, con valores de F1 y \textit{accuracy} que indican una buena capacidad de generalización de los modelos obtenidos gracias a la búsqueda automática de arquitectura y optimización de hiperparámetros.
+Durante los experimentos realizados, se ha observado que el modelo ExMeshCNN es capaz de aprender patrones topológicos relevantes en las mallas óseas para predecir las características de Todd. Los resultados obtenidos tanto en los experimentos de etiqueta única como en los de multietiqueta muestran un rendimiento prometedor, con valores de F1 y \textit{accuracy} que evidencian una buena capacidad de generalización por parte de los modelos, optimizados mediante búsqueda automática de arquitectura e hiperparámetros.
+
+Al analizar las matrices de confusión de los mejores modelos (Figuras \ref{fig5:AF_confusion_matrix}, \ref{fig5:BN_confusion_matrix}, \ref{fig5:DM_confusion_matrix}, \ref{fig5:DP_confusion_matrix}, \ref{fig5:IP_confusion_matrix}, \ref{fig5:LSE_confusion_matrix}, \ref{fig5:USE_confusion_matrix}, \ref{fig5:VB_confusion_matrix} y \ref{fig5:VM_confusion_matrix}), se aprecia que los modelos tienden a clasificar correctamente la mayoría de las muestras de una forma equilibrada tal y como se observó con la métrica F1, cometiendo más errores en aquellas clases menos representadas. Este comportamiento es coherente con lo esperado en problemas de clasificación desbalanceada, donde los modelos suelen favorecer las clases mayoritarias. No obstante, la mayoría de las confusiones ocurren entre clases adyacentes, lo que sugiere que el modelo ha aprendido a distinguir de manera significativa los patrones de las distintas características de Todd. De forma particular, la característica con peor rendimiento es VB, que presenta una matriz de confusión con un alto número de falsos negativos, lo que indica que el modelo tiene dificultades para identificar correctamente las muestras de esta clase, a pesar de que es la característica más balanceada en términos de distribución de etiquetas. Esto concuerda con las observaciones realizadas en en ???, dónde se observó que esta característica es la que presenta la mayor tasa de error inter e intra-experto, lo que sugiere que esta es una característica más subjetiva o menos consistente entre los expertos, lo que dificulta su clasificación por parte del modelo.
 
 \subsection{Hiperparámetros y Arquitectura Neuronal}
+Los mejores modelos obtenidos presentan configuraciones arquitectónicas notablemente diversas entre sí, lo que indica que la búsqueda automática ha sido efectiva para adaptar la arquitectura a los requerimientos específicos de cada característica.
+
+Pese a esta diversidad, se observa una tendencia general hacia redes con mayor profundidad en las capas convolucionales, como en los casos de AF (Tabla \ref{table5:AF_best_model}), BN (Tabla \ref{table5:BN_best_model}), IP (Tabla \ref{table5:IP_best_model}), LSE (Tabla \ref{table5:LSE_best_model}), VB (Tabla \ref{table5:VB_best_model}) y VM (Tabla \ref{table5:VM_best_model}), donde se utilizaron 4 o más capas convolucionales, y algunas, como AF, BN y VM, alcanzaron hasta 6 capas. Esto sugiere que estas características pueden requerir una mayor capacidad de representación para capturar los patrones complejos presentes en las mallas.
+
+En cuanto al número de filtros por capa, se aprecia un patrón común de expansión y contracción a lo largo de la red, posiblemente reflejando una estructura tipo cuello de botella. USE (Tabla \ref{table5:USE_best_model}) es la única excepción donde este patrón no se manifiesta claramente.
+
+Las capas totalmente conectadas, en cambio, presentan mayor variabilidad en cuanto al número de neuronas y estructura, sin un patrón claro, lo que indica una fuerte dependencia del diseño respecto a la tarea específica.
+
+En términos de hiperparámetros, se detecta un uso consistente del optimizador Adam y de la inicialización Kaiming en la mayoría de los modelos exitosos, lo que sugiere que estas configuraciones son adecuadas para el entrenamiento de redes basadas en ExMeshCNN. En cuanto a las funciones de pérdida, predomina el uso de WCE, seguida por CBL, lo cual es coherente con la naturaleza desbalanceada del problema y valida su idoneidad para este tipo de clasificación.
 
 %% AF
 \begin{figure}[htbp]
@@ -341,46 +352,9 @@ Durante los experimentos realizados, se ha observado que el modelo ExMeshCNN es 
     \label{fig5:DM_confusion_matrix}
     \includegraphics[width=0.5\linewidth]{figures/5_experiments/multi-dp-cm.pdf}
     \caption{Matriz de confusión mejor modelo para DM en test}
+    \label{fig5:DP_confusion_matrix}
 \end{figure}
 
-%% DP
-% \begin{figure}[htbp]
-%     \centering
-%     % --- Top: Table ---
-%     \begin{minipage}{\linewidth}
-%         \centering
-%         \begin{tabular}{|cc|c|cccc|}
-%             \hline
-%             \rowcolor[HTML]{D33333} 
-%             \multicolumn{2}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & {\color[HTML]{FFFFFF} \textbf{CONV}} & \multicolumn{4}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \hline
-%             \multicolumn{2}{|c|}{\textbf{GEOD}} & 64 & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{DM}} & \multicolumn{1}{c|}{\textbf{LSE}} & \textbf{USE} \\ \cline{1-2} \cline{4-7} 
-%             \multicolumn{1}{|c|}{\textbf{MID}} & 16 & 32 & \multicolumn{1}{c|}{256} & \multicolumn{1}{c|}{8} & \multicolumn{1}{c|}{16} & 32 \\ \cline{1-2} \cline{4-5}
-%             \multicolumn{1}{|c|}{\textbf{OUT}} & 128 & 32 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{8} & 32 \\ \cline{1-2}
-%             \multicolumn{2}{|c|}{\textbf{GEOM}} & 128 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{64} & 256 \\ \cline{1-2}
-%             \multicolumn{1}{|c|}{\textbf{MID}} & 128 & 256 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{128} & 64 \\ \cline{1-2} \cline{6-6}
-%             \multicolumn{1}{|c|}{\textbf{OUT}} & 256 & 32 &  &  & \multicolumn{1}{c|}{} & 16 \\ \cline{1-3} \cline{7-7} 
-%         \end{tabular}
-
-%         \vspace{1em}
-
-%         \begin{tabular}{|
-%             >{\columncolor[HTML]{D33333}}c |c|cccc|}
-%             \hline
-%             {\color[HTML]{FFFFFF} \textbf{LR}} & $3.4261 \times 10^{-4}$ & \multicolumn{4}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}}} \\ \hline
-%             {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & AdamW & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{DM}} & \multicolumn{1}{c|}{\textbf{LSE}} & \textbf{USE} \\ \hline
-%             {\color[HTML]{FFFFFF} \textbf{INIT}} & N/A & \multicolumn{1}{c|}{WCE} & \multicolumn{1}{c|}{WCE} & \multicolumn{1}{c|}{CE} & WCE \\ \hline
-%             \end{tabular}
-%         \captionof{table}{Estructura e hiperparámetros del mejor modelo para DM}
-%         \label{table5:DP_best_model}
-%     \end{minipage}
-
-%     \vspace{1.5em} % vertical space between table and image
-
-%     % --- Bottom: Figure ---
-%     \includegraphics[width=0.75\linewidth]{figures/5_experiments/multi-dp-cm.pdf}
-%     \caption{Matriz de confusión mejor modelo para DM en test}
-%     \label{fig5:DP_confusion_matrix}
-% \end{figure}
 
 %% IP
 \begin{figure}[htbp]
@@ -576,4 +550,49 @@ Durante los experimentos realizados, se ha observado que el modelo ExMeshCNN es 
     \label{fig5:VM_confusion_matrix}
 \end{figure}
 
+\FloatBarrier
+
 \section{Interpretación con Grad-CAM}
+Habiéndose visto los resultados de los modelos, es posible observar por medio de Grad-CAM que dichos modelos se enfocan en diferentes partes de la sínfisis del pubis para obtener su predicción, como se puede ver la Figura \ref{fig5:grad_cam__diff_chars}. Resulta de gran interés resaltar que las zonas en las que se enfoca cada modelo para su característica se mantiene consistente entre diferentes mallas, lo que indica que el modelo ha aprendido a identificar las características de la sínfisis del pubis y no se ha enfocado en artefactos de la malla o ruido.
+
+\begin{figure}[p]
+    \centering
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{../../scripts/misc/grad-cam/53-L/53-L_original_left.png}
+        \caption{Pubis original visto desde la izquierda}
+        \label{fig5:og_pubis}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{../../scripts/misc/grad-cam/53-L/53-L_af_left.png}
+        \caption{Característica AF}
+        \label{fig5:grad_af}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{../../scripts/misc/grad-cam/53-L/53-L_ip_left.png}
+        \caption{Característica IP}
+        \label{fig5:grad_bn}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{../../scripts/misc/grad-cam/53-L/53-L_dp_left.png}
+        \caption{Característica DP}
+        \label{fig5:grad_dp}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{../../scripts/misc/grad-cam/53-L/53-L_use_left.png}
+        \caption{Característica USE}
+        \label{fig5:grad_use}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{../../scripts/misc/grad-cam/53-L/53-L_vm_left.png}
+        \caption{Característica VM}
+        \label{fig5:grad_vm}
+    \end{subfigure}
+    \caption{Ejemplo de Grad-CAM aplicado a una sínfisis del Pubis utilizando los mejores modelos para cada característica obtenida, obsérvese como cada modelo se enfoca en una parte distinta de la malla. Se incluye la vista original de la malla en \ref{fig5:og_pubis} para tener una referencia tridimensional base de la superficie. Los colores más cálidos indican mayor importancia para la predicción.}
+    \label{fig5:grad_cam__diff_chars}
+\end{figure}

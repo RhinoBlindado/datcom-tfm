@@ -1,0 +1,20 @@
+﻿Scopus-10-Analyze-Year
+
+"Your query : (( TITLE-ABS-KEY ( forensic AND anthropology AND age AND estimation ) ) ( TITLE-ABS-KEY ( ( ( deep AND learning ) OR ( machine AND learning ) OR ( soft AND computing ) OR ( artificial AND intelligence ) OR ( data AND mining ) ) AND forensic AND anthropology AND age AND estimation ) ))"
+
+
+Number of results : 10
+
+"YEAR",
+"2025","5"
+"2024","29"
+"2023","9"
+"2022","8"
+"2021","9"
+"2020","4"
+"2019","2"
+"2018","1"
+"2016","1"
+"2015","1"
+"2013","1"
+"2012","1"

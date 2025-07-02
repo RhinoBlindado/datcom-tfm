@@ -26,3 +26,6 @@ experiments/
 *.synctex.gz
 *.toc
 *.blg
+
+# VSCode
+.vscode

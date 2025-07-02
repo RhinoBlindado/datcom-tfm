@@ -552,47 +552,42 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
 \FloatBarrier
 
-\section{Interpretación con Grad-CAM}
-Habiéndose visto los resultados de los modelos, es posible observar por medio de Grad-CAM que dichos modelos se enfocan en diferentes partes de la sínfisis del pubis para obtener su predicción, como se puede ver la Figura \ref{fig5:grad_cam__diff_chars}. Resulta de gran interés resaltar que las zonas en las que se enfoca cada modelo para su característica se mantiene consistente entre diferentes mallas, lo que indica que el modelo ha aprendido a identificar las características de la sínfisis del pubis y no se ha enfocado en artefactos de la malla o ruido.
+\section{Visualización de áreas de interés con Grad-CAM}
+
+Se empleó el método Grad-CAM para visualizar las regiones de las mallas en las que se enfocan los modelos al realizar sus predicciones. En la Figura \ref{fig5:grad_cam__diff_chars} se muestra un ejemplo comparativo entre distintas características, donde puede observarse que cada modelo se centra en una zona distinta de la sínfisis del pubis. Esto refuerza la idea de que los modelos han aprendido patrones morfológicos específicos para cada característica, localizados en distintas áreas del hueso. 
+
+Adicionalmente, se presentan ejemplos individuales de activación de Grad-CAM en las Figuras \ref{fig5:grad_cam__BN_samples}, \ref{fig5:grad_cam__USE_samples} y \ref{fig5:grad_cam__DP_samples}, correspondientes a las características BN, USE y DP, respectivamente. En estos casos, se observa que las zonas de atención se mantienen relativamente consistentes entre distintas muestras, aunque con variaciones según la etiqueta.
+
+En particular, para la característica BN, el modelo concentra su atención en la parte superior de la sínfisis del pubis. Para USE, las activaciones se localizan principalmente en la parte superior izquierda del hueso, con extensiones hacia los laterales y zonas planas de la superficie. Finalmente, para DP, el modelo se enfoca de forma bastante localizada en un solo lateral del hueso.
+
+Estos resultados no solo refuerzan la validez de los modelos entrenados, sino que también aportan evidencia de que las características morfológicas definidas por el método de Todd pueden ser localizadas objetivamente en la superficie del hueso mediante técnicas de DL. Esto representa un paso importante hacia la explicabilidad de modelos aplicados en AF, y abre la puerta a futuras investigaciones colaborativas con expertos humanos para validar y profundizar en estas observaciones para constatar que las regiones anatómicas identificadas son coherentes con la práctica forense.
 
 \begin{figure}[p]
     \centering
-    \begin{subfigure}{0.4\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{../../scripts/misc/grad-cam/53-L/53-L_original_left.png}
-        \caption{Pubis original visto desde la izquierda}
-        \label{fig5:og_pubis}
-    \end{subfigure}
-    \begin{subfigure}{0.4\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{../../scripts/misc/grad-cam/53-L/53-L_af_left.png}
-        \caption{Característica AF}
-        \label{fig5:grad_af}
-    \end{subfigure}
-    \begin{subfigure}{0.4\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{../../scripts/misc/grad-cam/53-L/53-L_ip_left.png}
-        \caption{Característica IP}
-        \label{fig5:grad_bn}
-    \end{subfigure}
-    \begin{subfigure}{0.4\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{../../scripts/misc/grad-cam/53-L/53-L_dp_left.png}
-        \caption{Característica DP}
-        \label{fig5:grad_dp}
-    \end{subfigure}
-    \begin{subfigure}{0.4\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{../../scripts/misc/grad-cam/53-L/53-L_use_left.png}
-        \caption{Característica USE}
-        \label{fig5:grad_use}
-    \end{subfigure}
-    \begin{subfigure}{0.4\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{../../scripts/misc/grad-cam/53-L/53-L_vm_left.png}
-        \caption{Característica VM}
-        \label{fig5:grad_vm}
-    \end{subfigure}
-    \caption{Ejemplo de Grad-CAM aplicado a una sínfisis del Pubis utilizando los mejores modelos para cada característica obtenida, obsérvese como cada modelo se enfoca en una parte distinta de la malla. Se incluye la vista original de la malla en \ref{fig5:og_pubis} para tener una referencia tridimensional base de la superficie. Los colores más cálidos indican mayor importancia para la predicción.}
+    \includegraphics[width=0.55\linewidth]{data/grad-cam-53-example.png}
+    \caption[Ejemplo de los diferentes mapas de activación de Grad-CAM correspondientes a distintas características para una misma muestra]{Ejemplo de los diferentes mapas de activación de Grad-CAM correspondientes a distintas características para una misma muestra. Los colores más cálidos indican una mayor activación. En (a) se muestra la malla original vista de frente. En este caso se visualizan las características AF (b), DM (c), IP (d), USE (e) y VM (f). Obsérvese cómo cada una se enfoca en regiones diferentes de la malla: algunas con activaciones bien definidas, como (b) y (e); otras con activaciones más dispersas o escasas, como (c) y (d); y (f), con activación en una gran parte de la superficie.}
     \label{fig5:grad_cam__diff_chars}
+\end{figure}
+
+\begin{figure}[p]
+    \centering
+    \includegraphics[width=\linewidth]{data/grad-cam-BN-samples.png}
+    \caption[Ejemplo de mapas de activación Grad-CAM para la característica BN]{Ejemplo de mapas de activación Grad-CAM para la característica BN. Se muestran tres mallas diferentes. En la parte superior se presentan las mallas originales, vistas de frente. En la parte inferior, las mismas mallas están coloreadas según la activación de Grad-CAM: los colores más cálidos indican una mayor activación. Se observa que el modelo se enfoca principalmente en la parte superior de la sínfisis del pubis. El modelo ha clasificado correctamente las mallas (a) y (b) como pertenecientes a la clase 0 (\say{ausente}), y la malla (c) a la clase 1 (\say{presente}).}
+    \label{fig5:grad_cam__BN_samples}
+\end{figure}
+
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{data/grad-cam-USE-samples.png}
+    \caption[Ejemplo de mapas de activación Grad-CAM para la característica USE]{Ejemplo de mapas de activación Grad-CAM para la característica USE. Se muestran tres mallas diferentes. En la parte superior se presentan las mallas originales, vistas de frente. En la parte inferior, las mismas mallas están coloreadas según la activación de Grad-CAM: los colores más cálidos indican una mayor activación. Se observa que el modelo tiende a enfocarse en la parte superior izquierda del hueso, con activaciones adicionales en los laterales y en zonas planas de la superficie. El modelo ha clasificado correctamente las mallas (a) y (b) como pertenecientes a la clase 1 (\say{definida}) y la malla (c) como 0 (\say{no definida}).}
+    \label{fig5:grad_cam__USE_samples}
+\end{figure}
+
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{data/grad-cam-DP-samples.png}
+    \caption[Ejemplo de mapas de activación Grad-CAM para la característica DP]{Ejemplo de mapas de activación Grad-CAM para la característica DP. Se muestran tres mallas diferentes. En la parte superior se presentan las mallas originales, vistas de frente. En la parte inferior, las mismas mallas están coloreadas según la activación de Grad-CAM por triángulo: los colores más cálidos indican mayor activación. Se observa que el modelo se enfoca únicamente en un lateral del hueso. El modelo ha clasificado correctamente las mallas (a) y (c) como pertenecientes a la clase 0 (\say{ausente}), y la malla (b) como 1 (\say{presente}).}
+    \label{fig5:grad_cam__DP_samples}
 \end{figure}

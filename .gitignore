@@ -6,7 +6,7 @@ env/
 *.obj
 
 # Data 
-data/
+/data/
 testing/
 
 # Experiments

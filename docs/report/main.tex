@@ -44,6 +44,9 @@
 \usepackage{eurosym}
 %   - Alineación imagen
 \usepackage{graphbox}
+%  - Para usar FloatBarrier
+%       -- Evita que las figuras se salgan de su sección.
+\usepackage{placeins}
 %   - Hipervínculos
 %       -- Tiene que estar de último siempre.
 \usepackage[pdfborder={000}]{hyperref}
@@ -251,20 +254,20 @@ pdfproducer = {pdflatex}
     % Introducción
     \input{chapters/1_introduction}
 
-    % Fundamentos teóricos
-    \input{chapters/2_theory}
+    % Fundamentos teóricos 
+    \input{chapters/2_theory} 
 
     % Estado del arte
     \input{chapters/3_sota}
 
-    % Metodología
+    % Metodología 
     \input{chapters/4_materials_and_methods}
     
    %  % Experimentos
     \input{chapters/5_experiments}
     
    %  % Conclusiones
-   %  \input{chapters/6_conclusion}
+    \input{chapters/6_conclusion}
 
     % Bibliografía
     \chapter{Bibliografía}

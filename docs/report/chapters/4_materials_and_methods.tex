@@ -1,4 +1,4 @@
-\chapter{Materiales, Métodos e Implementación}
+\chapter{Materiales y Métodos}
 
 \section{Materiales}
 \label{section4:materials}
@@ -22,7 +22,7 @@ A partir de este punto, se utilizarán las abreviaciones en inglés de las carac
     Bisel Ventral & \textit{Ventral Bevel} & \textbf{VB} \\ \hline
     Borde Ventral & \textit{Ventral Margin} & \textbf{VM} \\ \hline
     \end{tabular}
-    \caption{Correpondencia entre nombres de las características de Todd en castellano e inglés junto con su abreviación.}
+    \caption{Correspondencia entre nombres de las características de Todd en castellano e inglés junto con su abreviación.}
     \label{table4:chars_short_names}
 \end{table}
 
@@ -48,7 +48,7 @@ De ambos gráficos se aprecia que las edades más representadas corresponden a i
 \subsubsection{Análisis Univariable}
 Continuando con el EDA enfocado en las nueve características del método de Todd, se observa un claro desbalance en la distribución de atributos, como se muestra en las gráficas correspondientes en la Figura \ref{fig4:todd_chars}. Los atributos más representados son coherentes con las manifestaciones morfológicas que el hueso de la sínfisis del pubis presenta a edades más avanzadas.
 
-Desde la perspectiva del balance de datos, las características de USE (Subfigura \ref{fig4:todd_chars__use}), BN (Subfigura \ref{fig4:todd_chars__bn}), DP (Subfigura \ref{fig4:todd_chars__dp}) y LSE (Subfigura \ref{fig4:todd_chars__lse}) presentan un desbalance particularmente acentuado, con aproximadamente 95\%, 91\%, 90\% y 90\% de las muestras concentradas en un solo atributo, respectivamente. Este fuerte desbalance sugiere que estas características podrían tener un rendimiento limitado al ser utilizadas para el entrenamiento de modelos de DL.
+Desde la perspectiva del balance de datos, las características USE (Subfigura \ref{fig4:todd_chars__use}), BN (Subfigura \ref{fig4:todd_chars__bn}), DP (Subfigura \ref{fig4:todd_chars__dp}) y LSE (Subfigura \ref{fig4:todd_chars__lse}) presentan un desbalance particularmente acentuado, con aproximadamente 95\%, 91\%, 90\% y 90\% de las muestras concentradas en un solo atributo, respectivamente. Este fuerte desbalance sugiere que estas características podrían tener un rendimiento limitado al ser utilizadas para el entrenamiento de modelos de DL.
 
 \begin{figure}[p]
     \centering
@@ -83,7 +83,7 @@ Desde la perspectiva del balance de datos, las características de USE (Subfigur
 
     \begin{subfigure}{\textwidth}
         \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_ip_distr.pdf}
-        \caption{\textbf{IP}. Leyenda: \textbf{0}: No,\textbf{1}: Mediana, \textbf{2}: Si.}
+        \caption{\textbf{IP}. Leyenda: \textbf{0}: No, \textbf{1}: Mediana, \textbf{2}: Sí.}
         \label{fig4:todd_chars__ip}
     \end{subfigure}
 
@@ -128,45 +128,47 @@ El resto de las características muestra un desbalance menos extremo, con entre 
     \centering
     \begin{subfigure}{\textwidth}
         \centering
-        \includegraphics[width=0.7\linewidth]{../../scripts/eda/assoc_plot_cramersv.pdf}
-        \caption{Correlograma usando la V de Cramér}
+        \includegraphics[width=0.6\linewidth]{../../scripts/eda/assoc_plot_cramersv.pdf}
+        \caption{Mapa de calor de la V de Cramér}
         \label{fig4:todd_chars__cramersv}
     \end{subfigure}
     \begin{subfigure}{\textwidth}
         \centering
-        \includegraphics[width=0.7\linewidth]{../../scripts/eda/assoc_plot_tschuprow.pdf}
-        \caption{Correlograma usando la T de Tschuprow}
+        \includegraphics[width=0.6\linewidth]{../../scripts/eda/assoc_plot_tschuprow.pdf}
+        \caption{Mapa de calor de la T de Tschuprow}
         \label{fig4:todd_chars__tschuprow}
     \end{subfigure}
-    \caption[Correlogramas entre características de Todd]{Correlogramas entre las características de Todd}
+    \caption[Mapas de calor de asociaciones entre características de Todd]{Mapas de calor que muestran las asociaciones entre las características de Todd utilizando la V de Cramér (a) y la T de Tschuprow (b). Los colores más claros indican asociaciones más fuertes entre pares de características. Los valores oscilan entre 0, lo que indica ausencia de asociación, y 1, que sugiere una asociación muy fuerte.}
     \label{fig4:todd_chars_correlogram}
 \end{figure}
 
-Si bien los datos empleados en este estudio no son de naturaleza tabular y se utilizan técnicas de DL que no requieren una extracción manual de características, resulta igualmente útil de cara a los experimentos analizar las correlaciones existentes entre las nueve características de Todd. Dado que dichas variables son categóricas, se ha optado por utilizar la V de Cramér, una medida estadística que cuantifica el grado de asociación entre dos variables categóricas. Además, para corregir el sesgo que puede surgir al trabajar con tablas de contingencia no cuadradas, se ha complementado el análisis con la T de Tschuprow, la cual atenúa dicho efecto y permite una interpretación más equilibrada de la asociación entre las variables.
+Si bien los datos empleados en este estudio no son de naturaleza tabular y se utilizan técnicas de DL que no requieren una extracción manual de características, resulta igualmente útil, de cara a los experimentos, analizar las asociaciones existentes entre las nueve características del método de Todd. Dado que dichas variables son categóricas, se ha optado por emplear la V de Cramér \cite{sheskin_handbook_2020}, una medida estadística que cuantifica la intensidad de la asociación entre dos variables categóricas. Un valor cercano a 1 indica una asociación fuerte entre ambas características, mientras que un valor próximo a 0 sugiere poca o ninguna asociación. Cabe destacar que la V de Cramér únicamente indica la presencia e intensidad de una relación entre variables, sin ofrecer información sobre la dirección de dicha asociación (a diferencia de las medidas de correlación para variables numéricas) \cite{jimenez_nota_2024}.
 
-Ambos correlogramas se presentan en la Figura \ref{fig4:todd_chars_correlogram}, donde puede apreciarse que las correlaciones entre las características de Todd varían significativamente entre sí. Como era de esperarse, existen discrepancias entre los valores obtenidos mediante la V de Cramér y la T de Tschuprow, siendo esta última más conservadora en presencia de tablas de contingencia no cuadradas. Para facilitar la interpretación de estos resultados, se ha incluido la Tabla \ref{table4:corr}, en la que se listan las tres características con mayor correlación para cada una.
+No obstante, la V de Cramér puede verse afectada por un sesgo cuando se aplica a tablas de contingencia no cuadradas, es decir, cuando el número de categorías en las variables comparadas es diferente, lo cual sucede en varias combinaciones de las características de Todd. Para corregir este efecto y obtener una interpretación más equilibrada del grado de asociación, se ha complementado el análisis con la T de Tschuprow, una medida alternativa que atenúa este sesgo y permite una comparación más justa entre pares de variables con distinta cardinalidad.
 
-Del análisis se concluye que las características LSE, AF y VM son, en general, las que presentan los mayores niveles de correlación con el resto, lo que sugiere una mayor dependencia entre ellas. En contraste, la característica IP muestra los niveles más bajos de correlación con las demás, seguida de BN, lo cual puede indicar un comportamiento más independiente. Este conocimiento será especialmente relevante en los experimentos de entrenamiento en modo multietiqueta, ya que incorporar características correlacionadas entre sí podría favorecer el aprendizaje del modelo y mejorar su rendimiento.
+Se han generado mapas de calor por cada par de características, que pueden observarse en la Figura \ref{fig4:todd_chars_correlogram}, donde se aprecia que las asocaciones entre las características varían significativamente entre sí. Como era de esperarse, existen discrepancias ligeras entre los valores obtenidos mediante la V de Cramér y la T de Tschuprow. Para facilitar la interpretación de estos resultados, se ha incluido la Tabla \ref{table4:corr}, en la que se listan las tres características con mayor asocación para cada una.
+
+Del análisis se concluye que las características LSE, AF y VM son, en general, las que presentan los mayores niveles de asocación con el resto, lo que sugiere una mayor dependencia entre ellas. En contraste, la característica IP muestra los niveles más bajos de asocación con las demás, seguida de BN, lo cual puede indicar un comportamiento más independiente. Este conocimiento será especialmente relevante en los experimentos de entrenamiento en modo multietiqueta, ya que incorporar características correlacionadas entre sí podría favorecer el aprendizaje del modelo y mejorar su rendimiento.
 
 \begin{table}[t]
     \centering
     \begin{tabular}{|c|cc|}
-    \hline
-    \rowcolor[HTML]{D33333} 
-    \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} } & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} Características con mayor asociación}} \\ \cline{2-3} 
-    \rowcolor[HTML]{D33333} 
-    \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} Característica}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} V de Cramér}} & {\color[HTML]{FFFFFF} T de Tschuprow} \\ \hline
-    AF & \multicolumn{1}{c|}{LSE, USE, DM} & LSE, DM, USE \\
-    BN & \multicolumn{1}{c|}{\textbf{VM, AF, DP}} & \textbf{DP, LSE, VM} \\
-    DM & \multicolumn{1}{c|}{LSE, USE, AF} & LSE, USE, AF \\
-    DP & \multicolumn{1}{c|}{\textbf{AF, VM, LSE}} & \textbf{LSE, AF, BN} \\
-    IP & \multicolumn{1}{c|}{\textbf{VM, AF, LSE}} & \textbf{VM, DM, AF} \\
-    LSE & \multicolumn{1}{c|}{\textbf{VM, AF, DM}} & \textbf{DM, USE, VM} \\
-    USE & \multicolumn{1}{c|}{AF, DM, LSE} & LSE, DM, AF \\
-    VB & \multicolumn{1}{c|}{LSE, VM, AF} & LSE, VM, AF \\
-    VM & \multicolumn{1}{c|}{\textbf{LSE, USE, DM}} & \textbf{LSE, DM, AF} \\ \hline
+        \hline
+        \rowcolor[HTML]{D33333} 
+        \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} } & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} Características con mayor asociación}} \\ \cline{2-3} 
+        \rowcolor[HTML]{D33333} 
+        \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} Característica}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} V de Cramér}} & {\color[HTML]{FFFFFF} T de Tschuprow} \\ \hline
+        AF & \multicolumn{2}{c|}{DM, LSE, USE} \\ \cline{2-3} 
+        BN & \multicolumn{1}{c|}{AF, DP, VM} & DP, LSE, VM \\ \cline{2-3} 
+        DM & \multicolumn{2}{c|}{AF, LSE, USE} \\ \cline{2-3} 
+        DP & \multicolumn{1}{c|}{AF, LSE, VM} & AF, BN, LSE \\
+        IP & \multicolumn{1}{c|}{AF, LSE, VM} & AF, DM, VM \\
+        LSE & \multicolumn{1}{c|}{AF, DM, VM} & DM, USE, VM \\ \cline{2-3} 
+        USE & \multicolumn{2}{c|}{AF, DM, LSE} \\ \cline{2-3} 
+        VB & \multicolumn{2}{c|}{AF, LSE, VM} \\ \cline{2-3} 
+        VM & \multicolumn{1}{c|}{DM, LSE, USE} & AF, DM, LSE \\ \hline
     \end{tabular}
-    \caption[Cuadro resumen de las correlaciones más fuertes entre características de Todd]{Cuadro resumen de las correlaciones más fuertes entre cada característica de Todd. Las filas en negrita indican que las características más correladas son diferentes dependiendo del método.}
+    \caption[Cuadro resumen de las asociaciones más fuertes entre características de Todd]{Resumen de las asociaciones más fuertes entre cada característica del método de Todd, calculadas mediante la V de Cramér y la T de Tschuprow. Para cada característica, se presentan las tres características con mayor grado de asociación. Se observa que, en algunos casos, ambos coeficientes identifican las mismas características asociadas, mientras que en otros difieren, lo que resalta la sensibilidad de cada medida frente a la estructura de las variables categóricas.}
     \label{table4:corr}
 \end{table}
 
@@ -266,108 +268,3 @@ Este paso expande temporalmente el conjunto de datos, duplicando la cantidad de 
 Posteriormente, se aplica una convolución 1D con un kernel de tamaño 2 y un \textit{stride} de 2. Esta configuración permite que cada operación de convolución combine la información de $\alpha_i$ y $\beta_i$, de manera que la operación es invariante al orden de los triángulos en la malla. Al mismo tiempo, el uso de \textit{stride} 2 permite recuperar la dimensionalidad original del conjunto de datos.
 
 A diferencia de otros enfoques, ExMeshCNN mantiene fijo el tamaño del filtro de convolución entre capas y controla la capacidad de la red a través de la densidad (profundidad) de las mismas. Esta arquitectura facilita el uso de técnicas de interpretabilidad como Grad-CAM, permitiendo identificar los triángulos que más contribuyen al resultado final del modelo. Adicionalmente, esta es la razón por la cual se requiere un número idéntico de caras triangulares en las mallas 3D: no se puede variar el tamaño de una capa convolucional, por lo que tiene que fijarse a un valor ya conocido de antemano.
-
-\section{Implementación}
-\label{section4:implementation}
-\subsection{Entorno de desarrollo}
-\subsubsection{Software}
-Debido a su amplio uso en el ámbito de la IA y la Ciencia de Datos, y siendo el lenguaje de programación utilizado para la implementación de ExMeshCNN, este TFM ha sido desarrollado íntegramente en Python 3. Para la construcción de las redes neuronales se ha empleado de forma predominante la librería PyTorch junto con la librería de optimización de parámetros Optuna, complementada por otras bibliotecas ampliamente utilizadas en ML como NumPy, SciPy, Scikit-Learn y Pandas.
-
-Dado que los datos tratados son de naturaleza tridimensional, se ha recurrido extensivamente a herramientas especializadas para la manipulación de mallas 3D. Entre ellas destacan el software de código abierto Blender y su API para Python, así como las librerías PyMeshLab, Trimesh y OpenMesh.
-
-La gestión del control de versiones se ha llevado a cabo mediante Git y GitHub. Por otro lado, la gestión de dependencias del entorno Python se ha realizado mediante un entorno virtual (\textit{Virtual Environment}) específico para este proyecto.
-
-El código desarrollado en el presente trabajo se encuentra disponible en el siguiente repositorio: \url{https://github.com/RhinoBlindado/datcom-tfm}.
-
-\subsubsection{Hardware}
-La ejecución de este TFM se ha llevado a cabo en dos entornos diferenciados: uno local y otro remoto.
-
-El entorno local consistió en un ordenador portátil Asus FX505DT equipado con un procesador AMD Ryzen 7 3750H, 16 GB de memoria RAM y una GPU Nvidia GeForce GTX 1650 con 4 GB de VRAM. En este entorno se desarrolló el código fuente, así como las tareas de preprocesamiento de datos y pruebas a pequeña escala, dada la capacidad limitada de procesamiento gráfico.
-
-El entorno remoto correspondió al clúster de servidores GPU de la Universidad de Granada, denominado NGPU, ubicado en el CPD Santa Lucía. En particular, se utilizó preferentemente el nodo denominado Talos, que dispone de dos procesadores AMD EPYC 7742, 1 TB de memoria RAM y 8 GPUs Nvidia Tesla A100, cada una con 40 GB de VRAM. En este entorno se ejecutaron la totalidad de los experimentos a gran escala, gestionados mediante acceso remoto vía SSH y utilizando el sistema de planificación de tareas SLURM.
-
-\subsection{Preprocesamiento de datos}
-Como se ha mencionado en la Sección \ref{section4:materials}, los datos obtenidos para este proyecto provienen de escaneos en 3D de piezas anatómicas reales. Las mallas generadas a través de estos procesos resultan en geometrías incompletas, degeneradas y con gran variabilidad de resolución. Estos factores impiden su uso directo por el \textit{framework} de ExMeshCNN.
-
-Antes de llevar a cabo los procesos de reparación, remuestreo y reducción de resolución, se consideró necesario unificar la orientación de las muestras, dado que el conjunto de datos incluye tanto pubis izquierdas como derechas. Con el fin de mantener la consistencia geométrica en los datos, se desarrolló un script en Blender que aplica el modificador de espejo sobre las mallas 3D correspondientes a las pubis derechas. Este proceso refleja las mallas respecto al eje principal de simetría de la cara anatómica, transformándolas efectivamente en pubis izquierdas. De este modo, se garantiza que todas las muestras procesadas posean una orientación uniforme, realizado con el fin de eliminar posibles fuentes de ruido para el modelo.
-
-\subsubsection{Reparación y remuestreo de datos}
-\label{section4:data_repair}
-
-La reparación de las mallas tridimensionales implica tres pasos fundamentales: (1) sellado de los huecos para garantizar que sean estructuras \textit{watertight} (herméticas), (2) eliminación de geometría degenerada, como triángulos solapados, caras conectadas por un único vértice o aristas que se interceptan, y (3) supresión de geometría disconexa perteneciente a componentes menores, generada usualmente por errores en la captura mediante escáner 3D, y que no aporta información relevante.
-
-Para abordar este proceso, se emplearon de forma intensiva las funcionalidades de la API de Blender y de PyMeshLab, desarrollando una serie de scripts personalizados para automatizar la limpieza y normalización de las mallas.
-
-En primer lugar, se parte de la malla cruda obtenida del escaneo, denominada \code{raw}. Utilizando PyMeshLab, se aplican métodos predefinidos para eliminar componentes desconectadas, caras duplicadas y geometría \textit{non-manifold}. El resultado de esta etapa es una malla depurada, sin degeneraciones geométricas, denominada \code{raw_clean}.
-
-Sin embargo, esta malla aún puede contener huecos, por lo que no está lista para ser procesada por ExMeshCNN. El cierre de huecos en mallas 3D es una tarea compleja, pero puede abordarse de forma eficaz mediante una técnica alternativa: el remuestreo. Esta técnica genera una nueva topología manteniendo la forma superficial original de la malla. El proceso se basa en una aproximación iterativa mediante vóxeles, que reconstruye la superficie al tiempo que genera la conectividad necesaria para cerrar los huecos.
-
-Para ello, se empleó Blender, que dispone de un operador de remuestreo robusto. Se desarrolló un segundo script que toma como entrada la malla \code{raw_clean} y aplica el operador de remuestreo en modo \code{SHARP}, con una profundidad del árbol octal de 10 (para preservar la fidelidad geométrica) y una escala de 1. El resultado es una malla libre de huecos, aunque este proceso puede reintroducir geometría \textit{non-manifold}.
-
-Por lo tanto, en el mismo script se implementó un procedimiento iterativo para eliminar dicha geometría no válida. Este procedimiento incluye:
-
-\begin{enumerate}
-    \item Selección y eliminación de vértices \textit{non-manifold} duplicados.
-    \item Nueva selección de vértices \textit{non-manifold} y colapso de aristas entre los vértices afectados.
-    \item Nueva selección y eliminación directa de todos los vértices \textit{non-manifold}.
-\end{enumerate}
-Este ciclo entero se repite hasta que no se detectan más vértices \textit{non-manifold} al final de proceso. Se comprobó empíricamente que este procedimiento converge, generando finalmente mallas completamente selladas y con una topología coherente. A las mallas resultantes se les denomina \code{clean_remesh}.
-
-\subsubsection{Reducción de resolución}
-\label{section4:data_reduction}
-Una vez obtenidas las mallas \code{clean_remesh}, que presentan una geometría adecuada y sin defectos topológicos, persiste una variabilidad importante: el número de triángulos varía entre mallas. Para normalizar esta característica, se diseñaron dos procesos distintos que permiten obtener versiones reducidas y estandarizadas de las mallas, generando dos conjuntos de datos derivados a partir de cada una.
-
-En el primer proceso, se aplica una reducción global de resolución a la malla \code{clean_remesh} mediante colapso de aristas. Esta técnica, implementada en un script de Blender, permite reducir de forma progresiva el número de triángulos, preservando en la medida de lo posible la topología general y los detalles relevantes. El resultado son mallas con un número fijo de triángulos especificado por el usuario. Estas versiones se nombran como \code{clean_remesh_<x>K}, donde \code{<x>} representa la cantidad de triángulos en miles. Por ejemplo, una malla con 50,000 triángulos tendría el sufijo \code{clean_remesh_50K}.
-
-No obstante, esta reducción uniforme afecta por igual a todas las regiones de la malla, incluyendo zonas anatómicamente poco relevantes para el análisis forense, como la parte posterior del hueso. Para maximizar la preservación de detalles en las regiones de interés, se implementó un segundo proceso complementario. Este consiste en realizar un recorte anatómico antes de la reducción de resolución, eliminando aquellas partes que los expertos forenses no consideran durante el análisis.
-
-Este procedimiento, también automatizado mediante Blender, consiste en generar un cubo con las dimensiones de la malla y reducirlo proporcionalmente para definir una región de interés. A continuación, se aplica un operador booleano para recortar las partes externas no deseadas, lo cual es posible gracias a que todas las mallas están previamente alineadas en la misma orientación. Una vez realizado el recorte, se procede a aplicar la reducción de resolución por colapso de aristas. Las mallas obtenidas por este procedimiento se nombran como \code{clean_remesh_<x>K_cut}, indicando que son versiones recortadas y reducidas de las mallas originales.
-
-Este doble enfoque permite disponer tanto de versiones completas como de versiones enfocadas anatómicamente, facilitando comparativas experimentales entre ambas modalidades de entrada.
-
-\section{Búsqueda de Arquitectura Neuronal}
-\label{section4:nas}
-El procesamiento de mallas 3D mediante DL, como se ha comentado, constituye un campo aún en etapa experimental y en rápida evolución. Debido a su novedad, no existe un consenso establecido sobre cómo tratar estos datos de manera óptima. Como resultado, no se dispone de modelos preentrenados sobre mallas 3D con las características específicas requeridas en este trabajo, particularmente en el contexto de ExMeshCNN y con la resolución necesaria para abordar el presente problema.
-
-Ante esta situación, se recurre a técnicas NAS, descritas con mayor profundidad en la Sección \ref{section2:nas}, con el fin de determinar tanto la estructura como los hiperparámetros óptimos de los modelos a emplear para el aprendizaje de las distintas características del método de Todd.
-
-De entre las diversas herramientas disponibles para realizar NAS, se ha seleccionado Optuna \cite{optuna_2019}, una biblioteca basada en optimización bayesiana, que ha demostrado resultados de alto rendimiento en tareas de generación automática de arquitecturas de red y ajuste de hiperparámetros \cite{pizurica_generic_2024}. Específicamente, se está utilizando el algoritmo \textit{Tree-structured Parzen Estimator} o TPE internamente.
-
-Los hiperparámetros considerados, junto con sus respectivos espacios de búsqueda, se detallan en la Tabla \ref{fig4:optuna_params}.
-\begin{table}[h]
-    \centering
-    \begin{tabular}{|l|c|c|}
-        \hline
-        \rowcolor[HTML]{D33333} 
-        {\color[HTML]{FFFFFF} Hiperparámetro} & {\color[HTML]{FFFFFF} Espacio de búsqueda} & {\color[HTML]{FFFFFF} Tipo} \\ \hline
-        Tasa de Aprendizaje & $\left[1\times 10^{-5}, 1\times10^{-1}\right]$ & Rango \\ \hline
-        Optimizador & \begin{tabular}[c]{@{}c@{}}Adam, AdamW, \\ Radam, SGD\end{tabular} & Categórica \\ \hline
-        Inicialización de Pesos & \begin{tabular}[c]{@{}c@{}}Sin Inicializar, Normal, \\ Xavier, Kaiming, \\ Ortogonal\end{tabular} & Categórica \\ \hline
-        Escalado de Pesos & $\left[1, 10\right]$ & Rango \\ \hline
-        Función de Pérdida & CE, WCE, FL, CB & Categórica \\ \hline
-        Tipo de CBL\textsuperscript{\textdagger} & Softmax, Sigmoide, FL & Categórica \\ \hline
-        $\beta$ de CBL\textsuperscript{\textdagger} & $\left[1, 10\right]$ & Rango \\ \hline
-        \begin{tabular}[c]{@{}l@{}}Descriptor geodésico,\\ densidad de canal intermedio\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
-        \begin{tabular}[c]{@{}l@{}}Descriptor geodésico,\\ densidad de salida\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
-        \begin{tabular}[c]{@{}l@{}}Descriptor geométrico,\\ densidad de canal intermedio\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
-        \begin{tabular}[c]{@{}l@{}}Descriptor geométrico,\\ densidad de salida\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
-        Nº de capas convolucionales & $\left[2, 6\right]$ & Rango \\ \hline
-        \begin{tabular}[c]{@{}l@{}}Densidad capa \\ convolucional $i$-ésima\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
-        Nº de capas densas & $\left[1, 5\right]$ & Rango \\ \hline
-        Densidad capa densa $i$-ésima & $\left[8, 16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
-    \end{tabular}
-    \caption[Hiperparámetros utilizados por Optuna]{Hiperparámetros utilizados en el entrenamiento con Optuna junto a su espacio de búsqueda. El tipo \say{rango} indica que cualquier valor entre los indicados puede ser utilizado, mientras que el tipo \say{categórico} indica que solamente se pueden emplear los valores listados. Funciones de pérdida: CE: \textit{Cross-Entropy}; WCE: \textit{Weighted Cross-Entropy}; FL: \textit{Focal Loss}; CB: \textit{Class Balanced Loss}. \textbf{\textdagger}: Solo se aplica si la función de pérdida seleccionada es CB.}
-    \label{fig4:optuna_params}
-\end{table}
-
-
-La lógica detrás de la selección de estos hiperparámetros se justifica del siguiente modo:
-\begin{itemize}
-    \item \textbf{Optimizadores:} Se consideran variantes ampliamente utilizadas de la familia Adam, incluyendo AdamW y RAdam, que han demostrado mejoras empíricas sobre el algoritmo original en diversos contextos. Asimismo, se incluye el algoritmo clásico de Descenso de Gradiente Estocástico (SGD), dado que en ciertos escenarios puede superar el rendimiento de Adam, especialmente en términos de generalización.
-    \item \textbf{Tasa de aprendizaje:} El rango seleccionado corresponde al intervalo recomendado en la literatura para los optimizadores considerados. Optuna se encarga de explorar combinaciones y descartar automáticamente aquellas que conduzcan a un rendimiento subóptimo. 
-    \item \textbf{Inicialización y escalado de pesos:} Estos parámetros se incluyen debido a su impacto potencial sobre la estabilidad y eficiencia del entrenamiento. Se ha demostrado que en ciertos problemas, la elección adecuada de inicialización puede marcar una diferencia significativa en la calidad del aprendizaje.
-    \item \textbf{Funciones de pérdida:} Dado el fuerte desbalance presente en las etiquetas, se han incorporado varias funciones diseñadas específicamente para tratar este tipo de problemas. Además de la función clásica de entropía cruzada (CE), se incluyen su versión ponderada (WCE), la pérdida focal (FL), y la pérdida balanceada por clase (CB), cada una con ventajas particulares para abordar clases minoritarias. Para una descripción detallada de estas funciones, véase la Sección \ref{section5:metrics}.
-    \item \textbf{Parámetros específicos de CB:} Cuando la función de pérdida seleccionada es CB, se incluyen los hiperparámetros adicionales requeridos, cuyos valores se han establecido siguiendo las recomendaciones de los autores originales de dicha técnica.
-    \item \textbf{Arquitectura de red:} Dado que los descriptores también constituyen capas con parámetros entrenables, se ha considerado su densidad (relación entre tamaño de entrada y salida) como un hiperparámetro a explorar, utilizando valores típicos en capas convolucionales. En cuanto al número total de capas, se optó por arquitecturas compactas, priorizando capas convolucionales sobre totalmente conectadas, con el objetivo de maximizar la eficiencia computacional y la capacidad expresiva dentro de los límites de memoria de la GPU.
-    \item \textbf{Densidades de capas:} Los valores posibles para la densidad de capas se han tomado de configuraciones comúnmente utilizadas en redes profundas, procurando siempre que las configuraciones más grandes posibles puedan ajustarse dentro de la memoria disponible del hardware.
-\end{itemize}

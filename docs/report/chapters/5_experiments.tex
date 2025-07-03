@@ -1,4 +1,110 @@
 \chapter{Experimentos}
+
+\section{Implementación}
+\label{section4:implementation}
+\subsection{Entorno de desarrollo}
+\subsubsection{Software}
+Debido a su amplio uso en el ámbito de la IA y la Ciencia de Datos, y siendo el lenguaje de programación utilizado para la implementación de ExMeshCNN, este TFM ha sido desarrollado íntegramente en Python 3. Para la construcción de las redes neuronales se ha empleado de forma predominante la librería PyTorch junto con la librería de optimización de parámetros Optuna, complementada por otras bibliotecas ampliamente utilizadas en ML como NumPy, SciPy, Scikit-Learn y Pandas.
+
+Dado que los datos tratados son de naturaleza tridimensional, se ha recurrido extensivamente a herramientas especializadas para la manipulación de mallas 3D. Entre ellas destacan el software de código abierto Blender y su API para Python, así como las librerías PyMeshLab, Trimesh y OpenMesh.
+
+La gestión del control de versiones se ha llevado a cabo mediante Git y GitHub. Por otro lado, la gestión de dependencias del entorno Python se ha realizado mediante un entorno virtual (\textit{Virtual Environment}) específico para este proyecto.
+
+El código desarrollado en el presente trabajo se encuentra disponible en el siguiente repositorio: \url{https://github.com/RhinoBlindado/datcom-tfm}.
+
+\subsubsection{Hardware}
+La ejecución de este TFM se ha llevado a cabo en dos entornos diferenciados: uno local y otro remoto.
+
+El entorno local consistió en un ordenador portátil Asus FX505DT equipado con un procesador AMD Ryzen 7 3750H, 16 GB de memoria RAM y una GPU Nvidia GeForce GTX 1650 con 4 GB de VRAM. En este entorno se desarrolló el código fuente, así como las tareas de preprocesamiento de datos y pruebas a pequeña escala, dada la capacidad limitada de procesamiento gráfico.
+
+El entorno remoto correspondió al clúster de servidores GPU de la Universidad de Granada, denominado NGPU, ubicado en el CPD Santa Lucía. En particular, se utilizó preferentemente el nodo denominado Talos, que dispone de dos procesadores AMD EPYC 7742, 1 TB de memoria RAM y 8 GPUs Nvidia Tesla A100, cada una con 40 GB de VRAM. En este entorno se ejecutaron la totalidad de los experimentos a gran escala, gestionados mediante acceso remoto vía SSH y utilizando el sistema de planificación de tareas SLURM.
+
+\subsection{Preprocesamiento de datos}
+Como se ha mencionado en la Sección \ref{section4:materials}, los datos obtenidos para este proyecto provienen de escaneos en 3D de piezas anatómicas reales digitalizadas usando el escáner Artec Miro que permite captar datos en 3D en una zona de hasta 324 cm$^3$ y escanearlos con una precisión muy alta de hasta 10 micras y una resolución de hasta 0.029 mm \cite{artec_data}. Las mallas generadas a través de estos procesos resultan en geometrías incompletas, degeneradas y con gran variabilidad de resolución. Estos factores impiden su uso directo por el \textit{framework} de ExMeshCNN.
+
+Antes de llevar a cabo los procesos de reparación, remuestreo y reducción de resolución, se consideró necesario unificar la orientación de las muestras, dado que el conjunto de datos incluye tanto pubis izquierdas como derechas. Con el fin de mantener la consistencia geométrica en los datos, se desarrolló un \textit{script} en Blender que aplica el modificador de espejo sobre las mallas 3D correspondientes a las pubis derechas. Este proceso refleja las mallas respecto al eje principal de simetría de la cara anatómica, transformándolas efectivamente en pubis izquierdas. De este modo, se garantiza que todas las muestras procesadas posean una orientación uniforme, realizado con el fin de eliminar posibles fuentes de ruido para el modelo.
+
+\subsubsection{Reparación y remuestreo de datos}
+\label{section4:data_repair}
+
+La reparación de las mallas tridimensionales implica tres pasos fundamentales: (1) sellado de los huecos para garantizar que sean estructuras \textit{watertight} (herméticas), (2) eliminación de geometría degenerada, como triángulos solapados, caras conectadas por un único vértice o aristas que se interceptan, y (3) supresión de geometría disconexa perteneciente a componentes menores, generada usualmente por errores en la captura mediante escáner 3D, y que no aporta información relevante.
+
+Para abordar este proceso, se emplearon de forma intensiva las funcionalidades de la API de Blender y de PyMeshLab, desarrollando una serie de \textit{scripts} personalizados para automatizar la limpieza y normalización de las mallas.
+
+En primer lugar, se parte de la malla cruda obtenida del escaneo, denominada \code{raw}. Utilizando PyMeshLab, se aplican métodos predefinidos para eliminar componentes desconectadas, caras duplicadas y geometría \textit{non-manifold}. El resultado de esta etapa es una malla depurada, sin degeneraciones geométricas, denominada \code{raw_clean}.
+
+Sin embargo, esta malla aún puede contener huecos, por lo que no está lista para ser procesada por ExMeshCNN. El cierre de huecos en mallas 3D es una tarea compleja, pero puede abordarse de forma eficaz mediante una técnica alternativa: el remuestreo. Esta técnica genera una nueva topología manteniendo la forma superficial original de la malla. El proceso se basa en una aproximación iterativa mediante vóxeles, que reconstruye la superficie al tiempo que genera la conectividad necesaria para cerrar los huecos.
+
+Para ello, se empleó Blender, que dispone de un operador de remuestreo robusto. Se desarrolló un segundo script que toma como entrada la malla \code{raw_clean} y aplica el operador de remuestreo en modo \code{SHARP}, con una profundidad del árbol octal de 10 (para preservar la fidelidad geométrica) y una escala de 1. El resultado es una malla libre de huecos, aunque este proceso puede reintroducir geometría \textit{non-manifold}.
+
+Por lo tanto, en el mismo script se implementó un procedimiento iterativo para eliminar dicha geometría no válida. Este procedimiento incluye:
+
+\begin{enumerate}
+    \item Selección y eliminación de vértices \textit{non-manifold} duplicados.
+    \item Nueva selección de vértices \textit{non-manifold} y colapso de aristas entre los vértices afectados.
+    \item Nueva selección y eliminación directa de todos los vértices \textit{non-manifold}.
+\end{enumerate}
+Este ciclo entero se repite hasta que no se detectan más vértices \textit{non-manifold} al final de proceso. Se comprobó empíricamente que este procedimiento converge, generando finalmente mallas completamente selladas y con una topología coherente. A las mallas resultantes se les denomina \code{clean_remesh}.
+
+\subsubsection{Reducción de resolución}
+\label{section4:data_reduction}
+Una vez obtenidas las mallas \code{clean_remesh}, que presentan una geometría adecuada y sin defectos topológicos, persiste una variabilidad importante: el número de triángulos varía entre mallas. Para normalizar esta característica, se diseñaron dos procesos distintos que permiten obtener versiones reducidas y estandarizadas de las mallas, generando dos conjuntos de datos derivados a partir de cada una.
+
+En el primer proceso, se aplica una reducción global de resolución a la malla \code{clean_remesh} mediante colapso de aristas. Esta técnica, implementada en un script de Blender, permite reducir de forma progresiva el número de triángulos, preservando en la medida de lo posible la topología general y los detalles relevantes. El resultado son mallas con un número fijo de triángulos especificado por el usuario. Estas versiones se nombran como \code{clean_remesh_<x>K}, donde \code{<x>} representa la cantidad de triángulos en miles. Por ejemplo, una malla con 50,000 triángulos tendría el sufijo \code{clean_remesh_50K}.
+
+No obstante, esta reducción uniforme afecta por igual a todas las regiones de la malla, incluyendo zonas anatómicamente poco relevantes para el análisis forense, como la parte posterior del hueso. Para maximizar la preservación de detalles en las regiones de interés, se implementó un segundo proceso complementario. Este consiste en realizar un recorte anatómico antes de la reducción de resolución, eliminando aquellas partes que los expertos forenses no consideran durante el análisis.
+
+Este procedimiento, también automatizado mediante Blender, consiste en generar un cubo con las dimensiones de la malla y reducirlo proporcionalmente para definir una región de interés. A continuación, se aplica un operador booleano para recortar las partes externas no deseadas, lo cual es posible gracias a que todas las mallas están previamente alineadas en la misma orientación. Una vez realizado el recorte, se procede a aplicar la reducción de resolución por colapso de aristas. Las mallas obtenidas por este procedimiento se nombran como \code{clean_remesh_<x>K_cut}, indicando que son versiones recortadas y reducidas de las mallas originales.
+
+Este doble enfoque permite disponer tanto de versiones completas como de versiones enfocadas anatómicamente, facilitando comparativas experimentales entre ambas modalidades de entrada.
+
+\section{Búsqueda de Arquitectura Neuronal}
+\label{section4:nas}
+El procesamiento de mallas 3D mediante DL, como se ha comentado, constituye un campo aún en etapa experimental y en rápida evolución. Debido a su novedad, no existe un consenso establecido sobre cómo tratar estos datos de manera óptima. Como resultado, no se dispone de modelos preentrenados sobre mallas 3D con las características específicas requeridas en este trabajo, particularmente en el contexto de ExMeshCNN y con la resolución necesaria para abordar el presente problema.
+
+Ante esta situación, se recurre a técnicas NAS, descritas con mayor profundidad en la Sección \ref{section2:nas}, con el fin de determinar tanto la estructura como los hiperparámetros óptimos de los modelos a emplear para el aprendizaje de las distintas características del método de Todd.
+
+De entre las diversas herramientas disponibles para realizar NAS, se ha seleccionado Optuna \cite{optuna_2019}, una biblioteca basada en optimización bayesiana, que ha demostrado resultados de alto rendimiento en tareas de generación automática de arquitecturas de red y ajuste de hiperparámetros \cite{pizurica_generic_2024}. Específicamente, se está utilizando el algoritmo \textit{Tree-structured Parzen Estimator} o TPE internamente.
+
+Los hiperparámetros considerados, junto con sus respectivos espacios de búsqueda, se detallan en la Tabla \ref{fig4:optuna_params}.
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \rowcolor[HTML]{D33333} 
+        {\color[HTML]{FFFFFF} Hiperparámetro} & {\color[HTML]{FFFFFF} Espacio de búsqueda} & {\color[HTML]{FFFFFF} Tipo} \\ \hline
+        Tasa de Aprendizaje & $\left[1\times 10^{-5}, 1\times10^{-1}\right]$ & Rango \\ \hline
+        Optimizador & \begin{tabular}[c]{@{}c@{}}Adam, AdamW, \\ Radam, SGD\end{tabular} & Categórica \\ \hline
+        Inicialización de Pesos & \begin{tabular}[c]{@{}c@{}}Sin Inicializar, Normal, \\ Xavier, Kaiming, \\ Ortogonal\end{tabular} & Categórica \\ \hline
+        Escalado de Pesos & $\left[1, 10\right]$ & Rango \\ \hline
+        Función de Pérdida & CE, WCE, FL, CB & Categórica \\ \hline
+        Tipo de CBL\textsuperscript{\textdagger} & Softmax, Sigmoide, FL & Categórica \\ \hline
+        $\beta$ de CBL\textsuperscript{\textdagger} & $\left[1, 10\right]$ & Rango \\ \hline
+        \begin{tabular}[c]{@{}l@{}}Descriptor geodésico,\\ densidad de canal intermedio\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
+        \begin{tabular}[c]{@{}l@{}}Descriptor geodésico,\\ densidad de salida\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
+        \begin{tabular}[c]{@{}l@{}}Descriptor geométrico,\\ densidad de canal intermedio\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
+        \begin{tabular}[c]{@{}l@{}}Descriptor geométrico,\\ densidad de salida\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
+        Nº de capas convolucionales & $\left[2, 6\right]$ & Rango \\ \hline
+        \begin{tabular}[c]{@{}l@{}}Densidad capa \\ convolucional $i$-ésima\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
+        Nº de capas densas & $\left[1, 5\right]$ & Rango \\ \hline
+        Densidad capa densa $i$-ésima & $\left[8, 16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
+    \end{tabular}
+    \caption[Hiperparámetros utilizados por Optuna]{Hiperparámetros utilizados en el entrenamiento con Optuna junto a su espacio de búsqueda. El tipo \say{rango} indica que cualquier valor entre los indicados puede ser utilizado, mientras que el tipo \say{categórico} indica que solamente se pueden emplear los valores listados. Funciones de pérdida: CE: \textit{Cross-Entropy}; WCE: \textit{Weighted Cross-Entropy}; FL: \textit{Focal Loss}; CB: \textit{Class Balanced Loss}. \textbf{\textdagger}: Solo se aplica si la función de pérdida seleccionada es CB.}
+    \label{fig4:optuna_params}
+\end{table}
+
+
+La lógica detrás de la selección de estos hiperparámetros se justifica del siguiente modo:
+\begin{itemize}
+    \item \textbf{Optimizadores:} Se consideran variantes ampliamente utilizadas de la familia Adam, incluyendo AdamW y RAdam, que han demostrado mejoras empíricas sobre el algoritmo original en diversos contextos. Asimismo, se incluye el algoritmo clásico de Descenso de Gradiente Estocástico (SGD), dado que en ciertos escenarios puede superar el rendimiento de Adam, especialmente en términos de generalización.
+    \item \textbf{Tasa de aprendizaje:} El rango seleccionado corresponde al intervalo recomendado en la literatura para los optimizadores considerados. Optuna se encarga de explorar combinaciones y descartar automáticamente aquellas que conduzcan a un rendimiento subóptimo. 
+    \item \textbf{Inicialización y escalado de pesos:} Estos parámetros se incluyen debido a su impacto potencial sobre la estabilidad y eficiencia del entrenamiento. Se ha demostrado que en ciertos problemas, la elección adecuada de inicialización puede marcar una diferencia significativa en la calidad del aprendizaje.
+    \item \textbf{Funciones de pérdida:} Dado el fuerte desbalance presente en las etiquetas, se han incorporado varias funciones diseñadas específicamente para tratar este tipo de problemas. Además de la función clásica de entropía cruzada (CE), se incluyen su versión ponderada (WCE), la pérdida focal (FL), y la pérdida balanceada por clase (CB), cada una con ventajas particulares para abordar clases minoritarias. Para una descripción detallada de estas funciones, véase la Sección \ref{section5:metrics}.
+    \item \textbf{Parámetros específicos de CB:} Cuando la función de pérdida seleccionada es CB, se incluyen los hiperparámetros adicionales requeridos, cuyos valores se han establecido siguiendo las recomendaciones de los autores originales de dicha técnica.
+    \item \textbf{Arquitectura de red:} Dado que los descriptores también constituyen capas con parámetros entrenables, se ha considerado su densidad (relación entre tamaño de entrada y salida) como un hiperparámetro a explorar, utilizando valores típicos en capas convolucionales. En cuanto al número total de capas, se optó por arquitecturas compactas, priorizando capas convolucionales sobre totalmente conectadas, con el objetivo de maximizar la eficiencia computacional y la capacidad expresiva dentro de los límites de memoria de la GPU.
+    \item \textbf{Densidades de capas:} Los valores posibles para la densidad de capas se han tomado de configuraciones comúnmente utilizadas en redes profundas, procurando siempre que las configuraciones más grandes posibles puedan ajustarse dentro de la memoria disponible del hardware.
+\end{itemize}
+
 \section{Protocolo de validación experimental}
 Para el entrenamiento de los modelos se empleó la técnica de \textit{hold-out}, que consiste en dividir el conjunto de datos en dos subconjuntos principales: uno de entrenamiento y otro de test. A su vez, el conjunto de entrenamiento se subdivide para obtener un subconjunto adicional de validación. Durante el proceso de entrenamiento, el modelo es ajustado utilizando únicamente los datos del conjunto de entrenamiento, mientras que el conjunto de validación se utiliza para monitorizar el rendimiento del modelo en cada época, permitiendo detectar fenómenos como el sobreajuste y orientar procesos como el ajuste de hiperparámetros.
 
@@ -9,7 +115,7 @@ Como se ha descrito en la Sección \ref{section4:data_preparation} se utilizan t
 Este esquema de partición se ilustra en la Figura ???.
 \section{Métricas}
 \label{section5:metrics}
-Dado que se trata de un problema de clasificación, se emplea la función de pérdida de entropía cruzada (\textit{cross-entropy loss}) para ajustar los pesos y sesgos de las neuronas del modelo, tal como se explicó en la Sección \ref{section:DL}. Esta función se define de la siguiente forma:
+Dado que se trata de un problema de clasificación, se emplea la función de pérdida de entropía cruzada (\textit{cross-entropy loss}) para ajustar los pesos y sesgos de las neuronas del modelo. Esta función se define de la siguiente forma:
 
 \begin{equation}
 L_{CE} = -\sum_i^n t_i \log(p_i)
@@ -68,7 +174,7 @@ Durante el proceso de ajuste de hiperparámetros y búsqueda automática de arqu
     \text{Fitness} = \text{F1}_{\text{Validación}} \cdot (1 - | \text{F1}_{\text{Validación}} -  \text{F1}_{\text{Entrenamiento}}|)
 \end{equation}
 
-La intuición detrás de esta formulación es doble: por un lado, se favorecen modelos con un alto rendimiento en el conjunto de validación, y por otro, se penaliza la discrepancia entre el rendimiento en entrenamiento y validación, lo cual es indicativo de sobreajuste. De este modo, se priorizan aquellos modelos que generalizan bien y no simplemente memorizan los datos de entrenamiento.
+La heurística de esta formulación es la siguiente: por un lado, se favorecen modelos con un alto rendimiento en el conjunto de validación, y por otro, se penaliza la discrepancia entre el rendimiento en entrenamiento y validación, lo cual es indicativo de sobreajuste. De este modo, se priorizan aquellos modelos que generalizan bien y no simplemente memorizan los datos de entrenamiento.
 
 Por último, se incorpora una métrica adicional, la distancia de Hausdorff, que no evalúa directamente el rendimiento del modelo, sino la calidad geométrica de las mallas poligonales. Formalmente, esta distancia se define como:
 
@@ -78,7 +184,9 @@ d_H = \max\left\{\sup_{x\in X} \inf_{y \in Y} d(x,y), \sup_{y\in Y} \inf_{x \in 
 
 donde $X$ e $Y$ son subconjuntos del espacio métrico, y $d(x,y)$ representa la distancia entre los puntos $x$ e $y$. En el contexto de las mallas 3D \cite{cignoni1998metro}, se evalúa esta métrica entre triángulos de dos mallas distintas, permitiendo cuantificar la similitud o diferencia entre sus superficies. Para su cálculo se ha empleado PyMeshLab, el cual proporciona tanto la distancia máxima como la distancia media entre las superficies comparadas, expresadas en unidades absolutas (metros, centímetros, etc.) o como un porcentaje relativo.
 
-\section{Análisis de pérdida de calidad de mallas 3D al reducir el número de triángulos}
+\section{Experimentos}
+
+\subsection{Análisis de pérdida de calidad de mallas 3D al reducir el número de triángulos}
 \label{section5:experiment_edge_collapse}
 Como se ha explicado en la Sección \ref{section4:methods}, el método ExMeshCNN requiere que todas las mallas tengan un número idéntico de caras triangulares para poder procesarlas correctamente. Sin embargo, como se mencionó en la Sección \ref{section4:data_preparation}, las mallas del conjunto de datos original presentan un número variable de triángulos, y además, muchas de ellas contienen una cantidad excesiva de caras que supera las capacidades del hardware disponible.
 
@@ -99,7 +207,7 @@ Como puede observarse, hasta una reducción del 75\% del número de triángulos,
 
 Estos resultados apuntan a que es posible aplicar reducciones agresivas en la cantidad de triángulos sin comprometer significativamente la calidad topológica de las mallas. En consecuencia, se valida la viabilidad de utilizar versiones simplificadas de las mallas para el entrenamiento por medio de ExMeshCNN.
 
-\section{Experimentos con etiqueta única}
+\subsection{Experimentos con etiqueta única}
 Una vez validado que es factible utilizar versiones reducidas de las mallas sin pérdida significativa de información, y habiendo preparado los datos para su uso con el modelo ExMeshCNN, tal como se describe en la Sección \ref{section4:data_preparation}, se procedió a diseñar la estrategia para la generación automática de arquitecturas, explicada en profundidad en la Sección \ref{section4:nas}.
 
 En esta fase, se llevaron a cabo los denominados experimentos de etiqueta única, donde se entrena un modelo independiente para cada una de las características de Todd, sin considerar la influencia de las demás características.
@@ -151,7 +259,7 @@ Respecto a la resolución, se observa que los mejores resultados, en general, se
 
 Sin embargo, las características LSE e IP constituyen una excepción a esta tendencia: en ambos casos, la mayor resolución permitió obtener un mejor rendimiento, lo que indica que para estas características el mayor nivel de detalle en la superficie ósea proporciona una ventaja en el aprendizaje del modelo.
 
-\section{Experimentos multietiqueta}
+\subsection{Experimentos multietiqueta}
 Una vez realizados los experimentos de etiqueta única, se procedió a entrenar modelos capaces de predecir múltiples características simultáneamente. Para ello, se empleó el enfoque de \textit{multi-label classification}, que permite que cada muestra del conjunto de datos pueda estar asociada a más de una etiqueta, en contraste con la clasificación tradicional donde cada muestra pertenece a una única clase.
 
 Para estos experimentos, primero se realizaron ejecuciones con todas las características de Todd por cada resolución, tipo de malla y, adicionalmente, dos configuraciones de la parte densa o totalmente conectada del modelo: una donde todas las salidas poseen la misma estructura y otra donde cada salida tiene una estructura densa independiente.
@@ -219,12 +327,15 @@ Finalmente, se observa que los resultados obtenidos en los experimentos multieti
 Si bien existe más disparidad respecto al \textit{accuracy} entre los experimentos de etiqueta única y multietiqueta, en general se observa que se mantiene un rendimiento alto en ambas configuraciones, con valores muy similares a los obtenidos en los experimentos de etiqueta única.
 
 \section{Análisis de Resultados}
+
 Durante los experimentos realizados, se ha observado que el modelo ExMeshCNN es capaz de aprender patrones topológicos relevantes en las mallas óseas para predecir las características de Todd. Los resultados obtenidos tanto en los experimentos de etiqueta única como en los de multietiqueta muestran un rendimiento prometedor, con valores de F1 y \textit{accuracy} que evidencian una buena capacidad de generalización por parte de los modelos, optimizados mediante búsqueda automática de arquitectura e hiperparámetros.
 
 Al analizar las matrices de confusión de los mejores modelos (Figuras \ref{fig5:AF_confusion_matrix}, \ref{fig5:BN_confusion_matrix}, \ref{fig5:DM_confusion_matrix}, \ref{fig5:DP_confusion_matrix}, \ref{fig5:IP_confusion_matrix}, \ref{fig5:LSE_confusion_matrix}, \ref{fig5:USE_confusion_matrix}, \ref{fig5:VB_confusion_matrix} y \ref{fig5:VM_confusion_matrix}), se aprecia que los modelos tienden a clasificar correctamente la mayoría de las muestras de una forma equilibrada tal y como se observó con la métrica F1, cometiendo más errores en aquellas clases menos representadas. Este comportamiento es coherente con lo esperado en problemas de clasificación desbalanceada, donde los modelos suelen favorecer las clases mayoritarias. No obstante, la mayoría de las confusiones ocurren entre clases adyacentes, lo que sugiere que el modelo ha aprendido a distinguir de manera significativa los patrones de las distintas características de Todd. De forma particular, la característica con peor rendimiento es VB, que presenta una matriz de confusión con un alto número de falsos negativos, lo que indica que el modelo tiene dificultades para identificar correctamente las muestras de esta clase, a pesar de que es la característica más balanceada en términos de distribución de etiquetas. Esto concuerda con las observaciones realizadas en en ???, dónde se observó que esta característica es la que presenta la mayor tasa de error inter e intra-experto, lo que sugiere que esta es una característica más subjetiva o menos consistente entre los expertos, lo que dificulta su clasificación por parte del modelo.
 
 \subsection{Hiperparámetros y Arquitectura Neuronal}
-Los mejores modelos obtenidos presentan configuraciones arquitectónicas notablemente diversas entre sí, lo que indica que la búsqueda automática ha sido efectiva para adaptar la arquitectura a los requerimientos específicos de cada característica.
+Para facilitar la comprensión, se incluye una tabla resumen que detalla los datos de entrada utilizados por cada modelo, así como su arquitectura y los hiperparámetros seleccionados. La Tabla \ref{table5:sample_table} muestra un ejemplo del formato empleado, junto con la explicación de cada una de sus columnas y filas.
+
+Los mejores modelos obtenidos presentan configuraciones arquitectónicas notablemente diversas entre sí, lo que indica que la búsqueda automática ha sido efectiva para adaptar la estructura de las redes a los requerimientos específicos de cada característica.
 
 Pese a esta diversidad, se observa una tendencia general hacia redes con mayor profundidad en las capas convolucionales, como en los casos de AF (Tabla \ref{table5:AF_best_model}), BN (Tabla \ref{table5:BN_best_model}), IP (Tabla \ref{table5:IP_best_model}), LSE (Tabla \ref{table5:LSE_best_model}), VB (Tabla \ref{table5:VB_best_model}) y VM (Tabla \ref{table5:VM_best_model}), donde se utilizaron 4 o más capas convolucionales, y algunas, como AF, BN y VM, alcanzaron hasta 6 capas. Esto sugiere que estas características pueden requerir una mayor capacidad de representación para capturar los patrones complejos presentes en las mallas.
 
@@ -234,42 +345,72 @@ Las capas totalmente conectadas, en cambio, presentan mayor variabilidad en cuan
 
 En términos de hiperparámetros, se detecta un uso consistente del optimizador Adam y de la inicialización Kaiming en la mayoría de los modelos exitosos, lo que sugiere que estas configuraciones son adecuadas para el entrenamiento de redes basadas en ExMeshCNN. En cuanto a las funciones de pérdida, predomina el uso de WCE, seguida por CBL, lo cual es coherente con la naturaleza desbalanceada del problema y valida su idoneidad para este tipo de clasificación.
 
+\begin{figure}[p]
+    \begin{minipage}{\linewidth}
+        \centering
+        \begin{tabular}{c|cc|c|c|}
+            \hline
+            \rowcolor[HTML]{D33333} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & {\color[HTML]{FFFFFF} \textbf{CONV}} & {\color[HTML]{FFFFFF} \textbf{FN}} \\ \cline{2-5} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} &  & \textbf{(h)} \\ \cline{1-3} \cline{5-5} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & (c) &  &  \\ \cline{1-1}
+            \multicolumn{1}{|c|}{(a)} & OUT & (d) &  &  \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} &  &  \\ \cline{1-3}
+            \multicolumn{1}{|c|}{(b)} & MID & (e) &  &  \\ \cline{1-1}
+             & OUT & (f) & \multirow{-6}{*}{(g)} & \multirow{-5}{*}{(i)} \\ \cline{2-5} 
+        \end{tabular}
+    
+        \vspace{1em}
+    
+        \begin{tabular}{|
+            >{\columncolor[HTML]{D33333}}c |c|c|}
+            \hline
+            {\color[HTML]{FFFFFF} \textbf{LR}} & (j) & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & (k) & \textbf{(h)} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{INIT}} & (l) & (n) \\ \hline
+        \end{tabular}
+        \captionof{table}{Formato utilizado para resumir los datos de entrada, la estructura de la red y los hiperparámetros empleados en cada uno de los modelos. La tabla superior detalla las configuraciones relativas a los datos y la arquitectura, mientras que la tabla inferior resume los hiperparámetros principales. En la tabla superior, la columna \textbf{DATA} especifica las características de los datos de entrada: \textbf{RES} indica la resolución de la malla (a) y \textbf{TYPE} su tipo (b). La columna \textbf{DECR} incluye la configuración de los descriptores utilizados: \textbf{GEOD} para el descriptor geodésico y \textbf{GEOM} para el descriptor geométrico; MID y OUT indican respectivamente la densidad de sus capas intermedias (c, e) y de salida (d, f). La columna \textbf{CONV} muestra la arquitectura de las capas convolucionales: número de capas y densidad de cada una (g). La columna \textbf{FN} presenta en (h) las características morfológicas predichas y en (i) la configuración de la parte densa del modelo de cada una. En la tabla inferior, \textbf{LR} indica la tasa de aprendizaje (j), \textbf{OPTIMIZER} el optimizador empleado (k), \textbf{INIT} el tipo de inicialización de pesos (l), y \textbf{LOSS} la función de pérdida (n) asociada a la característica correspondiente (h).}
+        \label{table5:sample_table}
+    \end{minipage}
+\end{figure}
+
 %% AF
 \begin{figure}[htbp]
     \centering
     % --- Top: Table ---
     \begin{minipage}{\linewidth}
         \centering
-        \begin{tabular}{|cc|c|cccc|}
+        \begin{tabular}{c|cc|c|cccc|}
             \hline
             \rowcolor[HTML]{D33333} 
-            \multicolumn{2}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & {\color[HTML]{FFFFFF} \textbf{CONV}} & \multicolumn{4}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \hline
-            \multicolumn{2}{|c|}{\textbf{GEOD}} & 64 & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{DM}} & \multicolumn{1}{c|}{\textbf{LSE}} & \textbf{USE} \\ \cline{1-2} \cline{4-7} 
-            \multicolumn{1}{|c|}{\textbf{MID}} & 16 & 32 & \multicolumn{1}{c|}{256} & \multicolumn{1}{c|}{8} & \multicolumn{1}{c|}{16} & 32 \\ \cline{1-2} \cline{4-5}
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 128 & 32 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{8} & 32 \\ \cline{1-2}
-            \multicolumn{2}{|c|}{\textbf{GEOM}} & 128 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{64} & 256 \\ \cline{1-2}
-            \multicolumn{1}{|c|}{\textbf{MID}} & 128 & 256 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{128} & 64 \\ \cline{1-2} \cline{6-6}
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 256 & 32 &  &  & \multicolumn{1}{c|}{} & 16 \\ \cline{1-3} \cline{7-7} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & {\color[HTML]{FFFFFF} \textbf{CONV}} & \multicolumn{4}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \cline{2-8} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & 64 & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}\textbf{AF}} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFFFFF}\textbf{DM}} & \multicolumn{1}{c|}{\textbf{LSE}} & \textbf{USE} \\ \cline{1-3} \cline{5-8} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 16 & 32 & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}256} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFFFFF}8} & \multicolumn{1}{c|}{16} & 32 \\ \cline{1-1} \cline{5-6}
+            \multicolumn{1}{|c|}{50K} & OUT & 128 & 32 &  & \multicolumn{1}{c|}{\cellcolor[HTML]{FFFFFF}} & \multicolumn{1}{c|}{8} & 32 \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & 128 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{64} & 256 \\ \cline{1-3}
+            \multicolumn{1}{|c|}{Cut} & MID & 128 & 256 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{128} & 64 \\ \cline{1-1} \cline{7-7}
+             & OUT & 256 & 32 &  &  & \multicolumn{1}{c|}{} & 16 \\ \cline{2-4} \cline{8-8} 
         \end{tabular}
 
         \vspace{1em}
 
         \begin{tabular}{|
-            >{\columncolor[HTML]{D33333}}c |c|cccc|}
+            >{\columncolor[HTML]{D33333}}c |c|
+            >{\columncolor[HTML]{FFCCC9}}c ccc|}
             \hline
             {\color[HTML]{FFFFFF} \textbf{LR}} & $3.4261 \times 10^{-4}$ & \multicolumn{4}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}}} \\ \hline
-            {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & AdamW & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{DM}} & \multicolumn{1}{c|}{\textbf{LSE}} & \textbf{USE} \\ \hline
-            {\color[HTML]{FFFFFF} \textbf{INIT}} & N/A & \multicolumn{1}{c|}{WCE} & \multicolumn{1}{c|}{WCE} & \multicolumn{1}{c|}{CE} & WCE \\ \hline
-            \end{tabular}
-        \captionof{table}{Estructura e hiperparámetros del mejor modelo para AF}
+            {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & AdamW & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}\textbf{AF}} & \multicolumn{1}{c|}{\textbf{DM}} & \multicolumn{1}{c|}{\textbf{LSE}} & \textbf{USE} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{INIT}} & N/A & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}WCE} & \multicolumn{1}{c|}{WCE} & \multicolumn{1}{c|}{CE} & WCE \\ \hline
+        \end{tabular}
+        \captionof{table}{Característica \textbf{AF}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:AF_best_model}
     \end{minipage}
 
     \vspace{1.5em} % vertical space between table and image
 
     % --- Bottom: Figure ---
-    \includegraphics[width=0.75\linewidth]{figures/5_experiments/multi-af-cm.pdf}
-    \caption{Matriz de confusión mejor modelo para AF en test}
+    \includegraphics[width=0.6\linewidth]{figures/5_experiments/multi-af-cm.pdf}
+    \caption{Característica \textbf{AF}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Porosidad Regular, \textbf{1}: Muy Definidas, \textbf{2}: Poco Profundas, \textbf{3}: Restos de Surcos, \textbf{4}: No hay surcos.}
     \label{fig5:AF_confusion_matrix}
 \end{figure}
 
@@ -279,36 +420,37 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
     % --- Top: Table ---
     \begin{minipage}{\linewidth}
         \centering
-        \begin{tabular}{|cc|c|cccc}
+        \begin{tabular}{c|cc|c|cccc}
             \hline
             \rowcolor[HTML]{D33333} 
-            \multicolumn{2}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & {\color[HTML]{FFFFFF} \textbf{CONV}} & \multicolumn{4}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \hline
-            \multicolumn{2}{|c|}{\textbf{GEOD}} & 256 & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{BN}} & \multicolumn{1}{c|}{\textbf{DP}} & \multicolumn{1}{c|}{\textbf{LSE}} \\ \cline{1-2} \cline{4-7} 
-            \multicolumn{1}{|c|}{\textbf{MID}} & 256 & 128 & \multicolumn{1}{c|}{128} & \multicolumn{1}{c|}{32} & \multicolumn{1}{c|}{32} & \multicolumn{1}{c|}{32} \\ \cline{1-2} \cline{4-4}
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 16 & 256 & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{128} \\ \cline{1-2} \cline{5-5}
-            \multicolumn{2}{|c|}{\textbf{GEOM}} & 64 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{256} & \multicolumn{1}{c|}{128} \\ \cline{1-2} \cline{7-7} 
-            \multicolumn{1}{|c|}{\textbf{MID}} & 32 & 16 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{16} &  \\ \cline{1-2}
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 16 & 64 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{256} &  \\ \cline{1-3} \cline{6-6}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & {\color[HTML]{FFFFFF} \textbf{CONV}} & \multicolumn{4}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \cline{2-8} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & 256 & \multicolumn{1}{c|}{\cellcolor[HTML]{FFFFFF}\textbf{AF}} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}\textbf{BN}} & \multicolumn{1}{c|}{\textbf{DP}} & \multicolumn{1}{c|}{\textbf{LSE}} \\ \cline{1-3} \cline{5-8} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 256 & 128 & \multicolumn{1}{c|}{\cellcolor[HTML]{FFFFFF}128} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}32} & \multicolumn{1}{c|}{32} & \multicolumn{1}{c|}{32} \\ \cline{1-1} \cline{5-5}
+            \multicolumn{1}{|c|}{25K} & OUT & 16 & 256 & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}64} & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{128} \\ \cline{1-3} \cline{6-6}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & 64 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{256} & \multicolumn{1}{c|}{128} \\ \cline{1-3} \cline{8-8} 
+            \multicolumn{1}{|c|}{Cut} & MID & 32 & 16 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{16} &  \\ \cline{1-1}
+             & OUT & 16 & 64 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{256} &  \\ \cline{2-4} \cline{7-7}
         \end{tabular}
 
         \vspace{1em}
 
         \begin{tabular}{|
-            >{\columncolor[HTML]{D33333}}c |c|cccc|}
+            >{\columncolor[HTML]{D33333}}c |c|c
+            >{\columncolor[HTML]{FFCCC9}}c cc|}
             \hline
             {\color[HTML]{FFFFFF} \textbf{LR}} & $5.0965 \times 10^{-3}$ & \multicolumn{4}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}}} \\ \hline
-            {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Radam & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{BN}} & \multicolumn{1}{c|}{\textbf{DP}} & \textbf{LSE} \\ \hline
-            {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & \multicolumn{1}{c|}{FL} & \multicolumn{1}{c|}{CBL} & \multicolumn{1}{c|}{CBL} & CBL \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Radam & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}\textbf{BN}} & \multicolumn{1}{c|}{\textbf{DP}} & \textbf{LSE} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & \multicolumn{1}{c|}{FL} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}CBL} & \multicolumn{1}{c|}{CBL} & CBL \\ \hline
         \end{tabular}
-        \captionof{table}{Estructura e hiperparámetros del mejor modelo para BN}
+        \captionof{table}{Característica \textbf{BN}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:BN_best_model}
     \end{minipage}
 
     \vspace{1.5em} % vertical space between table and image
 
     % --- Bottom: Figure ---
-    \includegraphics[width=0.75\linewidth]{figures/5_experiments/multi-bn-cm.pdf}
-    \caption{Matriz de confusión mejor modelo para BN en test}
+    \includegraphics[width=0.6\linewidth]{figures/5_experiments/multi-bn-cm.pdf}
+    \caption{Característica \textbf{BN}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: Presente.}
     \label{fig5:BN_confusion_matrix}
 \end{figure}
 
@@ -318,43 +460,42 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
     % --- Top: Table ---
     \begin{minipage}{\linewidth}
         \centering
-        \begin{tabular}{|cc|cc}
+        \begin{tabular}{c|cc|cc}
             \hline
             \rowcolor[HTML]{D33333} 
-            \multicolumn{2}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{CONV}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \hline
-            \multicolumn{2}{|c|}{\textbf{GEOD}} & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{\textbf{Todos}} \\ \cline{1-2} \cline{4-4} 
-            \multicolumn{1}{|c|}{\textbf{MID}} & 16 & \multicolumn{1}{c|}{128} & \multicolumn{1}{c|}{32} \\ \cline{1-2} \cline{4-4} 
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 16 & \multicolumn{1}{c|}{128} &  \\ \cline{1-3}
-            \multicolumn{2}{|c|}{\textbf{GEOM}} &  &  \\ \cline{1-2}
-            \multicolumn{1}{|c|}{\textbf{MID}} & 16 &  &  \\ \cline{1-2}
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 256 &  &  \\ \cline{1-2}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{CONV}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \cline{2-5} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{\textbf{Todos}} \\ \cline{1-3} \cline{5-5} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 16 & \multicolumn{1}{c|}{128} & \multicolumn{1}{c|}{32} \\ \cline{1-1} \cline{5-5} 
+            \multicolumn{1}{|c|}{100K} & OUT & 16 & \multicolumn{1}{c|}{128} &  \\ \cline{1-4}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} &  &  \\ \cline{1-3}
+            \multicolumn{1}{|c|}{Cut} & MID & 16 &  &  \\ \cline{1-1}
+             & OUT & 256 &  &  \\ \cline{2-3}
         \end{tabular}
 
         \vspace{1em}
 
         \begin{tabular}{cc|ccccc}
-            \hline
-            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LR}}} & $1.4861 \times 10^{-4}$ & \multicolumn{5}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}}} \\ \hline
-            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{OPTIMIZER}}} & Adam & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{BN}} & \multicolumn{1}{c|}{\textbf{DM}} & \multicolumn{1}{c|}{\textbf{DP}} & \multicolumn{1}{c|}{\textbf{IP}} \\ \hline
-            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{INIT}}} & Kaiming & \multicolumn{1}{c|}{WCE} & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{WCE} \\ \hline
-             &  & \multicolumn{1}{c|}{\textbf{LSE}} & \multicolumn{1}{c|}{\textbf{USE}} & \multicolumn{1}{c|}{\textbf{VB}} & \multicolumn{1}{c|}{\textbf{VM}} &  \\ \cline{3-6}
-             &  & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{WCE} & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{CE} &  \\ \cline{3-6}
+        \hline
+        \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LR}}} & $1.4861 \times 10^{-4}$ & \multicolumn{5}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}}} \\ \hline
+        \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{OPTIMIZER}}} & Adam & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{BN}} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}\textbf{DM}} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}\textbf{DP}} & \multicolumn{1}{c|}{\textbf{IP}} \\ \hline
+        \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{INIT}}} & Kaiming & \multicolumn{1}{c|}{WCE} & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}CE} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}CE} & \multicolumn{1}{c|}{WCE} \\ \hline
+        &  & \multicolumn{1}{c|}{\textbf{LSE}} & \multicolumn{1}{c|}{\textbf{USE}} & \multicolumn{1}{c|}{\textbf{VB}} & \multicolumn{1}{c|}{\textbf{VM}} &  \\ \cline{3-6}
+        &  & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{WCE} & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{CE} &  \\ \cline{3-6}
         \end{tabular}
-        \captionof{table}{Estructura e hiperparámetros del mejor modelo para DM y DP}
+        \captionof{table}{Características \textbf{DP} y \textbf{DM}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:DM_DP_best_model}
     \end{minipage}
 
     \vspace{1.5em} % vertical space between table and image
 
     % --- Bottom: Figure ---
-    \includegraphics[width=0.5\linewidth]{figures/5_experiments/multi-dm-cm.pdf}
-    \caption{Matriz de confusión mejor modelo para DM en test}
+    \includegraphics[width=0.4\linewidth]{figures/5_experiments/multi-dm-cm.pdf}
+    \caption{Característica \textbf{DM}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No Definido, \textbf{1}: En Formación, \textbf{2}: Definido.}
     \label{fig5:DM_confusion_matrix}
-    \includegraphics[width=0.5\linewidth]{figures/5_experiments/multi-dp-cm.pdf}
-    \caption{Matriz de confusión mejor modelo para DM en test}
+    \includegraphics[width=0.4\linewidth]{figures/5_experiments/multi-dp-cm.pdf}
+    \caption{Característica \textbf{DP}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: Presente.}
     \label{fig5:DP_confusion_matrix}
 \end{figure}
-
 
 %% IP
 \begin{figure}[htbp]
@@ -362,16 +503,16 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
     % --- Top: Table ---
     \begin{minipage}{\linewidth}
         \centering
-        \begin{tabular}{|cc|cc}
+        \begin{tabular}{c|cc|cc}
             \hline
             \rowcolor[HTML]{D33333} 
-            \multicolumn{2}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{CONV}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \hline
-            \multicolumn{2}{|c|}{\textbf{GEOD}} & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{\textbf{IP}} \\ \cline{1-2} \cline{4-4} 
-            \multicolumn{1}{|c|}{\textbf{MID}} & 256 & \multicolumn{1}{c|}{128} & \multicolumn{1}{c|}{256} \\ \cline{1-2} \cline{4-4} 
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 32 & \multicolumn{1}{c|}{64} &  \\ \cline{1-2}
-            \multicolumn{2}{|c|}{\textbf{GEOM}} & \multicolumn{1}{c|}{64} &  \\ \cline{1-2}
-            \multicolumn{1}{|c|}{\textbf{MID}} & 16 & \multicolumn{1}{c|}{32} &  \\ \cline{1-3}
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 256 &  &  \\ \cline{1-2}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{CONV}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \cline{2-5} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{\textbf{IP}} \\ \cline{1-3} \cline{5-5} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 256 & \multicolumn{1}{c|}{128} & \multicolumn{1}{c|}{256} \\ \cline{1-1} \cline{5-5} 
+            \multicolumn{1}{|c|}{100K} & OUT & 32 & \multicolumn{1}{c|}{64} &  \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & \multicolumn{1}{c|}{64} &  \\ \cline{1-3}
+            \multicolumn{1}{|c|}{Cut} & MID & 16 & \multicolumn{1}{c|}{32} &  \\ \cline{1-1} \cline{4-4}
+             & OUT & 256 &  &  \\ \cline{2-3}
         \end{tabular}
 
         \vspace{1em}
@@ -383,15 +524,15 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Radam & \textbf{IP} \\ \hline
             {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & WCE \\ \hline
         \end{tabular}
-        \captionof{table}{Estructura e hiperparámetros del mejor modelo para IP}
+        \captionof{table}{Característica \textbf{IP}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:IP_best_model}
     \end{minipage}
 
     \vspace{1.5em} % vertical space between table and image
 
     % --- Bottom: Figure ---
-    \includegraphics[width=0.75\linewidth]{figures/5_experiments/single-ip-cm.pdf}
-    \caption{Matriz de confusión mejor modelo para IP en test}
+    \includegraphics[width=0.6\linewidth]{figures/5_experiments/single-ip-cm.pdf}
+    \caption{Característica \textbf{IP}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No, \textbf{1}: Mediana, \textbf{2}: Sí.}
     \label{fig5:IP_confusion_matrix}
 \end{figure}
 
@@ -401,17 +542,17 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
     % --- Top: Table ---
     \begin{minipage}{\linewidth}
         \centering
-        \begin{tabular}{|cc|cc}
+        \begin{tabular}{c|cc|cc}
             \hline
             \rowcolor[HTML]{D33333} 
-            \multicolumn{2}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{CONV}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \hline
-            \multicolumn{2}{|c|}{\textbf{GEOD}} & \multicolumn{1}{c|}{256} & \multicolumn{1}{c|}{\textbf{LSE}} \\ \cline{1-2} \cline{4-4} 
-            \multicolumn{1}{|c|}{\textbf{MID}} & 32 & \multicolumn{1}{c|}{16} & \multicolumn{1}{c|}{8} \\ \cline{1-2}
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 64 & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{16} \\ \cline{1-2}
-            \multicolumn{2}{|c|}{\textbf{GEOM}} & \multicolumn{1}{c|}{16} & \multicolumn{1}{c|}{256} \\ \cline{1-3}
-            \multicolumn{1}{|c|}{\textbf{MID}} & 256 & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{128} \\ \cline{1-2} \cline{4-4} 
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 128 &  &  \\ \cline{1-2}
-        \end{tabular}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{CONV}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \cline{2-5} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & \multicolumn{1}{c|}{256} & \multicolumn{1}{c|}{\textbf{LSE}} \\ \cline{1-3} \cline{5-5} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 32 & \multicolumn{1}{c|}{16} & \multicolumn{1}{c|}{8} \\ \cline{1-1}
+            \multicolumn{1}{|c|}{100K} & OUT & 64 & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{16} \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & \multicolumn{1}{c|}{16} & \multicolumn{1}{c|}{256} \\ \cline{1-4}
+            \multicolumn{1}{|c|}{Full} & MID & 256 & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{128} \\ \cline{1-1} \cline{5-5} 
+             & OUT & 128 &  &  \\ \cline{2-3}
+    \end{tabular}
 
         \vspace{1em}
 
@@ -422,15 +563,15 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Adam & \textbf{LSE} \\ \hline
             {\color[HTML]{FFFFFF} \textbf{INIT}} & Orthogonal & WCE \\ \hline
         \end{tabular}
-        \captionof{table}{Estructura e hiperparámetros del mejor modelo para LSE}
+        \captionof{table}{Característica \textbf{LSE}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:LSE_best_model}
     \end{minipage}
 
     \vspace{1.5em} % vertical space between table and image
 
     % --- Bottom: Figure ---
-    \includegraphics[width=0.75\linewidth]{figures/5_experiments/single-lse-cm.pdf}
-    \caption{Matriz de confusión mejor modelo para LSE en test}
+    \includegraphics[width=0.6\linewidth]{figures/5_experiments/single-lse-cm.pdf}
+    \caption{Característica \textbf{LSE}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No Definido, \textbf{1}: Definido.}
     \label{fig5:LSE_confusion_matrix}
 \end{figure}
 
@@ -440,36 +581,37 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
     % --- Top: Table ---
     \begin{minipage}{\linewidth}
         \centering
-        \begin{tabular}{|cc|cc}
+        \begin{tabular}{c|cc|cc}
             \hline
             \rowcolor[HTML]{D33333} 
-            \multicolumn{2}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{CONV}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \hline
-            \multicolumn{2}{|c|}{\textbf{GEOD}} & \multicolumn{1}{c|}{32} & \multicolumn{1}{c|}{\textbf{Todos}} \\ \cline{1-2} \cline{4-4} 
-            \multicolumn{1}{|c|}{\textbf{MID}} & 128 & \multicolumn{1}{c|}{32} & \multicolumn{1}{c|}{16} \\ \hline
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 256 &  &  \\ \cline{1-2}
-            \multicolumn{2}{|c|}{\textbf{GEOM}} &  &  \\ \cline{1-2}
-            \multicolumn{1}{|c|}{\textbf{MID}} & 16 &  &  \\ \cline{1-2}
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 32 &  &  \\ \cline{1-2}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{CONV}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \cline{2-5} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & \multicolumn{1}{c|}{32} & \multicolumn{1}{c|}{\textbf{Todos}} \\ \cline{1-3} \cline{5-5} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 128 & \multicolumn{1}{c|}{32} & \multicolumn{1}{c|}{16} \\ \cline{1-1} \cline{4-5} 
+            \multicolumn{1}{|c|}{25K} & OUT & 256 &  &  \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} &  &  \\ \cline{1-3}
+            \multicolumn{1}{|c|}{Cut} & MID & 16 &  &  \\ \cline{1-1}
+             & OUT & 32 &  &  \\ \cline{2-3}
         \end{tabular}
 
         \vspace{1em}
 
         \begin{tabular}{|
-            >{\columncolor[HTML]{D33333}}c |c|cccc|}
+            >{\columncolor[HTML]{D33333}}c |c|ccc
+            >{\columncolor[HTML]{FFCCC9}}c c|}
             \hline
-            {\color[HTML]{FFFFFF} \textbf{LR}} & $1.3456 \times 10^{-3}$ & \multicolumn{4}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}}} \\ \hline
-            {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Adam & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{DM}} & \multicolumn{1}{c|}{\textbf{LSE}} & \textbf{USE} \\ \hline
-            {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & \multicolumn{1}{c|}{CBL} & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{CBL} & FL \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{LR}} & $1.3456 \times 10^{-3}$ & \multicolumn{5}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}}} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Adam & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{DM}} & \multicolumn{1}{c|}{\textbf{LSE}} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}\textbf{USE}} & \textbf{IP} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & \multicolumn{1}{c|}{CBL} & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{CBL} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}FL} & WCE \\ \hline
         \end{tabular}
-        \captionof{table}{Estructura e hiperparámetros del mejor modelo para USE}
+        \captionof{table}{Característica \textbf{USE}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:USE_best_model}
     \end{minipage}
 
     \vspace{1.5em} % vertical space between table and image
 
     % --- Bottom: Figure ---
-    \includegraphics[width=0.75\linewidth]{figures/5_experiments/multi-use-cm.pdf}
-    \caption{Matriz de confusión mejor modelo para USE en test}
+    \includegraphics[width=0.6\linewidth]{figures/5_experiments/multi-use-cm.pdf}
+    \caption{Característica \textbf{USE}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No Definido, \textbf{1}: Definido.}
     \label{fig5:USE_confusion_matrix}
 \end{figure}
 
@@ -479,16 +621,16 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
     % --- Top: Table ---
     \begin{minipage}{\linewidth}
         \centering
-        \begin{tabular}{|cc|c|c|}
+        \begin{tabular}{c|cc|c|c|}
             \hline
             \rowcolor[HTML]{D33333} 
-            \multicolumn{2}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & {\color[HTML]{FFFFFF} \textbf{CONV}} & {\color[HTML]{FFFFFF} \textbf{FN}} \\ \hline
-            \multicolumn{2}{|c|}{\textbf{GEOD}} & 64 & \textbf{VB} \\ \cline{1-2} \cline{4-4} 
-            \multicolumn{1}{|c|}{\textbf{MID}} & 128 & 256 & 8 \\ \cline{1-2}
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 256 & 16 & 256 \\ \cline{1-2}
-            \multicolumn{2}{|c|}{\textbf{GEOM}} & 16 & 8 \\ \cline{1-3}
-            \multicolumn{1}{|c|}{\textbf{MID}} & 256 &  & 128 \\ \cline{1-2}
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 32 &  & 32 \\ \cline{1-2} \cline{4-4} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & {\color[HTML]{FFFFFF} \textbf{CONV}} & {\color[HTML]{FFFFFF} \textbf{FN}} \\ \cline{2-5} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & 64 & \textbf{VB} \\ \cline{1-3} \cline{5-5} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 128 & 256 & 8 \\ \cline{1-1}
+            \multicolumn{1}{|c|}{50K} & OUT & 256 & 16 & 256 \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & 16 & 8 \\ \cline{1-4}
+            \multicolumn{1}{|c|}{Cut} & MID & 256 &  & 128 \\ \cline{1-1}
+             & OUT & 32 &  & 32 \\ \cline{2-3} \cline{5-5} 
         \end{tabular}
 
         \vspace{1em}
@@ -500,15 +642,15 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Adam & \textbf{VB} \\ \hline
             {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & CE \\ \hline
         \end{tabular}
-        \captionof{table}{Estructura e hiperparámetros del mejor modelo para VB}
+        \captionof{table}{Característica \textbf{VB}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:VB_best_model}
     \end{minipage}
 
     \vspace{1.5em} % vertical space between table and image
 
     % --- Bottom: Figure ---
-    \includegraphics[width=0.75\linewidth]{figures/5_experiments/single-vb-cm.pdf}
-    \caption{Matriz de confusión mejor modelo para VB en test}
+    \includegraphics[width=0.6\linewidth]{figures/5_experiments/single-vb-cm.pdf}
+    \caption{Característica \textbf{VB}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: En Formación, \textbf{2}: Presente.}
     \label{fig5:VB_confusion_matrix}
 \end{figure}
 
@@ -518,16 +660,16 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
     % --- Top: Table ---
     \begin{minipage}{\linewidth}
         \centering
-        \begin{tabular}{|cc|c|c}
+        \begin{tabular}{c|cc|c|c}
             \hline
             \rowcolor[HTML]{D33333} 
-            \multicolumn{2}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & {\color[HTML]{FFFFFF} \textbf{CONV}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \hline
-            \multicolumn{2}{|c|}{\textbf{GEOD}} & 256 & \multicolumn{1}{c|}{\textbf{VM}} \\ \cline{1-2} \cline{4-4} 
-            \multicolumn{1}{|c|}{\textbf{MID}} & 32 & 256 & \multicolumn{1}{c|}{256} \\ \cline{1-2}
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 32 & 16 & \multicolumn{1}{c|}{256} \\ \cline{1-2}
-            \multicolumn{2}{|c|}{\textbf{GEOM}} & 16 & \multicolumn{1}{c|}{8} \\ \cline{1-2}
-            \multicolumn{1}{|c|}{\textbf{MID}} & 64 & 16 & \multicolumn{1}{c|}{32} \\ \cline{1-2} \cline{4-4} 
-            \multicolumn{1}{|c|}{\textbf{OUT}} & 64 & 64 &  \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & {\color[HTML]{FFFFFF} \textbf{CONV}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \cline{2-5} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & 256 & \multicolumn{1}{c|}{\textbf{VM}} \\ \cline{1-3} \cline{5-5} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 32 & 256 & \multicolumn{1}{c|}{256} \\ \cline{1-1}
+            \multicolumn{1}{|c|}{50K} & OUT & 32 & 16 & \multicolumn{1}{c|}{256} \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & 16 & \multicolumn{1}{c|}{8} \\ \cline{1-3}
+            \multicolumn{1}{|c|}{Cut} & MID & 64 & 16 & \multicolumn{1}{c|}{32} \\ \cline{1-1} \cline{5-5} 
+             & OUT & 64 & 64 &  \\ \cline{2-4}
         \end{tabular}
 
         \vspace{1em}
@@ -538,21 +680,21 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Adam & \textbf{VM} \\ \hline
             {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & FL \\ \hline
         \end{tabular}
-        \captionof{table}{Estructura e hiperparámetros del mejor modelo para VM}
+        \captionof{table}{Característica \textbf{VM}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:VM_best_model}
     \end{minipage}
 
     \vspace{1.5em} % vertical space between table and image
 
     % --- Bottom: Figure ---
-    \includegraphics[width=0.75\linewidth]{figures/5_experiments/single-vm-cm.pdf}
-    \caption{Matriz de confusión mejor modelo para VM en test}
+    \includegraphics[width=0.6\linewidth]{figures/5_experiments/single-vm-cm.pdf}
+    \caption{Característica \textbf{VM}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: En Formación, \textbf{2}: Formado, Sin Excrecencias, \textbf{3}: Formado, Pocas Excrecencias, \textbf{4}: Formado, Muchas Excrecencias.}
     \label{fig5:VM_confusion_matrix}
 \end{figure}
 
 \FloatBarrier
 
-\section{Visualización de áreas de interés con Grad-CAM}
+\subsection{Visualización de áreas de interés con Grad-CAM}
 
 Se empleó el método Grad-CAM para visualizar las regiones de las mallas en las que se enfocan los modelos al realizar sus predicciones. En la Figura \ref{fig5:grad_cam__diff_chars} se muestra un ejemplo comparativo entre distintas características, donde puede observarse que cada modelo se centra en una zona distinta de la sínfisis del pubis. Esto refuerza la idea de que los modelos han aprendido patrones morfológicos específicos para cada característica, localizados en distintas áreas del hueso. 
 
@@ -564,14 +706,14 @@ Estos resultados no solo refuerzan la validez de los modelos entrenados, sino qu
 
 \begin{figure}[p]
     \centering
-    \includegraphics[width=0.55\linewidth]{data/grad-cam-53-example.png}
+    \includegraphics[width=0.5\linewidth]{figures/5_experiments/grad-cam-53-example.png}
     \caption[Ejemplo de los diferentes mapas de activación de Grad-CAM correspondientes a distintas características para una misma muestra]{Ejemplo de los diferentes mapas de activación de Grad-CAM correspondientes a distintas características para una misma muestra. Los colores más cálidos indican una mayor activación. En (a) se muestra la malla original vista de frente. En este caso se visualizan las características AF (b), DM (c), IP (d), USE (e) y VM (f). Obsérvese cómo cada una se enfoca en regiones diferentes de la malla: algunas con activaciones bien definidas, como (b) y (e); otras con activaciones más dispersas o escasas, como (c) y (d); y (f), con activación en una gran parte de la superficie.}
     \label{fig5:grad_cam__diff_chars}
 \end{figure}
 
 \begin{figure}[p]
     \centering
-    \includegraphics[width=\linewidth]{data/grad-cam-BN-samples.png}
+    \includegraphics[width=\linewidth]{figures/5_experiments/grad-cam-BN-samples.png}
     \caption[Ejemplo de mapas de activación Grad-CAM para la característica BN]{Ejemplo de mapas de activación Grad-CAM para la característica BN. Se muestran tres mallas diferentes. En la parte superior se presentan las mallas originales, vistas de frente. En la parte inferior, las mismas mallas están coloreadas según la activación de Grad-CAM: los colores más cálidos indican una mayor activación. Se observa que el modelo se enfoca principalmente en la parte superior de la sínfisis del pubis. El modelo ha clasificado correctamente las mallas (a) y (b) como pertenecientes a la clase 0 (\say{ausente}), y la malla (c) a la clase 1 (\say{presente}).}
     \label{fig5:grad_cam__BN_samples}
 \end{figure}
@@ -579,7 +721,7 @@ Estos resultados no solo refuerzan la validez de los modelos entrenados, sino qu
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\linewidth]{data/grad-cam-USE-samples.png}
+    \includegraphics[width=\linewidth]{figures/5_experiments/grad-cam-USE-samples.png}
     \caption[Ejemplo de mapas de activación Grad-CAM para la característica USE]{Ejemplo de mapas de activación Grad-CAM para la característica USE. Se muestran tres mallas diferentes. En la parte superior se presentan las mallas originales, vistas de frente. En la parte inferior, las mismas mallas están coloreadas según la activación de Grad-CAM: los colores más cálidos indican una mayor activación. Se observa que el modelo tiende a enfocarse en la parte superior izquierda del hueso, con activaciones adicionales en los laterales y en zonas planas de la superficie. El modelo ha clasificado correctamente las mallas (a) y (b) como pertenecientes a la clase 1 (\say{definida}) y la malla (c) como 0 (\say{no definida}).}
     \label{fig5:grad_cam__USE_samples}
 \end{figure}
@@ -587,7 +729,7 @@ Estos resultados no solo refuerzan la validez de los modelos entrenados, sino qu
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\linewidth]{data/grad-cam-DP-samples.png}
+    \includegraphics[width=\linewidth]{figures/5_experiments/grad-cam-DP-samples.png}
     \caption[Ejemplo de mapas de activación Grad-CAM para la característica DP]{Ejemplo de mapas de activación Grad-CAM para la característica DP. Se muestran tres mallas diferentes. En la parte superior se presentan las mallas originales, vistas de frente. En la parte inferior, las mismas mallas están coloreadas según la activación de Grad-CAM por triángulo: los colores más cálidos indican mayor activación. Se observa que el modelo se enfoca únicamente en un lateral del hueso. El modelo ha clasificado correctamente las mallas (a) y (c) como pertenecientes a la clase 0 (\say{ausente}), y la malla (b) como 1 (\say{presente}).}
     \label{fig5:grad_cam__DP_samples}
 \end{figure}

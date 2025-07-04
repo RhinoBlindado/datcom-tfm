@@ -3,7 +3,7 @@ Este capítulo tiene como objetivo presentar los fundamentos teóricos sobre los
 
 En primer lugar, se introduce el campo de ML (Sección \ref{section2:ML}), base general del enfoque seguido, para luego centrarse en el subcampo de DL (Sección \ref{section2:DL}), cuyas técnicas han demostrado gran eficacia en tareas complejas de clasificación. Dentro de este marco, se abordan aspectos como la arquitectura de redes, técnicas de regularización y entrenamiento, que son fundamentales para comprender el funcionamiento de los modelos desarrollados.
 
-A continuación, se introduce el paradigma de clasificación multietiqueta (Sección \ref{section2:multilabel}), ya que el problema actual posee varias etiquetas para una misma muestra. Seguidamente, se exploran métodos de explicabilidad como Grad-CAM (Sección \ref{section2:gradcam}), los cuales resultan esenciales para interpretar visualmente las decisiones tomadas por los modelos, lo cual permite validar las decisiones tomadas por los expertos forenses y al mismo tiempo, da la posibilidad de encontrar nuevas regiones anatómicas que la AF no había considerado hasta el momento.
+A continuación, se introduce el paradigma de clasificación multietiqueta (Sección \ref{section2:multilabel}), ya que el problema actual posee varias etiquetas para una misma muestra. Seguidamente, se explora el método de explicabilidad Grad-CAM (Sección \ref{section2:gradcam}), el cual resulta para vital para interpretar visualmente las decisiones tomadas por los modelos, que a su vez permite validar las decisiones tomadas por los expertos forenses y al mismo tiempo, abre la posibilidad de encontrar nuevas regiones anatómicas que la AF no había considerado hasta el momento.
 
 Debido a la naturaleza tridimensional de los datos empleados, se dedica una sección específica al DL en 3D (Sección \ref{section2:3dreps}), abordando las particularidades de este tipo de modelos y su relevancia en el contexto del problema. Y justamente por la novedad de aplicar DL a datos 3D, no existen actualmente modelos base de los que partir, por lo que es necesario generar la arquitectura del modelo así como sus obtener sus hiperparámetros desde cero, por lo que se incluye una sección dedicada a la Búsqueda de Arquitectura Neuronal (\textit{Neural Architecture Search}, NAS) (Sección \ref{section2:nas}).
 
@@ -23,12 +23,12 @@ A partir de las descripciones previas, se puede concluir que es viable aplicar t
 \label{section2:DL}
 El aprendizaje profundo (\textit{Deep Learning}, DL) \cite{Goodfellow-et-al-2016, bishop_deep_2024, prince_understanding_2023, lecun_deep_2015, schmidhuber_deep_2015} es una subdisciplina de ML en la que el modelo se encarga de aprender y extraer de manera automática las características relevantes a partir de los datos del problema. Esta aproximación contrasta con otras técnicas de ML en las que las características son diseñadas manualmente o \textit{handcrafted} por expertos que utilizan su conocimiento específico del dominio. Se ha demostrado que, para problemas de alta complejidad, las características extraídas de forma automática tienden a ser más efectivas y eficientes en comparación con aquellas obtenidas manualmente.
 
-El modelo predominante en el ámbito del DL es la red neuronal artificial (\textit{Artificial Neural Network}, ANN) \cite{bishop_ANN, ripley_ANN}, compuesta por nodos de procesamiento, denominados \say{neuronas}{\interfootnotelinepenalty=10000 \footnote{Aunque su denominación es bioinspirada en la corteza visual del cerebro, estos modelos no simulan de forma precisa el funcionamiento biológico neuronal.}}, interconectados en diferentes capas. La red se estructura con una capa de entrada, que recibe los datos en bruto, seguida de una o varias capas ocultas encargadas de aprender y extraer progresivamente las características relevantes, y una capa de salida. En las capas iniciales se capturan atributos de bajo nivel, mientras que las subsiguientes permiten obtener representaciones más abstractas y de alto nivel, facilitando la solución del problema planteado. La cantidad de capas en una ANN define su profundidad, lo que justifica el término aprendizaje profundo: en general, a mayor número de capas, se logra un aprendizaje más detallado y eficaz. Un ejemplo clásico de una ANN se ilustra en la Figura \ref{fig:annExample}, donde se diferencia claramente entre una red superficial y una red profunda.
+El modelo predominante en el ámbito del DL es la red neuronal artificial (\textit{Artificial Neural Network}, ANN) \cite{bishop_ANN, ripley_ANN}, compuesta por nodos de procesamiento, denominados \say{neuronas}{\interfootnotelinepenalty=10000 \footnote{Aunque su denominación es bioinspirada en la corteza visual del cerebro, estos modelos no simulan de forma precisa el funcionamiento biológico neuronal.}}, interconectados en diferentes capas. La red se estructura con una capa de entrada, que recibe los datos en bruto, seguida de una o varias capas ocultas encargadas de aprender y extraer progresivamente las características relevantes, y una capa de salida. En las capas iniciales se capturan atributos de bajo nivel, mientras que las subsiguientes permiten obtener representaciones más abstractas y de alto nivel, facilitando la solución del problema planteado. La cantidad de capas en una ANN define su profundidad, lo que justifica el término aprendizaje profundo: en general, a mayor número de capas, se logra un aprendizaje más detallado y eficaz. Un ejemplo clásico de una ANN se ilustra en la Figura \ref{fig:annExample}, donde se diferencia entre una red superficial y una red profunda.
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{figures/2_theory/neuralNetDiagram.png}
-    \caption[Ejemplos de la estructura de una ANN]{Ejemplos típicos de la estructura de una ANN, en este caso se tiene una red superficial o \textit{shallow} y una profunda o \textit{deep} \cite{annPictureSource}.}
+    \caption[Ejemplos de la estructura de una ANN]{Ejemplos típicos de la estructura de una ANN, en este caso se tiene una red superficial o \textit{shallow} a la izquierda con una sola capa oculta entre las capas de entrada y salida; y una red profunda o \textit{deep} a la derecha, que posee múltiples capas con variable densidad de neuronas entre las capas de entrada y salida. Fuente: \cite{annPictureSource}.}
     \label{fig:annExample}
 \end{figure}
 
@@ -39,7 +39,7 @@ Existen numerosas funciones de activación, aunque las más comunes y ampliament
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{figures/2_theory/artificialNeuron.png}
-    \caption[Ejemplo de una neurona artificial]{Ejemplo de una neurona artificial, los datos de entrada son multiplicados por los pesos y su resultado, junto con el sesgo (o \textit{bias}), son combinados linealmente. A continuación, son transformados por la función no lineal para proporcionar el valor salida de la neurona \cite{artificialNeuron}.}
+    \caption[Ejemplo de una neurona artificial]{Ejemplo de una neurona artificial, los datos de entrada son multiplicados por los pesos y su resultado, junto con el sesgo (o \textit{bias}), son combinados linealmente. A continuación, son transformados por la función no lineal para proporcionar el valor salida de la neurona. Fuente: \cite{artificialNeuron}.}
     \label{fig:artificialNeuronExample}
 \end{figure}
 
@@ -58,8 +58,7 @@ La estructura básica de una CNN puede visualizarse en la Figura \ref{fig:cnnExa
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{figures/2_theory/cnnExample.jpeg}
-    \caption[Estructura básica de una red neuronal convolucional]{Estructura básica de una CNN donde se pueden apreciar las diferentes capas que la componen \cite{prabhu_understanding_2019}.}
-    \label{fig:cnnExample}
+    \caption[Estructura básica de una CNN]{Estructura básica de una CNN, en la que se aprecia su organización típica: una serie de capas convolucionales con funciones de activación no lineales, intercaladas con capas de \textit{pooling}, que conforman la etapa inicial de extracción de características (\textit{Feature Learning} en la imagen). Esta parte es seguida por una serie de capas totalmente conectadas que conducen hasta la capa de salida. En este ejemplo, la red aborda un problema de clasificación. Fuente: \cite{prabhu_understanding_2019}.}
 \end{figure}
 
 \subsection{Capa convolucional}
@@ -90,14 +89,6 @@ El \textit{pooling}, al igual que la convolución, utiliza un filtro o ventana q
     \item \textit{Max Pooling}: Se selecciona el valor máximo dentro de la ventana, lo que ayuda a preservar las características más relevantes y genera mayor invarianza a la traslación.
     \item \textit{Average Pooling}: Se calcula el promedio de los valores dentro de la ventana, lo que suaviza la salida y reduce el ruido en los datos.
 \end{itemize}
-La Figura \ref{fig:poolingExample} ilustra cómo funcionan estas operaciones.
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=\linewidth]{figures/2_theory/poolingExample.png}
-    \caption[Ejemplo del operador de pooling]{Ejemplo de las operaciones de \textit{pooling} con un filtro $2\times2$ y \textit{stride} 2 \cite{pooling}.}
-    \label{fig:poolingExample}
-\end{figure}
 
 Las capas convolucionales y de \textit{pooling} en conjunto conforman la sección de extracción de características en una CNN. Dependiendo de la complejidad del problema, el número de estas capas puede variarse para asegurar que la red extraiga las características esenciales necesarias para el aprendizaje.
 
@@ -180,8 +171,8 @@ Sin embargo, una de sus principales limitaciones es la dificultad para evaluar l
         \caption{Mapa de activación para la clase \say{perro}.}
         \label{fig__grad_cam__dog}
     \end{subfigure}    
-    \caption{Ejemplo de funcionamiento de Grad-CAM \cite{selvaraju_grad_cam_2017}.}
-    \label{fig__grad_cam}          
+    \caption[Ejemplo de funcionamiento de Grad-CAM]{Ejemplo ilustrativo del funcionamiento de Grad-CAM \cite{selvaraju_grad_cam_2017}. A partir de la imagen original (a), si se analiza la clase \say{gato}, se obtiene el mapa de activación (b), donde se resaltan las regiones que más han contribuido a la predicción de dicha clase. Al estudiar la clase \say{perro}, se genera el mapa (c). Esta técnica proporciona una forma de explicabilidad visual sobre las decisiones tomadas por una CNN.}   
+    \label{fig__grad_cam}  
 \end{figure}
 
 \section{Búsqueda de Arquitectura Neuronal}
@@ -241,7 +232,7 @@ En la literatura, se han identificado cinco principales categorías de represent
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{figures/2_theory/3Dtaxonomy.png}
-    \caption[Taxonomía de las representaciones 3D para Deep Learning]{Taxonomía de las diferentes técnicas actuales en DL utilizadas para representar datos tridimensionales \cite{gezawa_review_2020}.}
+    \caption[Taxonomía de las representaciones 3D para Deep Learning]{Taxonomía de las diferentes técnicas actuales en DL utilizadas para representar datos tridimensionales identificadas por \cite{gezawa_review_2020}}
     \label{fig:3dTaxonomy}
 \end{figure}
 

@@ -195,7 +195,7 @@ Por este motivo, es importante evaluar el impacto que tiene la reducción del n�
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{figures/5_experiments/mesh_redux_study.pdf}
-    \caption[Estudio de reducción de mallas]{Distancia Hausdorff normalizada entre las mallas originales y sus versiones reducidas a distintos porcentajes del número original de triángulos. En este experimento, la reducción se realizó en incrementos del 1\%.}
+    \caption[Estudio de reducción de mallas]{Distancia Hausdorff normalizada entre las mallas originales y sus versiones reducidas a distintos porcentajes del número original de triángulos. En este experimento, la reducción se realizó en incrementos del 1\%. Se observa que la distancia entre las mallas reducidas y las originales posee valores muy bajos hasta llegar al 90\% de reducción del tamaño original.}
     \label{fig5:redux_study}
 \end{figure}
 
@@ -369,7 +369,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & (k) & \textbf{(h)} \\ \hline
             {\color[HTML]{FFFFFF} \textbf{INIT}} & (l) & (n) \\ \hline
         \end{tabular}
-        \captionof{table}{Formato utilizado para resumir los datos de entrada, la estructura de la red y los hiperparámetros empleados en cada uno de los modelos. La tabla superior detalla las configuraciones relativas a los datos y la arquitectura, mientras que la tabla inferior resume los hiperparámetros principales. En la tabla superior, la columna \textbf{DATA} especifica las características de los datos de entrada: \textbf{RES} indica la resolución de la malla (a) y \textbf{TYPE} su tipo (b). La columna \textbf{DECR} incluye la configuración de los descriptores utilizados: \textbf{GEOD} para el descriptor geodésico y \textbf{GEOM} para el descriptor geométrico; MID y OUT indican respectivamente la densidad de sus capas intermedias (c, e) y de salida (d, f). La columna \textbf{CONV} muestra la arquitectura de las capas convolucionales: número de capas y densidad de cada una (g). La columna \textbf{FN} presenta en (h) las características morfológicas predichas y en (i) la configuración de la parte densa del modelo de cada una. En la tabla inferior, \textbf{LR} indica la tasa de aprendizaje (j), \textbf{OPTIMIZER} el optimizador empleado (k), \textbf{INIT} el tipo de inicialización de pesos (l), y \textbf{LOSS} la función de pérdida (n) asociada a la característica correspondiente (h).}
+        \captionof{table}[Formato de tabla usado para resumir los datos de entrada, la estructura de la red y los hiperparámetros de los mejores modelos]{Formato utilizado para resumir los datos de entrada, la estructura de la red y los hiperparámetros empleados en cada uno de los modelos. La tabla superior detalla las configuraciones relativas a los datos y la arquitectura, mientras que la tabla inferior resume los hiperparámetros principales. En la tabla superior, la columna \textbf{DATA} especifica las características de los datos de entrada: \textbf{RES} indica la resolución de la malla (a) y \textbf{TYPE} su tipo (b). La columna \textbf{DECR} incluye la configuración de los descriptores utilizados: \textbf{GEOD} para el descriptor geodésico y \textbf{GEOM} para el descriptor geométrico; MID y OUT indican respectivamente la densidad de sus capas intermedias (c, e) y de salida (d, f). La columna \textbf{CONV} muestra la arquitectura de las capas convolucionales: número de capas y densidad de cada una (g). La columna \textbf{FN} presenta en (h) las características morfológicas predichas y en (i) la configuración de la parte densa del modelo de cada una. En la tabla inferior, \textbf{LR} indica la tasa de aprendizaje (j), \textbf{OPTIMIZER} el optimizador empleado (k), \textbf{INIT} el tipo de inicialización de pesos (l), y \textbf{LOSS} la función de pérdida (n) asociada a la característica correspondiente (h).}
         \label{table5:sample_table}
     \end{minipage}
 \end{figure}
@@ -402,7 +402,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & AdamW & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}\textbf{AF}} & \multicolumn{1}{c|}{\textbf{DM}} & \multicolumn{1}{c|}{\textbf{LSE}} & \textbf{USE} \\ \hline
             {\color[HTML]{FFFFFF} \textbf{INIT}} & N/A & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}WCE} & \multicolumn{1}{c|}{WCE} & \multicolumn{1}{c|}{CE} & WCE \\ \hline
         \end{tabular}
-        \captionof{table}{Característica \textbf{AF}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
+        \captionof{table}{Característica AF: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:AF_best_model}
     \end{minipage}
 
@@ -410,7 +410,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.6\linewidth]{figures/5_experiments/multi-af-cm.pdf}
-    \caption{Característica \textbf{AF}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Porosidad Regular, \textbf{1}: Muy Definidas, \textbf{2}: Poco Profundas, \textbf{3}: Restos de Surcos, \textbf{4}: No hay surcos.}
+    \caption[Característica AF: Matriz de confusión del mejor modelo en datos de test]{Característica \textbf{AF}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Porosidad Regular, \textbf{1}: Muy Definidas, \textbf{2}: Poco Profundas, \textbf{3}: Restos de Surcos, \textbf{4}: No hay surcos.}
     \label{fig5:AF_confusion_matrix}
 \end{figure}
 
@@ -442,7 +442,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Radam & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}\textbf{BN}} & \multicolumn{1}{c|}{\textbf{DP}} & \textbf{LSE} \\ \hline
             {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & \multicolumn{1}{c|}{FL} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}CBL} & \multicolumn{1}{c|}{CBL} & CBL \\ \hline
         \end{tabular}
-        \captionof{table}{Característica \textbf{BN}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
+        \captionof{table}{Característica BN: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:BN_best_model}
     \end{minipage}
 
@@ -450,7 +450,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.6\linewidth]{figures/5_experiments/multi-bn-cm.pdf}
-    \caption{Característica \textbf{BN}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: Presente.}
+    \caption[Característica BN: Matriz de confusión del mejor modelo en datos de test.]{Característica BN: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: Presente.}
     \label{fig5:BN_confusion_matrix}
 \end{figure}
 
@@ -482,7 +482,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
         &  & \multicolumn{1}{c|}{\textbf{LSE}} & \multicolumn{1}{c|}{\textbf{USE}} & \multicolumn{1}{c|}{\textbf{VB}} & \multicolumn{1}{c|}{\textbf{VM}} &  \\ \cline{3-6}
         &  & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{WCE} & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{CE} &  \\ \cline{3-6}
         \end{tabular}
-        \captionof{table}{Características \textbf{DP} y \textbf{DM}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
+        \captionof{table}{Características DP y DM: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:DM_DP_best_model}
     \end{minipage}
 
@@ -490,10 +490,10 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.4\linewidth]{figures/5_experiments/multi-dm-cm.pdf}
-    \caption{Característica \textbf{DM}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No Definido, \textbf{1}: En Formación, \textbf{2}: Definido.}
+    \caption[Característica DM: Matriz de confusión del mejor modelo en datos de test.]{Característica \textbf{DM}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No Definido, \textbf{1}: En Formación, \textbf{2}: Definido.}
     \label{fig5:DM_confusion_matrix}
     \includegraphics[width=0.4\linewidth]{figures/5_experiments/multi-dp-cm.pdf}
-    \caption{Característica \textbf{DP}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: Presente.}
+    \caption[Característica DP: Matriz de confusión del mejor modelo en datos de test.]{Característica DP: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: Presente.}
     \label{fig5:DP_confusion_matrix}
 \end{figure}
 
@@ -524,7 +524,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Radam & \textbf{IP} \\ \hline
             {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & WCE \\ \hline
         \end{tabular}
-        \captionof{table}{Característica \textbf{IP}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
+        \captionof{table}{Característica IP: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:IP_best_model}
     \end{minipage}
 
@@ -532,7 +532,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.6\linewidth]{figures/5_experiments/single-ip-cm.pdf}
-    \caption{Característica \textbf{IP}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No, \textbf{1}: Mediana, \textbf{2}: Sí.}
+    \caption[Característica IP: Matriz de confusión del mejor modelo en datos de test.]{Característica IP: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No, \textbf{1}: Mediana, \textbf{2}: Sí.}
     \label{fig5:IP_confusion_matrix}
 \end{figure}
 
@@ -563,7 +563,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Adam & \textbf{LSE} \\ \hline
             {\color[HTML]{FFFFFF} \textbf{INIT}} & Orthogonal & WCE \\ \hline
         \end{tabular}
-        \captionof{table}{Característica \textbf{LSE}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
+        \captionof{table}{Característica LSE: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:LSE_best_model}
     \end{minipage}
 
@@ -571,7 +571,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.6\linewidth]{figures/5_experiments/single-lse-cm.pdf}
-    \caption{Característica \textbf{LSE}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No Definido, \textbf{1}: Definido.}
+    \caption[Característica LSE: Matriz de confusión del mejor modelo en datos de test.]{Característica LSE: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No Definido, \textbf{1}: Definido.}
     \label{fig5:LSE_confusion_matrix}
 \end{figure}
 
@@ -603,7 +603,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Adam & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{DM}} & \multicolumn{1}{c|}{\textbf{LSE}} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}\textbf{USE}} & \textbf{IP} \\ \hline
             {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & \multicolumn{1}{c|}{CBL} & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{CBL} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}FL} & WCE \\ \hline
         \end{tabular}
-        \captionof{table}{Característica \textbf{USE}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
+        \captionof{table}{Característica USE: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:USE_best_model}
     \end{minipage}
 
@@ -611,7 +611,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.6\linewidth]{figures/5_experiments/multi-use-cm.pdf}
-    \caption{Característica \textbf{USE}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No Definido, \textbf{1}: Definido.}
+    \caption[Característica USE: Matriz de confusión del mejor modelo en datos de test.]{Característica USE: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No Definido, \textbf{1}: Definido.}
     \label{fig5:USE_confusion_matrix}
 \end{figure}
 
@@ -642,7 +642,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Adam & \textbf{VB} \\ \hline
             {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & CE \\ \hline
         \end{tabular}
-        \captionof{table}{Característica \textbf{VB}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
+        \captionof{table}{Característica VB: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:VB_best_model}
     \end{minipage}
 
@@ -650,7 +650,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.6\linewidth]{figures/5_experiments/single-vb-cm.pdf}
-    \caption{Característica \textbf{VB}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: En Formación, \textbf{2}: Presente.}
+    \caption[Característica VB: Matriz de confusión del mejor modelo en datos de test.]{Característica VB: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: En Formación, \textbf{2}: Presente.}
     \label{fig5:VB_confusion_matrix}
 \end{figure}
 
@@ -680,7 +680,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Adam & \textbf{VM} \\ \hline
             {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & FL \\ \hline
         \end{tabular}
-        \captionof{table}{Característica \textbf{VM}: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
+        \captionof{table}{Característica VM: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.}
         \label{table5:VM_best_model}
     \end{minipage}
 
@@ -688,7 +688,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.6\linewidth]{figures/5_experiments/single-vm-cm.pdf}
-    \caption{Característica \textbf{VM}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: En Formación, \textbf{2}: Formado, Sin Excrecencias, \textbf{3}: Formado, Pocas Excrecencias, \textbf{4}: Formado, Muchas Excrecencias.}
+    \caption[Característica VM: Matriz de confusión del mejor modelo en datos de test.]{Característica VM: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: En Formación, \textbf{2}: Formado, Sin Excrecencias, \textbf{3}: Formado, Pocas Excrecencias, \textbf{4}: Formado, Muchas Excrecencias.}
     \label{fig5:VM_confusion_matrix}
 \end{figure}
 
@@ -707,14 +707,14 @@ Estos resultados no solo refuerzan la validez de los modelos entrenados, sino qu
 \begin{figure}[p]
     \centering
     \includegraphics[width=0.5\linewidth]{figures/5_experiments/grad-cam-53-example.png}
-    \caption[Ejemplo de los diferentes mapas de activación de Grad-CAM correspondientes a distintas características para una misma muestra]{Ejemplo de los diferentes mapas de activación de Grad-CAM correspondientes a distintas características para una misma muestra. Los colores más cálidos indican una mayor activación. En (a) se muestra la malla original vista de frente. En este caso se visualizan las características AF (b), DM (c), IP (d), USE (e) y VM (f). Obsérvese cómo cada una se enfoca en regiones diferentes de la malla: algunas con activaciones bien definidas, como (b) y (e); otras con activaciones más dispersas o escasas, como (c) y (d); y (f), con activación en una gran parte de la superficie.}
+    \caption[Ejemplo de mapas de activación de Grad-CAM correspondientes a distintas características para una misma muestra]{Ejemplo de los diferentes mapas de activación de Grad-CAM correspondientes a distintas características para una misma muestra. Los colores más cálidos indican una mayor activación. En (a) se muestra la malla original vista de frente. En este caso se visualizan las características AF (b), DM (c), IP (d), USE (e) y VM (f). Obsérvese cómo cada una se enfoca en regiones diferentes de la malla: algunas con activaciones bien definidas, como (b) y (e); otras con activaciones más dispersas o escasas, como (c) y (d); y (f), con activación en una gran parte de la superficie.}
     \label{fig5:grad_cam__diff_chars}
 \end{figure}
 
 \begin{figure}[p]
     \centering
     \includegraphics[width=\linewidth]{figures/5_experiments/grad-cam-BN-samples.png}
-    \caption[Ejemplo de mapas de activación Grad-CAM para la característica BN]{Ejemplo de mapas de activación Grad-CAM para la característica BN. Se muestran tres mallas diferentes. En la parte superior se presentan las mallas originales, vistas de frente. En la parte inferior, las mismas mallas están coloreadas según la activación de Grad-CAM: los colores más cálidos indican una mayor activación. Se observa que el modelo se enfoca principalmente en la parte superior de la sínfisis del pubis. El modelo ha clasificado correctamente las mallas (a) y (b) como pertenecientes a la clase 0 (\say{ausente}), y la malla (c) a la clase 1 (\say{presente}).}
+    \caption[Característica BN: Ejemplo de mapas de activación Grad-CAM]{Característica B: Ejemplo de mapas de activación Grad-CAM. Se muestran tres mallas diferentes. En la parte superior se presentan las mallas originales, vistas de frente. En la parte inferior, las mismas mallas están coloreadas según la activación de Grad-CAM: los colores más cálidos indican una mayor activación. Se observa que el modelo se enfoca principalmente en la parte superior de la sínfisis del pubis. El modelo ha clasificado correctamente las mallas (a) y (b) como pertenecientes a la clase 0 (\say{ausente}), y la malla (c) a la clase 1 (\say{presente}).}
     \label{fig5:grad_cam__BN_samples}
 \end{figure}
 
@@ -722,7 +722,7 @@ Estos resultados no solo refuerzan la validez de los modelos entrenados, sino qu
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=\linewidth]{figures/5_experiments/grad-cam-USE-samples.png}
-    \caption[Ejemplo de mapas de activación Grad-CAM para la característica USE]{Ejemplo de mapas de activación Grad-CAM para la característica USE. Se muestran tres mallas diferentes. En la parte superior se presentan las mallas originales, vistas de frente. En la parte inferior, las mismas mallas están coloreadas según la activación de Grad-CAM: los colores más cálidos indican una mayor activación. Se observa que el modelo tiende a enfocarse en la parte superior izquierda del hueso, con activaciones adicionales en los laterales y en zonas planas de la superficie. El modelo ha clasificado correctamente las mallas (a) y (b) como pertenecientes a la clase 1 (\say{definida}) y la malla (c) como 0 (\say{no definida}).}
+    \caption[Característica USE: Ejemplo de mapas de activación Grad-CAM]{Característica USE: Ejemplo de mapas de activación Grad-CAM. Se muestran tres mallas diferentes. En la parte superior se presentan las mallas originales, vistas de frente. En la parte inferior, las mismas mallas están coloreadas según la activación de Grad-CAM: los colores más cálidos indican una mayor activación. Se observa que el modelo tiende a enfocarse en la parte superior izquierda del hueso, con activaciones adicionales en los laterales y en zonas planas de la superficie. El modelo ha clasificado correctamente las mallas (a) y (b) como pertenecientes a la clase 1 (\say{definida}) y la malla (c) como 0 (\say{no definida}).}
     \label{fig5:grad_cam__USE_samples}
 \end{figure}
 
@@ -730,6 +730,6 @@ Estos resultados no solo refuerzan la validez de los modelos entrenados, sino qu
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=\linewidth]{figures/5_experiments/grad-cam-DP-samples.png}
-    \caption[Ejemplo de mapas de activación Grad-CAM para la característica DP]{Ejemplo de mapas de activación Grad-CAM para la característica DP. Se muestran tres mallas diferentes. En la parte superior se presentan las mallas originales, vistas de frente. En la parte inferior, las mismas mallas están coloreadas según la activación de Grad-CAM por triángulo: los colores más cálidos indican mayor activación. Se observa que el modelo se enfoca únicamente en un lateral del hueso. El modelo ha clasificado correctamente las mallas (a) y (c) como pertenecientes a la clase 0 (\say{ausente}), y la malla (b) como 1 (\say{presente}).}
+    \caption[Característica DP: Ejemplo de mapas de activación Grad-CAM]{Característica DP: Ejemplo de mapas de activación Grad-CAM. Se muestran tres mallas diferentes. En la parte superior se presentan las mallas originales, vistas de frente. En la parte inferior, las mismas mallas están coloreadas según la activación de Grad-CAM por triángulo: los colores más cálidos indican mayor activación. Se observa que el modelo se enfoca únicamente en un lateral del hueso. El modelo ha clasificado correctamente las mallas (a) y (c) como pertenecientes a la clase 0 (\say{ausente}), y la malla (b) como 1 (\say{presente}).}
     \label{fig5:grad_cam__DP_samples}
 \end{figure}

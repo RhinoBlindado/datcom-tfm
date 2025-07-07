@@ -308,17 +308,17 @@ Sobre las características de soporte, nuevamente se encuentra una distribución
         \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} } & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Etiqueta Única}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Etiqueta Múltiple}}} \\ \cline{2-5} 
         \rowcolor[HTML]{D33333} 
         \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Característica}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Test Acc}}} & {\color[HTML]{FFFFFF} \textbf{Test F1}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Test Acc}}} & {\color[HTML]{FFFFFF} \textbf{Test F1}} \\ \hline
-        AF & \multicolumn{1}{c|}{0.6546} & 0.4729 & \multicolumn{1}{c|}{\textbf{0.6888}} & \textbf{0.5164} \\
-        BN & \multicolumn{1}{c|}{\textbf{0.9158}} & 0.6916 & \multicolumn{1}{c|}{0.9141} & \textbf{0.7869} \\
-        DM & \multicolumn{1}{c|}{0.7333} & 0.6261 & \multicolumn{1}{c|}{\textbf{0.7980}} & \textbf{0.6525} \\
-        DP & \multicolumn{1}{c|}{0.8827} & 0.7113 & \multicolumn{1}{c|}{\textbf{0.9261}} & \textbf{0.7215} \\
-        IP & \multicolumn{1}{c|}{\textbf{0.7113}} & \textbf{0.541} & \multicolumn{1}{c|}{0.6749} & 0.4777 \\
-        LSE & \multicolumn{1}{c|}{\textbf{0.9800}} & \textbf{0.9232} & \multicolumn{1}{c|}{0.9495} & 0.7942 \\
-        USE & \multicolumn{1}{c|}{\textbf{0.9797}} & 0.8281 & \multicolumn{1}{c|}{0.9541} & \textbf{0.8588} \\
-        VB & \multicolumn{1}{c|}{\textbf{0.5202}} & \textbf{0.5275} & \multicolumn{1}{c|}{0.4926} & 0.4775 \\
-        VM & \multicolumn{1}{c|}{\textbf{0.6954}} & \textbf{0.6747} & \multicolumn{1}{c|}{\textbf{0.6954}} & 0.4975 \\ \hline
+        AF & \multicolumn{1}{c|}{0.6546} & 0.4729 & \multicolumn{1}{c|}{0.6888} & \textbf{0.5164} \\
+        BN & \multicolumn{1}{c|}{0.9158} & 0.6916 & \multicolumn{1}{c|}{0.9141} & \textbf{0.7869} \\
+        DM & \multicolumn{1}{c|}{0.7333} & 0.6261 & \multicolumn{1}{c|}{0.7980} & \textbf{0.6525} \\
+        DP & \multicolumn{1}{c|}{0.8827} & 0.7113 & \multicolumn{1}{c|}{0.9261} & \textbf{0.7215} \\
+        IP & \multicolumn{1}{c|}{0.7113} & \textbf{0.541} & \multicolumn{1}{c|}{0.6749} & 0.4777 \\
+        LSE & \multicolumn{1}{c|}{0.9800} & \textbf{0.9232} & \multicolumn{1}{c|}{0.9495} & 0.7942 \\
+        USE & \multicolumn{1}{c|}{0.9797} & 0.8281 & \multicolumn{1}{c|}{0.9541} & \textbf{0.8588} \\
+        VB & \multicolumn{1}{c|}{0.5202} & \textbf{0.5275} & \multicolumn{1}{c|}{0.4926} & 0.4775 \\
+        VM & \multicolumn{1}{c|}{0.6954} & \textbf{0.6747} & \multicolumn{1}{c|}{0.6954} & 0.4975 \\ \hline
     \end{tabular}
-    \caption{Comparación de resultados entre los mejores modelos obtenidos en los experimentos de etiqueta única y multietiqueta. Los valores en negrita indican los mejores resultados obtenidos para cada característica.}
+    \caption[Comparación de resultados entre los mejores modelos obtenidos en los experimentos de etiqueta única y multietiqueta]{Comparación de resultados entre los mejores modelos obtenidos en los experimentos de etiqueta única y multietiqueta. Los valores en negrita indican los mejores resultados obtenidos de la métrica F1 para cada característica.}
     \label{table5:multilabel_comparison}
 \end{table}
 
@@ -714,7 +714,7 @@ Estos resultados no solo refuerzan la validez de los modelos entrenados, sino qu
 \begin{figure}[p]
     \centering
     \includegraphics[width=\linewidth]{figures/5_experiments/grad-cam-BN-samples.png}
-    \caption[Característica BN: Ejemplo de mapas de activación Grad-CAM]{Característica B: Ejemplo de mapas de activación Grad-CAM. Se muestran tres mallas diferentes. En la parte superior se presentan las mallas originales, vistas de frente. En la parte inferior, las mismas mallas están coloreadas según la activación de Grad-CAM: los colores más cálidos indican una mayor activación. Se observa que el modelo se enfoca principalmente en la parte superior de la sínfisis del pubis. El modelo ha clasificado correctamente las mallas (a) y (b) como pertenecientes a la clase 0 (\say{ausente}), y la malla (c) a la clase 1 (\say{presente}).}
+    \caption[Característica BN: Ejemplo de mapas de activación Grad-CAM]{Característica BN: Ejemplo de mapas de activación Grad-CAM. Se muestran tres mallas diferentes. En la parte superior se presentan las mallas originales, vistas de frente. En la parte inferior, las mismas mallas están coloreadas según la activación de Grad-CAM: los colores más cálidos indican una mayor activación. Se observa que el modelo se enfoca principalmente en la parte superior de la sínfisis del pubis. El modelo ha clasificado correctamente las mallas (a) y (b) como pertenecientes a la clase 0 (\say{ausente}), y la malla (c) a la clase 1 (\say{presente}).}
     \label{fig5:grad_cam__BN_samples}
 \end{figure}
 

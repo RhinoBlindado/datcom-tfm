@@ -28,7 +28,7 @@ El modelo predominante en el ámbito del DL es la red neuronal artificial (\text
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{figures/2_theory/neuralNetDiagram.png}
-    \caption[Ejemplos de la estructura de una ANN]{Ejemplos típicos de la estructura de una ANN, en este caso se tiene una red superficial o \textit{shallow} a la izquierda con una sola capa oculta entre las capas de entrada y salida; y una red profunda o \textit{deep} a la derecha, que posee múltiples capas con variable densidad de neuronas entre las capas de entrada y salida. Fuente: \cite{annPictureSource}.}
+    \caption[Ejemplos de la estructura de una ANN]{Ejemplos típicos de la estructura de una ANN, en este caso se tiene una red superficial o \textit{shallow} a la izquierda con una sola capa oculta entre las capas de entrada y salida; y una red profunda o \textit{deep} a la derecha, que posee múltiples capas con variable densidad de neuronas entre las capas de entrada y salida. Figura tomada de \cite{annPictureSource}.}
     \label{fig:annExample}
 \end{figure}
 
@@ -39,7 +39,7 @@ Existen numerosas funciones de activación, aunque las más comunes y ampliament
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{figures/2_theory/artificialNeuron.png}
-    \caption[Ejemplo de una neurona artificial]{Ejemplo de una neurona artificial, los datos de entrada son multiplicados por los pesos y su resultado, junto con el sesgo (o \textit{bias}), son combinados linealmente. A continuación, son transformados por la función no lineal para proporcionar el valor salida de la neurona. Fuente: \cite{artificialNeuron}.}
+    \caption[Ejemplo de una neurona artificial]{Ejemplo de una neurona artificial, los datos de entrada son multiplicados por los pesos y su resultado, junto con el sesgo (o \textit{bias}), son combinados linealmente. A continuación, son transformados por la función no lineal para proporcionar el valor salida de la neurona. Figura tomada de \cite{artificialNeuron}.}
     \label{fig:artificialNeuronExample}
 \end{figure}
 
@@ -58,7 +58,7 @@ La estructura básica de una CNN puede visualizarse en la Figura \ref{fig:cnnExa
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{figures/2_theory/cnnExample.jpeg}
-    \caption[Estructura básica de una CNN]{Estructura básica de una CNN, en la que se aprecia su organización típica: una serie de capas convolucionales con funciones de activación no lineales, intercaladas con capas de \textit{pooling}, que conforman la etapa inicial de extracción de características (\textit{Feature Learning} en la imagen). Esta parte es seguida por una serie de capas totalmente conectadas que conducen hasta la capa de salida. En este ejemplo, la red aborda un problema de clasificación. Fuente: \cite{prabhu_understanding_2019}.}
+    \caption[Estructura básica de una CNN]{Estructura básica de una CNN, en la que se aprecia su organización típica: una serie de capas convolucionales con funciones de activación no lineales, intercaladas con capas de \textit{pooling}, que conforman la etapa inicial de extracción de características (\textit{Feature Learning} en la imagen). Esta parte es seguida por una serie de capas totalmente conectadas que conducen hasta la capa de salida. En este ejemplo, la red aborda un problema de clasificación. Figura tomada de \cite{prabhu_understanding_2019}.}
 \end{figure}
 
 \subsection{Capa convolucional}
@@ -127,13 +127,21 @@ Se pueden inicializar los valores de forma aleatoria utilizando una distribució
 \subsubsection{\textit{Dropout}}
 La técnica de abandono o \textit{dropout} \cite{10.5555/2627435.2670313} consiste en apagar o desactivar temporalmente cierta cantidad de neuronas en las capas totalmente conectadas de forma aleatoria durante el proceso de entrenamiento. La aplicación del \textit{dropout} hace que la red generalice mejor, pues las neuronas en una capa totalmente conectada tienden a generar una codependencia entre ellas, es decir, que ciertas neuronas se adaptan para contrarrestar los errores de otras neuronas y debido a que estos errores dependen de los datos de entrenamiento, no se generalizará bien para nuevos datos. Por lo tanto el \textit{dropout} permite evitar estas codependencias e impulsar el poder individual de cada neurona, lo cual aumenta el poder de generalización de la red.
 
+
+\FloatBarrier
+
 \section{Clasificación Multietiqueta}
 \label{section2:multilabel}
-Como se ha descrito anteriormente, la clasificación emplea una variable de salida asociada a una variable discreta. Sin embargo, existe una extensión de esta idea en la que, para cada variable de entrada, pueden existir múltiples categorías asociadas que no se solapan entre sí. Este enfoque se conoce como clasificación multietiqueta (o multi-label classification).
 
-En un problema de clasificación tradicional, cada instancia pertenece exclusivamente a una única clase dentro de un conjunto de categorías predefinidas. Por ejemplo, en la clasificación de imágenes de animales, un modelo puede etiquetar una imagen como \say{perro} o \say{gato}, pero no ambas a la vez. En contraste, en la clasificación multietiqueta, cada instancia puede estar asociada con múltiples categorías simultáneamente.
+\begin{figure}[htb]
+    \includegraphics[width=\linewidth]{figures/2_theory/multilabel_example.png}
+    \caption[Ejemplo comparativo entre clasificación binaria, multiclase y multietiqueta]{Ejemplo comparativo entre clasificación binaria, multiclase y multietiqueta. A la izquierda se muestra un clasificador binario, que determina si una única etiqueta está presente o no, en este caso si la imagen contiene un perro. En el centro, un clasificador multiclase, que asigna exactamente una clase entre varias posibles a cada muestra; aquí, la imagen es clasificada únicamente como \say{perro}, ignorando la planta. A la derecha, un clasificador multietiqueta, que permite asignar múltiples etiquetas simultáneamente a una misma entrada, reflejando mejor situaciones en las que varios atributos pueden coexistir; en este caso, se reconocen correctamente tanto el perro como la planta. Figura tomada de \cite{noauthor_multilabel_nodate}.}
+    \label{multilabel_example}
+\end{figure}
 
-Un ejemplo común de este tipo de clasificación se encuentra en el etiquetado de imágenes en redes sociales, donde una misma foto puede contener etiquetas como \say{persona}, \say{playa} y \say{atardecer}. De manera similar, en el procesamiento de textos, un documento puede clasificarse dentro de varias categorías temáticas, como \say{tecnología}, \say{negocios} y \say{ciencia}, si su contenido abarca múltiples áreas.
+Como se ha descrito anteriormente, la clasificación multiclase emplea una variable de salida asociada a una variable discreta. Sin embargo, existe una extensión de esta idea en la que, para cada variable de entrada, pueden existir múltiples categorías asociadas que no se solapan entre sí. Este enfoque se conoce como clasificación multietiqueta (o \textit{multi-label classification}) \cite{tarekegn_deep_2024}.
+
+En un problema de clasificación multiclase tradicional, cada instancia se asigna exclusivamente a una única clase dentro de un conjunto finito y mutuamente excluyente de categorías. Por ejemplo, en la clasificación de imágenes en redes sociales, un modelo puede etiquetar una imagen como \say{perro} o \say{planta}, pero nunca ambas simultáneamente. En cambio, en un problema de clasificación multietiqueta, una misma instancia puede estar asociada a múltiples etiquetas a la vez. Siguiendo el ejemplo anterior, una foto podría ser etiquetada simultáneamente como \say{perro} y \say{planta}, como se ilustra en la Figura \ref{multilabel_example}.
 
 Entre los algoritmos de ML más utilizados para la clasificación multietiqueta destacan los árboles de decisión, los métodos de vecinos más próximos, las máquinas de vectores de soporte y las redes neuronales. En particular, las redes neuronales han logrado mejoras en el aprendizaje cuando se utiliza este método \cite{ranjan_hyperface_2019}.
 
@@ -151,7 +159,7 @@ La principal ventaja de Grad-CAM radica en su capacidad para generar explicacion
 
 Sin embargo, una de sus principales limitaciones es la dificultad para evaluar la precisión de las explicaciones generadas. En algunos casos, la interpretación de los mapas de calor puede no ser intuitiva o carecer de sentido lógico, lo que impide obtener resultados claramente interpretables \cite{molnar2025}.
 
-\begin{figure}[!h]  
+\begin{figure}[t]  
     \centering
     \begin{subfigure}{0.28\textwidth}
         \includegraphics[width=\textwidth]{figures/2_theory/grad_cam__og.jpg}
@@ -171,19 +179,30 @@ Sin embargo, una de sus principales limitaciones es la dificultad para evaluar l
         \caption{Mapa de activación para la clase \say{perro}.}
         \label{fig__grad_cam__dog}
     \end{subfigure}    
-    \caption[Ejemplo de funcionamiento de Grad-CAM]{Ejemplo ilustrativo del funcionamiento de Grad-CAM \cite{selvaraju_grad_cam_2017}. A partir de la imagen original (a), si se analiza la clase \say{gato}, se obtiene el mapa de activación (b), donde se resaltan las regiones que más han contribuido a la predicción de dicha clase. Al estudiar la clase \say{perro}, se genera el mapa (c). Esta técnica proporciona una forma de explicabilidad visual sobre las decisiones tomadas por una CNN.}   
+    \caption[Ejemplo de funcionamiento de Grad-CAM]{Ejemplo ilustrativo del funcionamiento de Grad-CAM. A partir de la imagen original (a), si se analiza la clase \say{gato}, se obtiene el mapa de activación (b), donde se resaltan las regiones que más han contribuido a la predicción de dicha clase. Al estudiar la clase \say{perro}, se genera el mapa (c). Esta técnica proporciona una forma de explicabilidad visual sobre las decisiones tomadas por una CNN. Figura tomada de \cite{selvaraju_grad_cam_2017}.}   
     \label{fig__grad_cam}  
 \end{figure}
 
+\FloatBarrier
+
 \section{Búsqueda de Arquitectura Neuronal}
 \label{section2:nas}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/2_theory/nas_example.pdf}
+    \caption[Ejemplo abstracto de los métodos de búsqueda de arquitectura neuronal]{Ejemplo abstracto de los métodos de búsqueda de arquitectura neuronal. Una estrategia de búsqueda (\textit{Search Strategy}) selecciona una arquitectura $A$ dentro de un espacio de búsqueda predefinido (\textit{Search Space}) $\mathcal{A}$. Esta arquitectura es evaluada por una estrategia de estimación de rendimiento (\textit{Performance Estimation Strategy}), la cual devuelve el rendimiento estimado de $A$ a la estrategia de búsqueda para generar una nueva arquitectura $A$ para la siguiente iteración. Esto se realiza hasta que se llega a un criterio de parada predefinido. Figura tomada de \cite{elsken_neural_2018}.}
+
+    \label{nas_example}
+\end{figure}
+
 La búsqueda de arquitectura neuronal (\textit{Neural Architecture Search}, NAS) \cite{zoph_neural_2017} pretende automatizar la generación de la estructura de una red neuronal. A diferencia de obtener una estructura por medio de conocimiento experto, se utilizan algoritmos para explorar e identificar la mejor arquitectura de red neuronal para una tarea específica. Este enfoque automatizado ayuda a optimizar el rendimiento, la velocidad y la eficacia \cite{ultralytics_busqueda_nas}.
 
 El enfoque consiste en definir un espacio de búsqueda de posibles arquitecturas de red, establecer una estrategia para explorar este espacio y evaluar el rendimiento de cada arquitectura. Este proceso iterativo permite a NAS descubrir arquitecturas muy eficaces para tareas específicas que podrían no ser diseñadas intuitivamente por los humanos, y que a menudo igualan o superan las mismas tanto en exactitud como en uso de recursos y tamaño \cite{poyser_neural_2024}.
 
-Si bien existen actualmente una gran cantidad de algoritmos NAS, estos se pueden clasificar en distintos grupos dependiendo de la estrategia utilizada para la exploración del espacio de búsqueda \cite{baymurzina_review_2022, white_neural_2023}.
+Si bien existen actualmente una gran cantidad de algoritmos NAS, estos se pueden clasificar en distintos grupos dependiendo de la estrategia utilizada para la exploración del espacio de búsqueda y estrategias de estimación de rendimiento \cite{elsken_neural_2018, baymurzina_review_2022, white_neural_2023}.
 
-\subsection{Métodos de búsqueda}
+\subsection{Estrategías de búsqueda}
 \subsubsection{Por métodos evolutivos}
 Los métodos evolutivos o de \textit{neuroevolution} hacen uso de algoritmos evolutivos para la generación de la estructura de la red. La idea principal es la de ir modificando iterativamente la arquitectura por medio de una población de redes candidatas por el uso de operadores de cruce y mutación para incrementar su valor de evaluación o \textit{fitness}, en cada siguiente iteración se van cruzando las redes con el mejor \textit{fitness} para obtener descendientes hasta que se obtenga un valor deseado de \textit{fitness} o se llegue a un criterio de para definido. Notablemente, la función de optimización no tiene por qué ser diferenciable, por lo que resultan particularmente útiles para optimización multi objetivo. 
 
@@ -220,6 +239,9 @@ Los espacios de búsqueda basados en celdas toma inspiración en el hecho que la
 
 \subsubsection{Espacios de búsqueda jerárquicos}
 A diferencia de los otros tipos de espacios de búsqueda, en lo que todo el diseño de la arquitectura es \say{plano} o diseñado en una sola capa, los espacios de búsqueda jerárquicos poseen múltiples niveles en los que se va definiendo la estructura de la red desde los parámetros más generales hasta los más específicos. Son extremadamente expresivos, permiten obtener redes complejas y diversas, además de que al tener la jerarquía se hace más efectivo la búsqueda del espacio lo que lo hace más eficiente también. Por otro lado, son bastante más complicados de diseñar e implementar.
+
+\subsection{Estrategias de estimación de rendimiento}
+
 
 \section{Representaciones 3D en \textit{Deep Learning}}
 \label{section2:3dreps}

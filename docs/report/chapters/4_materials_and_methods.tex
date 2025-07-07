@@ -2,7 +2,15 @@
 
 \section{Materiales}
 \label{section4:materials}
-Para la realización de este TFM se dispone de una colección de 497 modelos 3D de la sínfisis del pubis, correspondientes tanto al lado izquierdo como derecho, en formato de malla OBJ. Estos modelos fueron escaneados por el personal del Laboratorio de Antropología Física del Departamento de Medicina Legal, Toxicología y Antropología Física de la Universidad de Granada. Además de la digitalización tridimensional, el equipo del laboratorio examinó cuidadosamente cada una de las muestras y etiquetó manualmente los atributos correspondientes a las características morfológicas observables en la superficie de la sínfisis del pubis así como la edad real de fallecimiento de los individuos, datos que también han sido provistos dentro de un fichero de Microsoft Excel. Se utilizaron las características y atributos propuestos por Villar et al. \cite{villar2017first}, que se pueden visualizar en la Tabla \ref{table:themBones}.
+Para la realización de este TFM se dispone de una colección de 497 mallas 3D de la sínfisis del pubis, correspondientes tanto al lado izquierdo como derecho, en formato de malla OBJ. Estas mallas fueron escaneados por el personal del Laboratorio de Antropología Física del Departamento de Medicina Legal, Toxicología y Antropología Física de la Universidad de Granada. Además de la digitalización tridimensional, el equipo del laboratorio examinó cuidadosamente cada una de las muestras y etiquetó manualmente los atributos correspondientes a las características morfológicas observables en la superficie de la sínfisis del pubis así como la edad real de fallecimiento de los individuos, datos que también han sido provistos dentro de un fichero de Microsoft Excel. Se utilizaron las características y atributos propuestos por Villar et al. \cite{villar2017first}, que se pueden visualizar en la Tabla \ref{table:themBones}.
+
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\linewidth]{figures/4_materials-methods/pb-examples.png}
+    \caption[Ejemplos de mallas 3D de la sínfisis del pubis]{Ejemplos de mallas 3D de la sínfisis del pubis. Se presentan tres muestras distintas, renderizadas con iluminación fotorrealista desde tres ángulos: vista lateral izquierda (a), frontal (b) y lateral derecha (c). Obsérvese la complejidad de la superficie ósea, la cual ha sido capturada con alta fidelidad por el escáner 3D.}
+    \label{pb_3dexamples}
+\end{figure}
 
 A partir de este punto, se utilizarán las abreviaciones en inglés de dichas características con el fin de facilitar legibilidad del texto. La correspondencia entre las abreviaciones y su nombre en castellano puede consultarse en la Tabla \ref{table4:chars_short_names}.
 
@@ -41,7 +49,11 @@ A partir de este punto, se utilizarán las abreviaciones en inglés de dichas ca
 
 \subsection{Análisis Exploratorio de Datos}
 \label{section4:data_eda}
-Realizando un análisis exploratorio de los datos (\textit{Exploratory Data Analisys}, EDA), se observa que la muestra está compuesta por individuos de entre 18 y 60 años, como se muestra en la Figura \ref{fig4:age}. Además, estos individuos han sido clasificados dentro de las 10 fases del método de Todd, tal como se aprecia en la Figura \ref{fig4:todd_phase}.
+Realizando un análisis exploratorio de los datos (\textit{Exploratory Data Analysis}, EDA), resulta de interés realizar una inspección visual preliminar de las mallas. En la Figura \ref{pb_3dexamples} se muestran tres mallas 3D de la sínfisis del pubis renderizados con iluminación fotorrealista desde tres ángulos diferentes: vista lateral izquierda, frontal y lateral derecha. A partir de estas imágenes puede observarse que se trata de mallas 3D de alta complejidad geométrica y nivel de detalle. Además, al tratarse de estructuras anatómicas reales, presentan una alta variabilidad morfológica tanto en dimensiones como en proporciones, lo cual supone un reto adicional para los métodos de DL a aplicar.
+
+Cabe destacar que el método seleccionado (ExMeshCNN, véase \ref{section4:methods}) no ha sido validado con datos de esta naturaleza, sino con conjuntos de datos sintéticos y de menor resolución. Aun así, se espera que su rendimiento se mantenga elevado, dado que está diseñado para capturar patrones discriminativos directamente desde la superficie de las mallas, independientemente de su nivel de complejidad o del origen biológico de las estructuras representadas.
+
+Centrándose ahora en los datos asociados a cada malla, se observa que la muestra está compuesta por individuos de entre 18 y 60 años, como se muestra en la Figura \ref{fig4:age}. Además, estos individuos han sido clasificados dentro de las 10 fases del método de Todd, tal como se aprecia en la Figura \ref{fig4:todd_phase}.
 
 De ambos gráficos se aprecia que las edades más representadas corresponden a individuos de mayor edad, lo cual es coherente considerando el origen de los datos. Sin embargo, este patrón también evidencia un desbalance inherente en la muestra, un fenómeno esperado cuando se trabaja con datos reales.
 
@@ -211,14 +223,21 @@ Partiendo de estas ideas, se propone el siguiente descriptor $\mathcal{K}$, defi
 Donde: 
 \begin{itemize}
     \item $\bar{\textbf{a}_{t}}$ representa el conjunto conformado por un triángulo objetivo $f_{t}$ y sus tres triángulos vecinos topológicos $f_{n(t)_j}$, con $j \in \left\{1,2,3\right\}$.
-    \item $\textbf{u}_{t}^{j}$ describe la relación entre el centro del triángulo $\textbf{c}_t$ y el vértice $j$-ésimo $\textbf{v}_{t}^j$ definido como  $\textbf{u}_{t}^{j} = \textbf{c}_t - \textbf{v}_t^j$ con $j \in \left\{1,2,3\right\}$.
+    \item $\textbf{u}_{t}^{j}$ describe el vector entre el centro del triángulo $\textbf{c}_t$ y el vértice $j$-ésimo $\textbf{v}_{t}^j$ definido como  $\textbf{u}_{t}^{j} = \textbf{c}_t - \textbf{v}_t^j$ con $j \in \left\{1,2,3\right\}$.
     \item $\overrightarrow{\textbf{n}}_{t}^{j}$ es la normal del vértice $\textbf{v}_t^j$, calculada como la media de las normales de los triángulos que rodean dicho vértice.
     \item $\textbf{e}_{n(t)}^{j,k}$ representa la arista entre el vértice $\textbf{v}_{t}^j$ del triángulo objetivo y un vértice $\textbf{v}_{n(t)}^{j,k}$ del triángulo vecino, donde $k \in \left\{1,2\right\}$. Dado que solo existen dos caminos posibles desde un vértice $\textbf{v}_t^j$ hacia vértices de triángulos vecinos a través de una arista común, la diferencia $|\textbf{e}_{n(t)}^{j,1} - \textbf{e}_{n(t)}^{j,2}|$ captura una característica invariante al orden debido al valor absoluto.
     \item Los términos $\theta_0, \theta_1 $ y $\theta_2$ son parámetros entrenables por la red.
 \end{itemize}
-Para una mejor comprensión de estos términos, se recomienda consultar la Figura ???.
 
-En esencia, lo que se realiza es un mapeo del triángulo objetivo y su vecindario topológico a un espacio de características geodésicas capturando las siguientes propiedades:
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figures/4_materials-methods/geodesic_descriptor.png}
+    \caption[Ejemplo visual del descriptor geodésico]{Ejemplo visual del descriptor geodésico, donde se toma como triángulo objetivo $f_t$ el que se encuentra en el centro de la malla. Se observa el vector $\textbf{u}_{t}^{1}$ que conecta el centro del triángulo $\textbf{c}_t$ con uno de sus vértices, $\textbf{v}_t^1$, así como las aristas $\textbf{e}_{n(t)}^{1,1}$ (izquierda) y $\textbf{e}_{n(t)}^{1,2}$ (derecha), que enlazan el triángulo $f_t$ con sus triángulos vecinos a través del vértice $\textbf{v}_t^1$. Este proceso se repite de forma análoga para los otros dos vértices del triángulo objetivo.}
+    \label{geod_descrp}
+\end{figure}
+
+Para una mejor comprensión de estos términos, se recomienda consultar la Figura \ref{geod_descrp}. En esencia, lo que se realiza es un mapeo del triángulo objetivo y su vecindario topológico a un espacio de características geodésicas capturando las siguientes propiedades:
 \begin{itemize}
     \item Forma local del triángulo, mediante el término $\textbf{u}_{t}^{j}$, que describe cómo se distribuyen espacialmente los vértices con respecto al centroide.
     \item Orientación local, reflejada en $\overrightarrow{\textbf{n}}_{t}^{j}$, que aporta información sobre la dirección normal de la superficie.
@@ -226,6 +245,8 @@ En esencia, lo que se realiza es un mapeo del triángulo objetivo y su vecindari
 \end{itemize}
 
 Además, el descriptor actúa funcionalmente como un filtro de convolución 1D de tamaño 3, ya que posee parámetros entrenables. Esto permite realizar subsiguientes convoluciones 1D sobre el vector de características obtenido.
+
+\FloatBarrier
 
 \subsubsection{Descriptor geométrico basado en caras}
 En la literatura, las características geométricas más comúnmente empleadas para describir las caras triangulares incluyen el vector normal de la misma, su centroide y el ángulo que forma con las caras vecinas. Dado que estas características son de bajo nivel y, en cierta medida, de naturaleza heurística, se propone el descriptor $\mathcal{G}$, definido en la Ecuación \ref{eq4:geometric}, con el objetivo de capturar representaciones de alto nivel que integren dicha información geométrica.
@@ -241,7 +262,14 @@ Donde:
     \item Los términos $\phi_{0}, \phi_{1}, \phi_{2} $ y $\phi_{3}$ son parámetros entrenables por la red.
 \end{itemize}
 
-De esta forma, se logra realizar otro mapeo de las caras triangulares junto a su vecindario topológico a un espacio de características geométricas y, al igual que sucede con el descriptor de aristas, se tiene esencialmente una capa entrenable por la red y que su resultado es factible realizarle convoluciones 1D.
+De esta forma, se logra realizar otro mapeo de las caras triangulares junto a su vecindario topológico a un espacio de características geométricas y, al igual que sucede con el descriptor de aristas, se tiene esencialmente una capa entrenable por la red y que su resultado es factible realizarle convoluciones 1D. La Figura \ref{geom_descrp} permite visualizar estos conceptos de forma clara.
+
+\begin{figure}[hb]
+    \centering
+    \includegraphics[width=0.75\linewidth]{figures/4_materials-methods/geometric_decriptor.png}
+    \caption[Ejemplo visual del descriptor geométrico]{Ejemplo visual del descriptor geométrico, donde se muestra el triángulo objetivo $f_t$ (a la derecha de la malla) junto con su vecino topológico $f_{n(t)_1}$. Se destacan los centroides de ambos triángulos, $\textbf{c}_{t}$ y $ \textbf{c}_{n(t)}^{1}$, utilizados para calcular el vector $\left| \textbf{c}_{t} - \textbf{c}_{n(t)}^{1} \right|$, representado en azul en la figura. También se visualizan sus normales respectivas, $\overrightarrow{\textbf{n}}_{t}$ y $\overrightarrow{\textbf{n}}_{n(t)}^{1}$, cuya relación angular se captura mediante su producto cruzado.}
+    \label{geom_descrp}
+\end{figure}
 
 
 En resumen, la primera capa de cualquier red construida con ExMeshCNN se compone de los dos descriptores $\mathcal{K}(\bar{\textbf{a}}_t)$ y $\mathcal{G}(\bar{\textbf{a}}_t)$, que funcionalmente actúan como capas convolucionales 1D pues poseen parámetros entrenables, pero que están realizando un mapeo de cada triángulo a un espacio de características geométricas y geodésicas. El resultado de los descriptores es concatenado como se observa en la Ecuación \ref{eq4:concat} para ser utilizado por las capas verdaderamente convolucionales.

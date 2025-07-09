@@ -101,32 +101,30 @@ La última capa densa es la salida de toda la red. En esta etapa, se evalúa la 
 \label{subsection:regularization}
 Como se ha comentado anteriormente, tanto las ANNs como las CNNs son propensas al fenómeno de sobreentrenamiento u \textit{overfitting}. La regularización es un método utilizado para combatir este fenómeno y en esencia lo que se quiere es controlar la complejidad del modelo, ya sea alterando los datos, el número de parámetros o el funcionamiento de la red. En general, la regularización es cualquier modificación que se puede realizar al modelo para que generalice mejor.
 
-Se compone de múltiples técnicas diferentes, pero las más relevantes y utilizadas en CNNs son: La normalización, \textit{data augmentation}, la inicialización de los pesos y \textit{dropout}.
+Se compone de múltiples técnicas diferentes, pero las más relevantes para este proyecto son: La normalización, el \textit{Early Stopping} y la inicialización de los pesos.
 
 \subsubsection{Normalización}
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=\linewidth]{figures/2_theory/normTypes.png}
-    \caption[Tipos de normalización]{Diferentes tipos de normalización. \textbf{H,W} indican la altura y anchura de la imagen, \textbf{C} indica los canales y \textbf{N} el número de lotes \cite{wu2018group}.}
+    \includegraphics[width=\linewidth]{figures/2_theory/normTypes.pdf}
+    \caption[Tipos de normalización]{Tipos de normalización. Cada subgráfico muestra un tensor de mapa de características, donde N representa el eje del lote (\textit{batch}), C el eje de los canales, y (H, W) los ejes espaciales. Los píxeles en azul se normalizan utilizando la misma media y varianza, calculadas agregando los valores de dichos píxeles. Figura tomada de \cite{wu2018group}.}
     \label{fig:normTypes}
 \end{figure}
 
 La normalización es una técnica que estandariza los datos de manera que el valor medio de los mismos sea cercano a 0, con una desviación estándar cercana a 1, empíricamente se ha demostrado que esto mejora el rendimiento de las redes, pues evita que los pesos posean valores muy grandes, lo que afecta el cálculo de gradientes. 
 
-Por lo general la normalización se aplica a las capas convolucionales de la red y la manera típica de utilizarla es haciendo uso de la normalización por lotes o \textit{batch normalization}, en donde se aplica la estandarización a una característica $i$-ésima de entrada calculando la media y desviación típica de todas las características $i$-ésimas del lote. Existe también la normalización por capa o \textit{layer normalization} que aplica la media y desviación típica por cada capa independiente del lote, la normalización por grupo o \textit{group normalization} que aplica la normalización a un grupo de canales pero no toda la capa entera. Por último se tiene la normalización por instancia o \textit{instance normalization} que normaliza cada canal por separado. El uso de un tipo u otro de normalización depende de la tarea a cumplir, pues se sabe que empíricamente diferentes tipos producen mejores modelos en diferentes problemas. Un ejemplo visual de todos los tipos de normalización se puede observar en la Figura \ref{fig:normTypes}. 
+Por lo general la normalización se aplica a las capas convolucionales de la red y la manera típica de utilizarla es haciendo uso de la normalización por lotes o \textit{batch normalization}, en donde se aplica la estandarización a una característica $i$-ésima de entrada calculando la media y desviación típica de todas las características $i$-ésimas del lote. Existe también la normalización por capa o \textit{layer normalization} que aplica la media y desviación típica por cada capa independiente del lote, la normalización por instancia o \textit{instance normalization} que normaliza cada canal por separado. Por último se tiene la normalización por grupo o \textit{group normalization} que aplica la normalización a un grupo de canales pero no toda la capa entera. El uso de un tipo u otro de normalización depende de la tarea a cumplir, pues se sabe que empíricamente diferentes tipos producen mejores modelos en diferentes problemas. Un ejemplo visual de todos los tipos de normalización mencionados se puede observar en la Figura \ref{fig:normTypes}. 
 
-\subsubsection{\textit{Data Augmentation}}
-El aumento de datos o \textit{data augmentation}, es una técnica para aumentar la cantidad de datos que se poseen de manera artificial, significa que, se generan nuevos datos de los ya presentes mediante la aplicación de transformaciones aleatorias pero realistas. Por ejemplo, escalados no uniformes de la imagen, rotaciones, traslaciones, adición de ruido o transformaciones de perspectiva. De esta manera se poseen más muestras de entrenamiento diferentes, lo que reduce la posibilidad de \textit{overfitting} porque la red tendrá más datos con los que trabajar y las modificaciones realizadas ayudan a la red a tener una idea más general de lo que se está aprendiendo.
+\subsubsection{\textit{Early Stopping}}
+La técnica de regularización conocida como detención anticipada o \textit{Early Stopping} \cite{prechelt_early_1998} busca mitigar el \textit{overfitting} mediante el monitoreo continuo del entrenamiento. Su principio es detener el proceso de aprendizaje en el momento en que el rendimiento del modelo comienza a degradarse, lo cual suele indicar que ha empezado a memorizar los datos del conjunto de entrenamiento en lugar de generalizar. Para detectar esta degradación, se emplea un conjunto adicional de datos denominado de \say{validación}, que no interviene en el entrenamiento, pero se utiliza tras cada época para evaluar el desempeño del modelo, ya sea mediante una métrica específica o a través del error de pérdida.
+
+La decisión de detener el entrenamiento se toma mediante una heurística, que puede consistir en alguno de los siguientes criterios: ausencia de mejora en la métrica después de un número determinado de épocas consecutivas, mejoras inferiores a un umbral mínimo, o bien la consecución de un valor objetivo predefinido. Esta técnica no solo ha demostrado ser tan efectiva como otras formas más complejas de regularización, sino que además permite combinarse con el llamado \textit{Model Checkpointing} \cite{geron_hands-machine_2019}, que consiste en guardar automáticamente el estado del modelo (o sus pesos) en el punto donde se obtuvo el mejor rendimiento sobre el conjunto de validación, en lugar de almacenar simplemente la última iteración del entrenamiento.
 
 \subsubsection{Inicialización de los pesos}
 Como ha sido mencionado, las ANNs y CNNs utilizan pesos y sesgos en cada neurona, que son modificados en el entrenamiento por un algoritmo de optimización. Estos algoritmos necesitan un valor inicial que sea diferente de 0 al comienzo de dicho entrenamiento para funcionar, y la elección de estos valores afecta de gran forma al entrenamiento de la red, por lo tanto, se considera también como una técnica de regularización.
 
-Se pueden inicializar los valores de forma aleatoria utilizando una distribución normal o uniforme que no toma en cuenta ningún parámetro de la red. Aún así, existen diversas heurísticas que se han desarrollado sobre los años que se ha comprobado mejoran el entrenamiento de los modelos. Por ejemplo, se tiene la inicialización Xavier \cite{glorot2010understanding} que parte de una distribución uniforme pero que toma en cuenta la cantidad de entradas que posee cada neurona, por lo que la inicialización está parcialmente guiada por la densidad de las capas. Otra inicialización heurística se denomina Kaiming \cite{he2015delving} y genera los valores por medio de una distribución normal acotada por el número de entradas de la capa.
-
-\subsubsection{\textit{Dropout}}
-La técnica de abandono o \textit{dropout} \cite{10.5555/2627435.2670313} consiste en apagar o desactivar temporalmente cierta cantidad de neuronas en las capas totalmente conectadas de forma aleatoria durante el proceso de entrenamiento. La aplicación del \textit{dropout} hace que la red generalice mejor, pues las neuronas en una capa totalmente conectada tienden a generar una codependencia entre ellas, es decir, que ciertas neuronas se adaptan para contrarrestar los errores de otras neuronas y debido a que estos errores dependen de los datos de entrenamiento, no se generalizará bien para nuevos datos. Por lo tanto el \textit{dropout} permite evitar estas codependencias e impulsar el poder individual de cada neurona, lo cual aumenta el poder de generalización de la red.
-
+Se pueden inicializar los valores de forma aleatoria utilizando una distribución normal o uniforme que no toma en cuenta ningún parámetro de la red. Aún así, existen diversas heurísticas que se han desarrollado sobre los años que se ha comprobado mejoran el entrenamiento de los modelos. Por ejemplo, se tiene la inicialización Xavier \cite{glorot2010understanding} que parte de una distribución uniforme, pero que toma en cuenta la cantidad de entradas que posee cada neurona, por lo que la inicialización está parcialmente guiada por la densidad de las capas. Otra inicialización heurística se denomina Kaiming \cite{he2015delving} y genera los valores por medio de una distribución normal acotada por el número de entradas de la capa.
 
 \FloatBarrier
 
@@ -149,17 +147,8 @@ Dado que el problema en cuestión involucra la clasificación de huesos de la s�
 
 \section{Grad-CAM}
 \label{section2:gradcam}
-El mapeo de activación de clase ponderado por gradiente (\textit{Gradient-weighted Class Activation Mapping}, Grad-CAM) \cite{selvaraju_grad_cam_2017} es una técnica ampliamente utilizada para interpretar el funcionamiento de las CNNs en tareas de clasificación de imágenes. Su propósito es identificar qué regiones de una imagen influyen en la decisión del modelo, proporcionando así una representación visual del proceso de clasificación.
 
-Grad-CAM genera mapas de calor que destacan la relevancia de cada píxel en relación con una clase específica, generalmente aplicándose en la última capa convolucional de la red. Para ello, combina de manera lineal las activaciones de dicha capa, ponderadas por el gradiente de la salida correspondiente. Este cálculo permite resaltar las áreas de la imagen que impactan positiva o negativamente en la predicción del modelo. Finalmente, se conservan únicamente las contribuciones positivas, es decir, aquellas que refuerzan la decisión del modelo en favor de la clase seleccionada.
-
-Por ejemplo observar la Figura \ref{fig__grad_cam} donde se tiene una fotografía de un perro y un gato (\ref{fig__grad_cam__og}). Si se estudia la clase \say{gato} con Grad-CAM, se obtiene un mapa de calor que indica que partes de la imagen han contribuido a que el modelo detecte al gato (\ref{fig__grad_cam__cat}). De igual forma si se estudia la clase \say{perro}, se obtiene un mapa de calor distinto indicando que partes influenciaron la detección del perro (\ref{fig__grad_cam__dog}).
-
-La principal ventaja de Grad-CAM radica en su capacidad para generar explicaciones visuales, lo que facilita la comprensión de los factores que influyeron en la decisión de la red respecto a una clase específica. Además, este método es altamente versátil, ya que puede aplicarse a una amplia variedad de redes neuronales convolucionales sin necesidad de modificar su estructura, y su cálculo es relativamente sencillo.
-
-Sin embargo, una de sus principales limitaciones es la dificultad para evaluar la precisión de las explicaciones generadas. En algunos casos, la interpretación de los mapas de calor puede no ser intuitiva o carecer de sentido lógico, lo que impide obtener resultados claramente interpretables \cite{molnar2025}.
-
-\begin{figure}[t]  
+\begin{figure}[h]  
     \centering
     \begin{subfigure}{0.28\textwidth}
         \includegraphics[width=\textwidth]{figures/2_theory/grad_cam__og.jpg}
@@ -183,6 +172,16 @@ Sin embargo, una de sus principales limitaciones es la dificultad para evaluar l
     \label{fig__grad_cam}  
 \end{figure}
 
+El mapeo de activación de clase ponderado por gradiente (\textit{Gradient-weighted Class Activation Mapping}, Grad-CAM) \cite{selvaraju_grad_cam_2017} es una técnica ampliamente utilizada para interpretar el funcionamiento de las CNNs en tareas de clasificación de imágenes. Su propósito es identificar qué regiones de una imagen influyen en la decisión del modelo, proporcionando así una representación visual del proceso de clasificación.
+
+Grad-CAM genera mapas de calor que destacan la relevancia de cada píxel en relación con una clase específica, generalmente aplicándose en la última capa convolucional de la red. Para ello, combina de manera lineal las activaciones de dicha capa, ponderadas por el gradiente de la salida correspondiente. Este cálculo permite resaltar las áreas de la imagen que impactan positiva o negativamente en la predicción del modelo. Finalmente, se conservan únicamente las contribuciones positivas, es decir, aquellas que refuerzan la decisión del modelo en favor de la clase seleccionada.
+
+Por ejemplo observar la Figura \ref{fig__grad_cam} donde se tiene una fotografía de un perro y un gato (\ref{fig__grad_cam__og}). Si se estudia la clase \say{gato} con Grad-CAM, se obtiene un mapa de calor que indica que partes de la imagen han contribuido a que el modelo detecte al gato (\ref{fig__grad_cam__cat}). De igual forma si se estudia la clase \say{perro}, se obtiene un mapa de calor distinto indicando que partes influenciaron la detección del perro (\ref{fig__grad_cam__dog}).
+
+La principal ventaja de Grad-CAM radica en su capacidad para generar explicaciones visuales, lo que facilita la comprensión de los factores que influyeron en la decisión de la red respecto a una clase específica. Además, este método es altamente versátil, ya que puede aplicarse a una amplia variedad de redes neuronales convolucionales sin necesidad de modificar su estructura, y su cálculo es relativamente sencillo.
+
+Sin embargo, una de sus principales limitaciones es la dificultad para evaluar la precisión de las explicaciones generadas. En algunos casos, la interpretación de los mapas de calor puede no ser intuitiva o carecer de sentido lógico, lo que impide obtener resultados claramente interpretables \cite{molnar2025}.
+
 \FloatBarrier
 
 \section{Búsqueda de Arquitectura Neuronal}
@@ -191,7 +190,7 @@ Sin embargo, una de sus principales limitaciones es la dificultad para evaluar l
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\linewidth]{figures/2_theory/nas_example.pdf}
-    \caption[Ejemplo abstracto de los métodos de búsqueda de arquitectura neuronal]{Ejemplo abstracto de los métodos de búsqueda de arquitectura neuronal. Una estrategia de búsqueda (\textit{Search Strategy}) selecciona una arquitectura $A$ dentro de un espacio de búsqueda predefinido (\textit{Search Space}) $\mathcal{A}$. Esta arquitectura es evaluada por una estrategia de estimación de rendimiento (\textit{Performance Estimation Strategy}), la cual devuelve el rendimiento estimado de $A$ a la estrategia de búsqueda para generar una nueva arquitectura $A$ para la siguiente iteración. Esto se realiza hasta que se llega a un criterio de parada predefinido. Figura tomada de \cite{elsken_neural_2018}.}
+    \caption[Ejemplo abstracto de los métodos de búsqueda de arquitectura neuronal]{Ejemplo abstracto de los métodos de búsqueda de arquitectura neuronal. Una estrategia de búsqueda (\textit{Search Strategy}) selecciona una arquitectura A dentro de un espacio de búsqueda predefinido (\textit{Search Space}) $\mathcal{A}$. Esta arquitectura es evaluada por una estrategia de estimación de rendimiento (\textit{Performance Estimation Strategy}), la cual devuelve el rendimiento estimado de A a la estrategia de búsqueda para generar una nueva arquitectura A para la siguiente iteración. Esto se realiza hasta que se llega a un criterio de parada predefinido. Figura tomada de \cite{elsken_neural_2018}.}
 
     \label{nas_example}
 \end{figure}
@@ -241,7 +240,21 @@ Los espacios de búsqueda basados en celdas toma inspiración en el hecho que la
 A diferencia de los otros tipos de espacios de búsqueda, en lo que todo el diseño de la arquitectura es \say{plano} o diseñado en una sola capa, los espacios de búsqueda jerárquicos poseen múltiples niveles en los que se va definiendo la estructura de la red desde los parámetros más generales hasta los más específicos. Son extremadamente expresivos, permiten obtener redes complejas y diversas, además de que al tener la jerarquía se hace más efectivo la búsqueda del espacio lo que lo hace más eficiente también. Por otro lado, son bastante más complicados de diseñar e implementar.
 
 \subsection{Estrategias de estimación de rendimiento}
+Las estrategias de búsqueda discutidas anteriormente tienen como objetivo obtener una arquitectura neuronal que maximice algún criterio de rendimiento, como puede ser la \textit{accuracy} sobre datos no previamente observados. Para guiar este proceso de búsqueda, es necesario estimar el rendimiento de cada arquitectura candidata.
 
+La forma más directa de hacerlo consiste en entrenar completamente la arquitectura y evaluar su rendimiento sobre un conjunto de datos de validación. Sin embargo, esta estrategia no resulta escalable en la práctica, especialmente cuando el espacio de búsqueda es amplio o las arquitecturas son complejas, ya que cada entrenamiento completo puede requerir un alto coste computacional.
+
+Por ello, se han propuesto diversas alternativas que permiten acelerar la estimación del rendimiento sin necesidad de realizar un entrenamiento completo. Estas técnicas buscan aproximar el comportamiento final del modelo de forma más eficiente, reduciendo considerablemente el tiempo requerido por cada evaluación durante la búsqueda.
+
+\subsubsection{Extrapolación de la curva de aprendizaje}
+Esta técnica busca predecir el rendimiento final de una arquitectura neuronal a partir de un entrenamiento parcial, mediante la extrapolación de su curva de aprendizaje. Dicha curva está compuesta por los valores de rendimiento obtenidos en el conjunto de validación a lo largo de las primeras épocas de entrenamiento. La idea consiste en ajustar un modelo paramétrico a esta curva parcial con el objetivo de estimar cómo evolucionará el rendimiento en las siguientes épocas, evitando así la necesidad de completar el entrenamiento completo de cada arquitectura. Naturalmente su principal desventaja es que la curva predicha se desvíe del verdadero rendimiento que podría obtener el modelo.
+
+\subsubsection{\textit{Proxies} sin coste}
+
+Los denominados \textit{proxies} sin coste (\textit{Zero-Cost Proxies}) constituyen una familia de técnicas para la estimación rápida del rendimiento de arquitecturas neuronales. Su principio consiste en calcular métricas simples (por ejemplo, una única pasada de propagación hacia adelante y hacia atrás sobre un minilote de datos) para asignar una puntuación a cada arquitectura. La hipótesis subyacente es que dichas puntuaciones presentan una correlación con el rendimiento final real de las arquitecturas, permitiendo así identificar candidatos prometedores sin necesidad de entrenamiento completo. Se les considera \say{sin coste} porque su tiempo de cómputo es significativamente menor que el requerido por otras estrategias de evaluación. No obstante, su principal limitación radica en su escasa precisión al explorar espacios de búsqueda amplios, mostrando además una tendencia a favorecer arquitecturas de mayor tamaño o con mayor densidad de canales.
+
+\subsubsection{Predicciones de baja fidelidad}
+Una alternativa al entrenamiento completo de las arquitecturas consiste en realizar predicciones de bajo coste computacional mediante técnicas de baja fidelidad. Estas incluyen entrenar las arquitecturas durante un número reducido de épocas, emplear subconjuntos más pequeños del conjunto de datos, utilizar versiones degradadas de los datos (por ejemplo, imágenes de menor resolución) o bien simplificar la arquitectura evaluada, reduciendo el número de filtros por capa o el número de bloques estructurales. Aunque estas estrategias reducen significativamente el coste computacional, introducen sesgos que tienden a subestimar el rendimiento final del modelo. Para mitigar este efecto, es habitual que la estrategia de búsqueda utilice sistemas de ranking en lugar de valores absolutos, siempre que las posiciones relativas entre arquitecturas se mantengan consistentes. No obstante, si las simplificaciones aplicadas son demasiado extremas, estas relaciones pueden distorsionarse, por lo que se recomienda incrementar gradualmente la fidelidad de las predicciones conforme se refina el proceso de búsqueda.
 
 \section{Representaciones 3D en \textit{Deep Learning}}
 \label{section2:3dreps}

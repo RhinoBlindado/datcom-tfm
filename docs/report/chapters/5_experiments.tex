@@ -218,33 +218,35 @@ En esta fase, se llevaron a cabo los denominados experimentos de etiqueta única
 Por cada característica, se realizaron 6 ejecuciones distintas resultantes de las combinaciones de los siguientes parámetros:
 
 \begin{itemize}
-\item \textbf{Resolución de la malla}: 100,000 (o 100K); 50,000 (50K) y 25,000 (25K) triángulos.
-\item \textbf{Tipo de malla}: Malla completa (Full) o malla recortada (Cut).
+\item \textbf{Resolución de la malla}: 100,000 (abreviado a 100K); 50,000 (50K) o 25,000 (25K) triángulos.
+\item \textbf{Tipo de malla}: Malla completa (abreviado a \textit{Full}) o malla recortada (\textit{Cut}).
 \end{itemize}
 
-Cada ejecución implicó la realización de 200 entrenamientos utilizando Optuna para la búsqueda de arquitectura neuronal y optimización de hiperparámetros, con el fin de obtener el modelo más adecuado para predecir cada característica de forma individual.
+Cada ejecución implicó la realización de 200 entrenamientos utilizando Optuna como herramienta de búsqueda de arquitecturas neuronales y optimización de hiperparámetros, con el objetivo de obtener el modelo más adecuado para predecir cada característica de forma individual.
 
-Dado que se tienen 9 características de Todd, y para cada una se ejecutaron 6 combinaciones con 200 entrenamientos, el número total de entrenamientos realizados asciende a $9\times6\times200=10,800$ entrenamientos totales.
+Dado que se trabajó con las 9 características del método de Todd, y que para cada una de ellas se realizaron 6 combinaciones distintas de configuración, el número total de entrenamientos realizados asciende a: $9\times6\times200=10,800$ entrenamientos totales.
 
-Esto equivale a $1,800$ entrenamientos por característica, lo que refleja el alto grado de exploración llevado a cabo para asegurar un modelo óptimo en cada caso.
+Esto equivale a 1,800 entrenamientos por característica, lo que refleja el elevado grado de exploración llevado a cabo con el fin de asegurar un modelo óptimo para cada una.
+
+El tiempo requerido por cada ejecución varió en función de la resolución de la malla utilizada independientemente del tipo de malla, así como de la complejidad de las arquitecturas evaluadas por Optuna en cada uno de los 200 entrenamientos. A pesar de esta variabilidad, se observó que: Las ejecuciones con mallas de 100K triángulos requerían entre 7 y 8 días completos; las de 50K triángulos, entre 3 y 4 días; y las de 25K triángulos, alrededor de 1 a 2 días por ejecución.
 
 \begin{table}[h]
     \centering
     \begin{tabular}{|c|c|c|c|c|}
     \hline
     \rowcolor[HTML]{D33333} 
-    {\color[HTML]{FFFFFF} Característica} & {\color[HTML]{FFFFFF} Test Accuracy} & {\color[HTML]{FFFFFF} Test F1} & {\color[HTML]{FFFFFF} Resolución} & {\color[HTML]{FFFFFF} Tipo} \\ \hline
-    AF & 0.6546 & 0.4729 & 50K & Cut \\
-    BN & 0.9158 & 0.6916 & 25K & Cut \\
-    DM & 0.7333 & 0.6261 & 25K & Cut \\
-    DP & 0.8827 & 0.7113 & 25K & Cut \\
-    IP & 0.7113 & 0.5410 & 100K & Cut \\
-    LSE & 0.9800 & 0.9232 & 100K & Full \\
-    USE & 0.9797 & 0.8281 & 25K & Cut \\
-    VB & 0.5202 & 0.5275 & 50K & Cut \\
-    VM & 0.6954 & 0.6747 & 50K & Cut \\ \hline
+    {\color[HTML]{FFFFFF} \textbf{Característica}} & {\color[HTML]{FFFFFF} \textbf{Test Acc}} & {\color[HTML]{FFFFFF} \textbf{Test F1}} & {\color[HTML]{FFFFFF} \textbf{Resolución}} & {\color[HTML]{FFFFFF} \textbf{Tipo}} \\ \hline
+    AF & 0.6546 & 0.4729 & 50K & \textit{Cut} \\
+    BN & 0.9158 & 0.6916 & 25K & \textit{Cut} \\
+    DM & 0.7333 & 0.6261 & 25K & \textit{Cut} \\
+    DP & 0.8827 & 0.7113 & 25K & \textit{Cut} \\
+    IP & 0.7113 & 0.5410 & 100K & \textit{Cut} \\
+    LSE & 0.9800 & 0.9232 & 100K & \textit{Full} \\
+    USE & 0.9797 & 0.8281 & 25K & \textit{Cut} \\
+    VB & 0.5202 & 0.5275 & 50K & \textit{Cut} \\
+    VM & 0.6954 & 0.6747 & 50K & \textit{Cut} \\ \hline
     \end{tabular}
-    \caption{Cuadro resumen de los mejores modelos obtenidos para cada característica}
+    \caption[Cuadro resumen de los mejores modelos obtenidos para cada característica]{Cuadro resumen de los mejores modelos obtenidos para cada característica en el conjunto de datos de test. Se observan en las columnas \say{Test Acc} y \say{Test F1} los valores obtenidos para las métricas de \textit{accuracy} y F1 Macro respectivamente.}
     \label{table5:single_tag__results}
 \end{table}
 
@@ -265,11 +267,13 @@ Sin embargo, las características LSE e IP constituyen una excepción a esta ten
 \subsection{Experimentos multietiqueta}
 Una vez realizados los experimentos de etiqueta única, se procedió a entrenar modelos capaces de predecir múltiples características simultáneamente. Para ello, se empleó el enfoque de \textit{multi-label classification}, que permite que cada muestra del conjunto de datos pueda estar asociada a más de una etiqueta, en contraste con la clasificación tradicional donde cada muestra pertenece a una única clase.
 
-Para estos experimentos, primero se realizaron ejecuciones con todas las características de Todd por cada resolución, tipo de malla y, adicionalmente, dos configuraciones de la parte densa o totalmente conectada del modelo: una donde todas las salidas poseen la misma estructura y otra donde cada salida tiene una estructura densa independiente.
+Para estos experimentos, primero se realizaron ejecuciones con todas las características de Todd por cada resolución, tipo de malla y, adicionalmente, dos configuraciones de la parte densa o totalmente conectada del modelo: una donde todas las salidas poseen la misma estructura (abreviado a \textit{Same}) y otra donde cada salida tiene una estructura densa independiente (\textit{Variable}).
 
-Posteriormente se realizaron experimentos con la mejor configuración obtenida en los resultados de etiqueta única para cada característica y las 3 características que presentan mayor correlación a la misma, como se puede observar en la Tabla \ref{table4:corr}, variando las dos configuraciones de la parte densa de la red.
+Posteriormente, se llevaron a cabo experimentos adicionales utilizando la mejor combinación de resolución de malla y tipo de malla para cada característica individual, junto con las tres características que presentan mayor asociación con ella, según los valores de la T de Tschuprow mostrados en la Tabla \ref{table4:corr}. En este caso, también se evaluaron ambas configuraciones de la parte densa del modelo (\textit{Same} y \textit{Variable}). Se realizaron $2 \times 2 \times 3 \times 200 = 2,400$ experimentos con todas las características, $9 \times 2 \times 200 = 3,600$ experimentos con las tres características con mayor asociación a una característica dada.
 
-Se realizaron $2 \times 2 \times 3 \times 200 = 2,400$ experimentos con todas las características, $9 \times 2 \times 200 = 3,600$ experimentos con las top 3 características con mayor asociación a una característica dada. De estos 6000 entrenamientos, en la Tabla \ref{table5:multilabel_results} se muestran los resultados de los mejores modelos obtenidos para cada característica.
+El tiempo requerido por cada ejecución varió en función de la resolución de las mallas y de la complejidad de la parte densa del modelo. Como era de esperar, los modelos con mayor número de características y resolución elevada fueron los que presentaron mayores requerimientos computacionales: Para las configuraciones con nueve características y resolución de 100K triángulos, el tiempo de entrenamiento se situó entre 28 y 30 días continuos. Con 50K triángulos, la duración se redujo a aproximadamente 15 días, y con 25K triángulos, a unos 7 días.
+
+En los experimentos con cuatro características, los tiempos se redujeron considerablemente: Con mallas de 100K triángulos, los entrenamientos tomaron alrededor de 10 días; con 50K triángulos, cerca de 5 días y con 25K triángulos, aproximadamente 3 días por ejecución. Estos tiempos evidencian el alto coste computacional del proceso experimental, así como el compromiso asumido para lograr una validación exhaustiva de los modelos generados.
 
 \begin{table}[h]
     \centering
@@ -280,24 +284,24 @@ Se realizaron $2 \times 2 \times 3 \times 200 = 2,400$ experimentos con todas la
         \multicolumn{2}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Característica}}} & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} } & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} } & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} } & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} } & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} } \\ \cline{1-2}
         \rowcolor[HTML]{D33333} 
         \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Evaluada}}} & {\color[HTML]{FFFFFF} \textbf{Soporte}} & \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{\begin{tabular}[c]{@{}c@{}}Test \\ Acc\end{tabular}}}} & \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{\begin{tabular}[c]{@{}c@{}}Test \\ F1\end{tabular}}}} & \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Resolución}}} & \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Hueso}}} & \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Estructura Densa}}} \\ \hline
-        \multicolumn{1}{|c|}{AF} & DM, LSE, USE & 0.6888 & 0.5164 & 50K & Cut & Variable \\
-        \multicolumn{1}{|c|}{BN} & AF, DP, LSE & 0.9141 & 0.7869 & 25K & Cut & Variable \\
-        \multicolumn{1}{|c|}{DM} & Todas & 0.7980 & 0.6525 & 100K & Cut & Same \\
-        \multicolumn{1}{|c|}{DP} & Todas & 0.9261 & 0.7215 & 100K & Cut & Same \\
-        \multicolumn{1}{|c|}{IP} & Todas & 0.6749 & 0.4777 & 50K & Full & Same \\
-        \multicolumn{1}{|c|}{LSE} & DM, USE, VM & 0.9495 & 0.7942 & 100K & Full & Variable \\
-        \multicolumn{1}{|c|}{USE} & AF, DM, LSE & 0.9541 & 0.8588 & 25K & Cut & Same \\
-        \multicolumn{1}{|c|}{VB} & Todas & 0.4926 & 0.4775 & 50K & Cut & Same \\
-        \multicolumn{1}{|c|}{VM} & AF, DM, IP & 0.6954 & 0.4975 & 100K & Cut & Variable \\ \hline
+        \multicolumn{1}{|c|}{AF} & DM, LSE, USE & 0.6888 & 0.5164 & 50K & \textit{Cut} & \textit{Variable} \\
+        \multicolumn{1}{|c|}{BN} & AF, DP, LSE & 0.9141 & 0.7869 & 25K & \textit{Cut} & \textit{Variable} \\
+        \multicolumn{1}{|c|}{DM} & Todas & 0.7980 & 0.6525 & 100K & \textit{Cut} & \textit{Same} \\
+        \multicolumn{1}{|c|}{DP} & Todas & 0.9261 & 0.7215 & 100K & \textit{Cut} & \textit{Same} \\
+        \multicolumn{1}{|c|}{IP} & Todas & 0.6749 & 0.4777 & 50K & \textit{Full} & \textit{Same} \\
+        \multicolumn{1}{|c|}{LSE} & DM, USE, VM & 0.9495 & 0.7942 & 100K & \textit{Full} & \textit{Variable} \\
+        \multicolumn{1}{|c|}{USE} & AF, DM, LSE & 0.9541 & 0.8588 & 25K & \textit{Cut} & \textit{Same} \\
+        \multicolumn{1}{|c|}{VB} & Todas & 0.4926 & 0.4775 & 50K & \textit{Cut} & \textit{Same} \\
+        \multicolumn{1}{|c|}{VM} & AF, DM, IP & 0.6954 & 0.4975 & 100K & \textit{Cut} & \textit{Variable} \\ \hline
     \end{tabular}%
     }
-    \caption{Resultados de los mejores modelos obtenidos para cada característica en los experimentos multietiqueta.}
+    \caption[Resultados de los mejores modelos obtenidos para cada característica en los experimentos multietiqueta]{Resultados de los mejores modelos obtenidos para cada característica en los experimentos multietiqueta en el conjunto de datos de test. Se observan en las columnas \say{Test Acc} y \say{Test F1} los valores obtenidos para las métricas de \textit{accuracy} y F1 Macro respectivamente.}
     \label{table5:multilabel_results}
     \end{table}
 
-De los resultados obtenidos, se observa que existe más variedad respecto a la resolución de las mallas empleadas. Sorpresivamente, se encuentran casi de forma equitativa las resoluciones de 25K, 50K y 100K triángulos, con 4 modelos utilizando 100K, 3 modelos con 50K y 2 modelos con 25K. Esto contrasta con los experimentos de etiqueta única, donde la mayoría de los modelos se entrenaron con mallas de 25K triángulos. Esto resulta interesante porque sugiere que, al entrenar modelos multietiqueta, la información contenida en las mallas de mayor resolución puede ser más relevante para la predicción de múltiples características simultáneamente.
+De estos 6000 entrenamientos, en la Tabla \ref{table5:multilabel_results} se muestran los resultados de los mejores modelos obtenidos para cada característica. Se observa que existe más variedad respecto a la resolución de las mallas empleadas. Sorpresivamente, se encuentran casi de forma equitativa las resoluciones de 25K, 50K y 100K triángulos, con 4 modelos utilizando 100K, 3 modelos con 50K y 2 modelos con 25K. Esto contrasta con los experimentos de etiqueta única, donde la mayoría de los modelos se entrenaron con mallas de 25K triángulos. Esto resulta interesante porque sugiere que, al entrenar modelos multietiqueta, la información contenida en las mallas de mayor resolución puede ser más relevante para la predicción de múltiples características simultáneamente.
 
-Por parte de los tipos de malla, esto se ha mantenido constante respecto a los experimentos de etiqueta única, ya que la mayoría de los modelos se entrenaron con mallas recortadas (Cut), excepto en el caso de las características LSE e IP, que emplearon mallas completas (Full). Esto refuerza la idea de que, para ciertas características, la información contenida en las zonas no recortadas es crucial para lograr un buen rendimiento del modelo incluso en un contexto multietiqueta.
+Por parte de los tipos de malla, esto se ha mantenido constante respecto a los experimentos de etiqueta única, ya que la mayoría de los modelos se entrenaron con mallas recortadas (\textit{Cut}), excepto en el caso de las características LSE e IP, que emplearon mallas completas (\textit{Full}). Esto refuerza la idea de que, para ciertas características, la información contenida en las zonas no recortadas es crucial para lograr un buen rendimiento del modelo incluso en un contexto multietiqueta.
 
 En cuanto a la estructura de las capas totalmente conectadas, se observa que no hay una preferencia clara entre las distintas configuraciones, estando distribuidas casi equitativamente, esto sugiere que la elección de la estructura densa puede depender más de la naturaleza específica de las características a predecir que de una tendencia generalizada.
 
@@ -315,17 +319,17 @@ Sobre las características de soporte, nuevamente se encuentra una distribución
         BN & \multicolumn{1}{c|}{0.9158} & 0.6916 & \multicolumn{1}{c|}{0.9141} & \textbf{0.7869} \\
         DM & \multicolumn{1}{c|}{0.7333} & 0.6261 & \multicolumn{1}{c|}{0.7980} & \textbf{0.6525} \\
         DP & \multicolumn{1}{c|}{0.8827} & 0.7113 & \multicolumn{1}{c|}{0.9261} & \textbf{0.7215} \\
-        IP & \multicolumn{1}{c|}{0.7113} & \textbf{0.541} & \multicolumn{1}{c|}{0.6749} & 0.4777 \\
+        IP & \multicolumn{1}{c|}{0.7113} & \textbf{0.5410} & \multicolumn{1}{c|}{0.6749} & 0.4777 \\
         LSE & \multicolumn{1}{c|}{0.9800} & \textbf{0.9232} & \multicolumn{1}{c|}{0.9495} & 0.7942 \\
         USE & \multicolumn{1}{c|}{0.9797} & 0.8281 & \multicolumn{1}{c|}{0.9541} & \textbf{0.8588} \\
         VB & \multicolumn{1}{c|}{0.5202} & \textbf{0.5275} & \multicolumn{1}{c|}{0.4926} & 0.4775 \\
         VM & \multicolumn{1}{c|}{0.6954} & \textbf{0.6747} & \multicolumn{1}{c|}{0.6954} & 0.4975 \\ \hline
     \end{tabular}
-    \caption[Comparación de resultados entre los mejores modelos obtenidos en los experimentos de etiqueta única y multietiqueta]{Comparación de resultados entre los mejores modelos obtenidos en los experimentos de etiqueta única y multietiqueta. Los valores en negrita indican los mejores resultados obtenidos de la métrica F1 para cada característica.}
+    \caption[Comparación de resultados entre los mejores modelos obtenidos en los experimentos de etiqueta única y multietiqueta]{Comparación de resultados entre los mejores modelos obtenidos en los experimentos de etiqueta única y multietiqueta en el conjunto de datos de test. Se observan en las columnas \say{Test Acc} y \say{Test F1} los valores obtenidos para las métricas de \textit{accuracy} y F1 Macro respectivamente. Los valores en negrita indican los mejores resultados obtenidos de la métrica F1 Macro para cada característica.}
     \label{table5:multilabel_comparison}
 \end{table}
 
-Finalmente, se observa que los resultados obtenidos en los experimentos multietiqueta son en general superiores a los de etiqueta única, observándose la Tabla \ref{table5:multilabel_comparison}, dónde 6 de las 9 características mejoran la métrica F1 respecto a sus contrapartes de etiqueta única. Esto sugiere que el modelo es capaz de aprender patrones más complejos y representativos al considerar múltiples características simultáneamente, lo que a su vez puede mejorar la generalización del modelo y su capacidad para capturar relaciones entre las distintas características. Siendo esto consistente con la literatura consultada, donde se ha demostrado que los modelos multietiqueta pueden beneficiarse de la correlación entre las etiquetas para mejorar el rendimiento general del modelo \cite{ranjan_hyperface_2019}.
+Finalmente, se observa que los resultados obtenidos en los experimentos multietiqueta son en general superiores a los de etiqueta única, observándose la Tabla \ref{table5:multilabel_comparison}, dónde 5 de las 9 características mejoran la métrica F1 respecto a sus contrapartes de etiqueta única. Esto sugiere que el modelo es capaz de aprender patrones más complejos y representativos al considerar múltiples características simultáneamente, lo que a su vez puede mejorar la generalización del modelo y su capacidad para capturar relaciones entre las distintas características. Siendo esto consistente con la literatura consultada, donde se ha demostrado que los modelos multietiqueta pueden beneficiarse de la correlación entre las etiquetas para mejorar el rendimiento general del modelo \cite{ranjan_hyperface_2019}.
 
 Si bien existe más disparidad respecto al \textit{accuracy} entre los experimentos de etiqueta única y multietiqueta, en general se observa que se mantiene un rendimiento alto en ambas configuraciones, con valores muy similares a los obtenidos en los experimentos de etiqueta única.
 
@@ -391,7 +395,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 16 & 32 & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}256} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFFFFF}8} & \multicolumn{1}{c|}{16} & 32 \\ \cline{1-1} \cline{5-6}
             \multicolumn{1}{|c|}{50K} & OUT & 128 & 32 &  & \multicolumn{1}{c|}{\cellcolor[HTML]{FFFFFF}} & \multicolumn{1}{c|}{8} & 32 \\ \cline{1-3}
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & 128 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{64} & 256 \\ \cline{1-3}
-            \multicolumn{1}{|c|}{Cut} & MID & 128 & 256 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{128} & 64 \\ \cline{1-1} \cline{7-7}
+            \multicolumn{1}{|c|}{\textit{Cut}} & MID & 128 & 256 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{128} & 64 \\ \cline{1-1} \cline{7-7}
              & OUT & 256 & 32 &  &  & \multicolumn{1}{c|}{} & 16 \\ \cline{2-4} \cline{8-8} 
         \end{tabular}
 
@@ -413,7 +417,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.6\linewidth]{figures/5_experiments/multi-af-cm.pdf}
-    \caption[Característica AF: Matriz de confusión del mejor modelo en datos de test]{Característica \textbf{AF}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Porosidad Regular, \textbf{1}: Muy Definidas, \textbf{2}: Poco Profundas, \textbf{3}: Restos de Surcos, \textbf{4}: No hay surcos.}
+    \caption[Característica AF: Matriz de confusión del mejor modelo en datos de test]{Característica AF: Matriz de confusión del mejor modelo en datos de test obteniendo un \textit{accuracy} de 0.6888 y un F1 de 0.5164. Leyenda: \textbf{0}: Porosidad Regular, \textbf{1}: Muy Definidas, \textbf{2}: Poco Profundas, \textbf{3}: Restos de Surcos, \textbf{4}: No hay surcos.}
     \label{fig5:AF_confusion_matrix}
 \end{figure}
 
@@ -431,7 +435,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 256 & 128 & \multicolumn{1}{c|}{\cellcolor[HTML]{FFFFFF}128} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}32} & \multicolumn{1}{c|}{32} & \multicolumn{1}{c|}{32} \\ \cline{1-1} \cline{5-5}
             \multicolumn{1}{|c|}{25K} & OUT & 16 & 256 & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFCCC9}64} & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{128} \\ \cline{1-3} \cline{6-6}
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & 64 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{256} & \multicolumn{1}{c|}{128} \\ \cline{1-3} \cline{8-8} 
-            \multicolumn{1}{|c|}{Cut} & MID & 32 & 16 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{16} &  \\ \cline{1-1}
+            \multicolumn{1}{|c|}{\textit{Cut}} & MID & 32 & 16 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{16} &  \\ \cline{1-1}
              & OUT & 16 & 64 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{256} &  \\ \cline{2-4} \cline{7-7}
         \end{tabular}
 
@@ -453,7 +457,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.6\linewidth]{figures/5_experiments/multi-bn-cm.pdf}
-    \caption[Característica BN: Matriz de confusión del mejor modelo en datos de test.]{Característica BN: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: Presente.}
+    \caption[Característica BN: Matriz de confusión del mejor modelo en datos de test.]{Característica BN: Matriz de confusión del mejor modelo en datos de test obteniendo un \textit{accuracy} de 0.9141, y un F1 de 0.7869. Leyenda: \textbf{0}: Ausente, \textbf{1}: Presente.}
     \label{fig5:BN_confusion_matrix}
 \end{figure}
 
@@ -471,7 +475,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 16 & \multicolumn{1}{c|}{128} & \multicolumn{1}{c|}{32} \\ \cline{1-1} \cline{5-5} 
             \multicolumn{1}{|c|}{100K} & OUT & 16 & \multicolumn{1}{c|}{128} &  \\ \cline{1-4}
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} &  &  \\ \cline{1-3}
-            \multicolumn{1}{|c|}{Cut} & MID & 16 &  &  \\ \cline{1-1}
+            \multicolumn{1}{|c|}{\textit{Cut}} & MID & 16 &  &  \\ \cline{1-1}
              & OUT & 256 &  &  \\ \cline{2-3}
         \end{tabular}
 
@@ -493,10 +497,10 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.4\linewidth]{figures/5_experiments/multi-dm-cm.pdf}
-    \caption[Característica DM: Matriz de confusión del mejor modelo en datos de test.]{Característica \textbf{DM}: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No Definido, \textbf{1}: En Formación, \textbf{2}: Definido.}
+    \caption[Característica DM: Matriz de confusión del mejor modelo en datos de test.]{Característica \textbf{DM}: Matriz de confusión del mejor modelo en datos de test obteniendo un \textit{accuracy} de 0.7980 y un F1 de 0.6525. Leyenda: \textbf{0}: No Definido, \textbf{1}: En Formación, \textbf{2}: Definido.}
     \label{fig5:DM_confusion_matrix}
     \includegraphics[width=0.4\linewidth]{figures/5_experiments/multi-dp-cm.pdf}
-    \caption[Característica DP: Matriz de confusión del mejor modelo en datos de test.]{Característica DP: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: Presente.}
+    \caption[Característica DP: Matriz de confusión del mejor modelo en datos de test.]{Característica DP: Matriz de confusión del mejor modelo en datos de test obteniendo un \textit{accuracy} de 0.9261 y un F1 de 0.7215. Leyenda: \textbf{0}: Ausente, \textbf{1}: Presente.}
     \label{fig5:DP_confusion_matrix}
 \end{figure}
 
@@ -514,7 +518,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 256 & \multicolumn{1}{c|}{128} & \multicolumn{1}{c|}{256} \\ \cline{1-1} \cline{5-5} 
             \multicolumn{1}{|c|}{100K} & OUT & 32 & \multicolumn{1}{c|}{64} &  \\ \cline{1-3}
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & \multicolumn{1}{c|}{64} &  \\ \cline{1-3}
-            \multicolumn{1}{|c|}{Cut} & MID & 16 & \multicolumn{1}{c|}{32} &  \\ \cline{1-1} \cline{4-4}
+            \multicolumn{1}{|c|}{\textit{Cut}} & MID & 16 & \multicolumn{1}{c|}{32} &  \\ \cline{1-1} \cline{4-4}
              & OUT & 256 &  &  \\ \cline{2-3}
         \end{tabular}
 
@@ -535,7 +539,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.6\linewidth]{figures/5_experiments/single-ip-cm.pdf}
-    \caption[Característica IP: Matriz de confusión del mejor modelo en datos de test.]{Característica IP: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No, \textbf{1}: Mediana, \textbf{2}: Sí.}
+    \caption[Característica IP: Matriz de confusión del mejor modelo en datos de test.]{Característica IP: Matriz de confusión del mejor modelo en datos de test obteniendo un \textit{accuracy} de 0.7113 y un F1 de 0.5410. Leyenda: \textbf{0}: No, \textbf{1}: Mediana, \textbf{2}: Sí.}
     \label{fig5:IP_confusion_matrix}
 \end{figure}
 
@@ -553,14 +557,14 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 32 & \multicolumn{1}{c|}{16} & \multicolumn{1}{c|}{8} \\ \cline{1-1}
             \multicolumn{1}{|c|}{100K} & OUT & 64 & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{16} \\ \cline{1-3}
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & \multicolumn{1}{c|}{16} & \multicolumn{1}{c|}{256} \\ \cline{1-4}
-            \multicolumn{1}{|c|}{Full} & MID & 256 & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{128} \\ \cline{1-1} \cline{5-5} 
+            \multicolumn{1}{|c|}{\textit{Full}} & MID & 256 & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{128} \\ \cline{1-1} \cline{5-5} 
              & OUT & 128 &  &  \\ \cline{2-3}
     \end{tabular}
 
         \vspace{1em}
 
         \begin{tabular}{|
-            >{\columncolor[HTML]{D33333}}l |l|l|}
+            >{\columncolor[HTML]{D33333}}c |c|c|}
             \hline
             {\color[HTML]{FFFFFF} \textbf{LR}} & $8.4586 \times 10^{-5}$ & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}} \\ \hline
             {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Adam & \textbf{LSE} \\ \hline
@@ -574,7 +578,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.6\linewidth]{figures/5_experiments/single-lse-cm.pdf}
-    \caption[Característica LSE: Matriz de confusión del mejor modelo en datos de test.]{Característica LSE: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No Definido, \textbf{1}: Definido.}
+    \caption[Característica LSE: Matriz de confusión del mejor modelo en datos de test.]{Característica LSE: Matriz de confusión del mejor modelo en datos de test obteniendo un \textit{accuracy} de 0.9800 y un F1 de 0.9232. Leyenda: \textbf{0}: No Definido, \textbf{1}: Definido.}
     \label{fig5:LSE_confusion_matrix}
 \end{figure}
 
@@ -592,7 +596,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 128 & \multicolumn{1}{c|}{32} & \multicolumn{1}{c|}{16} \\ \cline{1-1} \cline{4-5} 
             \multicolumn{1}{|c|}{25K} & OUT & 256 &  &  \\ \cline{1-3}
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} &  &  \\ \cline{1-3}
-            \multicolumn{1}{|c|}{Cut} & MID & 16 &  &  \\ \cline{1-1}
+            \multicolumn{1}{|c|}{\textit{Cut}} & MID & 16 &  &  \\ \cline{1-1}
              & OUT & 32 &  &  \\ \cline{2-3}
         \end{tabular}
 
@@ -614,7 +618,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.6\linewidth]{figures/5_experiments/multi-use-cm.pdf}
-    \caption[Característica USE: Matriz de confusión del mejor modelo en datos de test.]{Característica USE: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: No Definido, \textbf{1}: Definido.}
+    \caption[Característica USE: Matriz de confusión del mejor modelo en datos de test.]{Característica USE: Matriz de confusión del mejor modelo en datos de test obteniendo un \textit{accuracy} de 0.9541 y un F1 de 0.8588. Leyenda: \textbf{0}: No Definido, \textbf{1}: Definido.}
     \label{fig5:USE_confusion_matrix}
 \end{figure}
 
@@ -632,7 +636,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 128 & 256 & 8 \\ \cline{1-1}
             \multicolumn{1}{|c|}{50K} & OUT & 256 & 16 & 256 \\ \cline{1-3}
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & 16 & 8 \\ \cline{1-4}
-            \multicolumn{1}{|c|}{Cut} & MID & 256 &  & 128 \\ \cline{1-1}
+            \multicolumn{1}{|c|}{\textit{Cut}} & MID & 256 &  & 128 \\ \cline{1-1}
              & OUT & 32 &  & 32 \\ \cline{2-3} \cline{5-5} 
         \end{tabular}
 
@@ -653,7 +657,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.6\linewidth]{figures/5_experiments/single-vb-cm.pdf}
-    \caption[Característica VB: Matriz de confusión del mejor modelo en datos de test.]{Característica VB: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: En Formación, \textbf{2}: Presente.}
+    \caption[Característica VB: Matriz de confusión del mejor modelo en datos de test.]{Característica VB: Matriz de confusión del mejor modelo en datos de test obteniendo un \textit{accuracy} de 0.5202 y un F1 de 0.5275. Leyenda: \textbf{0}: Ausente, \textbf{1}: En Formación, \textbf{2}: Presente.}
     \label{fig5:VB_confusion_matrix}
 \end{figure}
 
@@ -671,7 +675,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 32 & 256 & \multicolumn{1}{c|}{256} \\ \cline{1-1}
             \multicolumn{1}{|c|}{50K} & OUT & 32 & 16 & \multicolumn{1}{c|}{256} \\ \cline{1-3}
             \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & 16 & \multicolumn{1}{c|}{8} \\ \cline{1-3}
-            \multicolumn{1}{|c|}{Cut} & MID & 64 & 16 & \multicolumn{1}{c|}{32} \\ \cline{1-1} \cline{5-5} 
+            \multicolumn{1}{|c|}{\textit{Cut}} & MID & 64 & 16 & \multicolumn{1}{c|}{32} \\ \cline{1-1} \cline{5-5} 
              & OUT & 64 & 64 &  \\ \cline{2-4}
         \end{tabular}
 
@@ -691,7 +695,7 @@ En términos de hiperparámetros, se detecta un uso consistente del optimizador 
 
     % --- Bottom: Figure ---
     \includegraphics[width=0.6\linewidth]{figures/5_experiments/single-vm-cm.pdf}
-    \caption[Característica VM: Matriz de confusión del mejor modelo en datos de test.]{Característica VM: Matriz de confusión del mejor modelo en datos de test. Leyenda: \textbf{0}: Ausente, \textbf{1}: En Formación, \textbf{2}: Formado, Sin Excrecencias, \textbf{3}: Formado, Pocas Excrecencias, \textbf{4}: Formado, Muchas Excrecencias.}
+    \caption[Característica VM: Matriz de confusión del mejor modelo en datos de test.]{Característica VM: Matriz de confusión del mejor modelo en datos de test obteniendo un \textit{accuracy} de 0.6954 y un F1 de 0.6747. Leyenda: \textbf{0}: Ausente, \textbf{1}: En Formación, \textbf{2}: Formado, Sin Excrecencias, \textbf{3}: Formado, Pocas Excrecencias, \textbf{4}: Formado, Muchas Excrecencias.}
     \label{fig5:VM_confusion_matrix}
 \end{figure}
 

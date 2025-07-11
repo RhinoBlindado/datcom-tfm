@@ -20,43 +20,69 @@ El entorno local consistió en un ordenador portátil Asus FX505DT equipado con 
 El entorno remoto correspondió al clúster de servidores GPU de la Universidad de Granada, denominado NGPU, ubicado en el CPD Santa Lucía. En particular, se utilizó preferentemente el nodo denominado Talos, que dispone de dos procesadores AMD EPYC 7742, 1 TB de memoria RAM y 8 GPUs Nvidia Tesla A100, cada una con 40 GB de VRAM. En este entorno se ejecutaron la totalidad de los experimentos a gran escala, gestionados mediante acceso remoto vía SSH y utilizando el sistema de planificación de tareas SLURM.
 
 \subsection{Preprocesamiento de datos}
-Como se ha mencionado en la Sección \ref{section4:materials}, los datos obtenidos para este proyecto provienen de escaneos en 3D de piezas anatómicas reales digitalizadas usando el escáner Artec Miro que permite captar datos en 3D en una zona de hasta 324 cm$^3$ y escanearlos con una precisión muy alta de hasta 10 micras y una resolución de hasta 0.029 mm \cite{artec_data}. Las mallas generadas a través de estos procesos resultan en geometrías incompletas, degeneradas y con gran variabilidad de resolución. Estos factores impiden su uso directo por el \textit{framework} de ExMeshCNN.
 
-Antes de llevar a cabo los procesos de reparación, remuestreo y reducción de resolución, se consideró necesario unificar la orientación de las muestras, dado que el conjunto de datos incluye tanto pubis izquierdas como derechas. Con el fin de mantener la consistencia geométrica en los datos, se desarrolló un \textit{script} en Blender que aplica el modificador de espejo sobre las mallas 3D correspondientes a las pubis derechas. Este proceso refleja las mallas respecto al eje principal de simetría de la cara anatómica, transformándolas efectivamente en pubis izquierdas. De este modo, se garantiza que todas las muestras procesadas posean una orientación uniforme, realizado con el fin de eliminar posibles fuentes de ruido para el modelo.
+\begin{figure}[h]
+    \includegraphics[width=\linewidth]{figures/4_materials-methods/mesh_preparation_pipeline.pdf}
+    \caption[Diagrama resumen del preprocesado de datos]{Diagrama resumen del preprocesado de datos. Las mallas 3D escaneadas son primero limpiadas (a): se elimina geometría disconexa, se ajustan las normales, se elimina la mayor parte de la geometría degenerada y se remueve la información de textura. Las mallas resultantes se remuestrean (b) para sellar los huecos existentes y obtener una geometría uniforme. Este proceso puede reintroducir geometría degenerada, por lo que posteriormente se realiza una reparación adicional (c). A continuación, la malla puede recortarse (d) hasta un porcentaje de su tamaño original quitando partes no relevantes de la malla antes de ser simplificada (e) a un número determinado de triángulos. Finalmente, se convierten (f) al formato compatible con ExMeshCNN.}
+    \label{mesh_preparation_pipeline}
+\end{figure}
 
-\subsubsection{Reparación y remuestreo de datos}
+Como se ha mencionado en la Sección \ref{section4:materials}, los datos obtenidos para este proyecto provienen de escaneos de piezas anatómicas reales digitalizadas usando el escáner Artec Miro que permite captar datos en 3D en una zona de hasta 324 cm$^3$ y escanearlos con una precisión muy alta de hasta 10 micras y una resolución de hasta 0.029 mm \cite{artec_data}. Las mallas generadas a través de estos procesos resultan en geometrías incompletas, degeneradas y con gran variabilidad de resolución. Estos factores impiden su uso directo por el \textit{framework} de ExMeshCNN. Se tiene en la Figura \ref{mesh_preparation_pipeline} un diagrama que resume los pasos que se han tomado para preprocesar las mallas.
+
+\subsubsection{Limpieza inicial de las mallas}
+El primer paso del preprocesado consiste en la limpieza inicial de las mallas (Paso (a) en la Figura \ref{mesh_preparation_pipeline}). En este paso, mediante un \textit{script} desarrollado con PyMeshLab, se busca eliminar la mayor cantidad posible de geometría no deseada presente en las mallas crudas obtenidas mediante escaneo 3D.
+
+El proceso comienza eliminando las componentes desconectadas respecto a la componente principal; es decir, se eliminan fragmentos de geometría (ya sean triángulos o vértices) que no estén conectados a la porción principal de la malla. A continuación, se realiza una primera limpieza para remover geometría \textit{non-manifold} y triángulos degenerados (o de cero área). Finalmente, se eliminan los vértices duplicados antes de guardar una versión intermedia de la malla para su posterior procesamiento.
+
+Para garantizar la consistencia de los datos y reducir posibles fuentes de ruido para el modelo, en el caso de las sínfisis púbicas derechas, se aplica un preprocesamiento adicional previo al paso de limpieza. Mediante un \textit{script} en Blender, se utiliza el modificador de espejo para reflejar estas mallas respecto al eje principal de simetría anatómica, transformándolas efectivamente en mallas equivalentes a las izquierdas.
+
+\subsubsection{Remuestreo y sellado}
+En este paso, las mallas intermedias se encuentran con una geometría limpia, pero poseen todavía huecos que es vital sellar para su procesado por ExMeshCNN. El cierre de huecos en mallas 3D es una tarea compleja de realizar manualmente, pero puede abordarse de forma eficaz mediante una técnica alternativa: el remuestreo. Esta técnica genera una nueva topología manteniendo la forma superficial original de la malla. El proceso se basa en una aproximación iterativa mediante vóxeles, que reconstruye la superficie al tiempo que genera la conectividad necesaria para cerrar los huecos. Este paso corresponde al (b) de la Figura \ref{mesh_preparation_pipeline}.
+
+Para ello, se empleó Blender, que dispone de un modificador de remuestreo robusto llamado \textit{Remesh}. Se desarrolló un segundo \textit{script} que toma como entrada la malla de salida del paso (a) y aplica el operador de remuestreo en modo \textit{SHARP}, con una profundidad del árbol octal de 10 (para preservar la fidelidad geométrica) y una escala de 1. El resultado es una malla libre de huecos, aunque este proceso puede reintroducir geometría \textit{non-manifold}.
+
+Se puede detallar en la Figura \ref{remesh_hole_example} el resultado de procesar la malla por este paso de preprocesado, obsérvese como el modificador sella por completo el hueco en la parte posterior de la malla 3D.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{figures/4_materials-methods/remesh_hole_filled_example.png}
+    \caption[Ejemplo de malla sellada por remuestreo]{Ejemplo de malla sellada mediante remuestreo. Se muestran las mallas vistas desde la parte posterior de la cara anatómica: en (a) se observa la malla tras el proceso de limpieza inicial, aún con un hueco visible en la zona posterior; en (b), la misma malla tras haber sido remuestrada y reparada durante el paso (b) del preprocesado, donde dicho hueco ha sido sellado.}
+    \label{remesh_hole_example}
+\end{figure}
+
+\subsubsection{Reparación de geometría}
 \label{section4:data_repair}
-
-La reparación de las mallas tridimensionales implica tres pasos fundamentales: (1) sellado de los huecos para garantizar que sean estructuras \textit{watertight} (herméticas), (2) eliminación de geometría degenerada, como triángulos solapados, caras conectadas por un único vértice o aristas que se interceptan, y (3) supresión de geometría disconexa perteneciente a componentes menores, generada usualmente por errores en la captura mediante escáner 3D, y que no aporta información relevante.
-
-Para abordar este proceso, se emplearon de forma intensiva las funcionalidades de la API de Blender y de PyMeshLab, desarrollando una serie de \textit{scripts} personalizados para automatizar la limpieza y normalización de las mallas.
-
-En primer lugar, se parte de la malla cruda obtenida del escaneo, denominada \code{raw}. Utilizando PyMeshLab, se aplican métodos predefinidos para eliminar componentes desconectadas, caras duplicadas y geometría \textit{non-manifold}. El resultado de esta etapa es una malla depurada, sin degeneraciones geométricas, denominada \code{raw_clean}.
-
-Sin embargo, esta malla aún puede contener huecos, por lo que no está lista para ser procesada por ExMeshCNN. El cierre de huecos en mallas 3D es una tarea compleja, pero puede abordarse de forma eficaz mediante una técnica alternativa: el remuestreo. Esta técnica genera una nueva topología manteniendo la forma superficial original de la malla. El proceso se basa en una aproximación iterativa mediante vóxeles, que reconstruye la superficie al tiempo que genera la conectividad necesaria para cerrar los huecos.
-
-Para ello, se empleó Blender, que dispone de un operador de remuestreo robusto. Se desarrolló un segundo script que toma como entrada la malla \code{raw_clean} y aplica el operador de remuestreo en modo \code{SHARP}, con una profundidad del árbol octal de 10 (para preservar la fidelidad geométrica) y una escala de 1. El resultado es una malla libre de huecos, aunque este proceso puede reintroducir geometría \textit{non-manifold}.
-
-Por lo tanto, en el mismo script se implementó un procedimiento iterativo para eliminar dicha geometría no válida. Este procedimiento incluye:
+Debido a la posible reintroducción de geometría \textit{non-manifold} tras el remuestreo, se implementó en el mismo \textit{script} el paso (c) del preprocesado. Este paso consiste en un procedimiento iterativo diseñado para eliminar dicha geometría no válida. El procedimiento sigue los siguientes pasos:
 
 \begin{enumerate}
-    \item Selección y eliminación de vértices \textit{non-manifold} duplicados.
-    \item Nueva selección de vértices \textit{non-manifold} y colapso de aristas entre los vértices afectados.
-    \item Nueva selección y eliminación directa de todos los vértices \textit{non-manifold}.
+    \item Se parte de la malla resultante del paso (b).
+    \item Se seleccionan los vértices \textit{non-manifold} existentes. Si los hay, se realiza primero una eliminación de vértices duplicados, lo que en muchos casos deja la malla en un estado topológicamente válido.
+    \item Se realiza una nueva selección de vértices \textit{non-manifold}. Si persisten, se colapsan vecindarios de dichos vértices en un único vértice con el fin de mitigar posibles huecos generados en pasos o iteraciones anteriores.
+    \item Se repite la selección de vértices \textit{non-manifold}. Si aún existen, se eliminan directamente. Este paso puede generar nuevos huecos, que serán tratados en la siguiente iteración mediante el paso 3.
+    \item Si persiste geometría \textit{non-manifold}, se retorna al paso 1; si la malla está reparada, el bucle finaliza.
 \end{enumerate}
-Este ciclo entero se repite hasta que no se detectan más vértices \textit{non-manifold} al final de proceso. Se comprobó empíricamente que este procedimiento converge, generando finalmente mallas completamente selladas y con una topología coherente. A las mallas resultantes se les denomina \code{clean_remesh}.
+
+Se ha comprobado que, para los datos utilizados, este procedimiento converge tras un número finito de iteraciones, generando mallas completamente selladas y con una topología válida para su posterior procesamiento.
+
+\subsubsection{Recorte de mallas}
+Obsérvese en la Figura \ref{mesh_preparation_pipeline} que existe una decisión entre los pasos (c) y (d) o (e) sobre recortar primero la malla antes de realizar la reducción de triángulos.
+
+Se ha añadido este paso debido a que la reducción uniforme afecta por igual a todas las regiones de la malla, incluyendo zonas anatómicamente poco relevantes para el análisis forense, como la parte posterior y laterales del hueso. Para maximizar la preservación de detalles en las regiones de interés, se implementó este proceso. Este consiste en realizar un recorte anatómico antes de la reducción de resolución, eliminando aquellas partes que los expertos forenses no consideran durante el análisis.
+
+Este doble enfoque permite disponer tanto de versiones completas como de versiones enfocadas anatómicamente, facilitando comparativas experimentales entre ambas modalidades de entrada.
+
+El procedimiento, también automatizado mediante Blender, consiste en generar un cubo con las dimensiones de la malla y reducirlo proporcionalmente para definir una región de interés. A continuación, se aplica un modificador booleano para recortar las partes externas no deseadas, lo cual es posible gracias a que todas las mallas están previamente alineadas en la misma orientación. Una vez realizado el recorte, se procede a aplicar la reducción de resolución. Se puede observar un ejemplo de una malla antes y después de haber sido recortada en la Figura ???.
 
 \subsubsection{Reducción de resolución}
 \label{section4:data_reduction}
-Una vez obtenidas las mallas \code{clean_remesh}, que presentan una geometría adecuada y sin defectos topológicos, persiste una variabilidad importante: el número de triángulos varía entre mallas. Para normalizar esta característica, se diseñaron dos procesos distintos que permiten obtener versiones reducidas y estandarizadas de las mallas, generando dos conjuntos de datos derivados a partir de cada una.
+Una vez obtenidas las mallas que presentan una geometría adecuada y sin defectos topológicos estando o no recortadas, persiste una variabilidad importante: el número de triángulos varía entre mallas. Para normalizar esta característica, se diseñó un \textit{script} que aplica una reducción global de resolución a la malla mediante colapso de aristas. Esto permite reducir de forma progresiva el número de triángulos, preservando en la medida de lo posible la topología general y los detalles relevantes. El resultado son mallas con un número fijo de triángulos especificado por el usuario. En el caso del proyecto actual se fijaron a valores de 100,000; 50,000 y 25,000 triángulos.
 
-En el primer proceso, se aplica una reducción global de resolución a la malla \code{clean_remesh} mediante colapso de aristas. Esta técnica, implementada en un script de Blender, permite reducir de forma progresiva el número de triángulos, preservando en la medida de lo posible la topología general y los detalles relevantes. El resultado son mallas con un número fijo de triángulos especificado por el usuario. Estas versiones se nombran como \code{clean_remesh_<x>K}, donde \code{<x>} representa la cantidad de triángulos en miles. Por ejemplo, una malla con 50,000 triángulos tendría el sufijo \code{clean_remesh_50K}.
+\subsubsection{Conversión de Formato}
+Como último paso (f) del preprocesado, guiándose por la Figura \ref{mesh_preparation_pipeline}, se realiza la conversión de formato. Hasta este punto, las mallas han sido representadas mediante ficheros en formato OBJ. Sin embargo, ExMeshCNN, debido a los requisitos específicos que imponen sus descriptores y capas convolucionales, requiere que los datos estén en un formato particular utilizando el formato de guardado NPY de NumPy.
 
-No obstante, esta reducción uniforme afecta por igual a todas las regiones de la malla, incluyendo zonas anatómicamente poco relevantes para el análisis forense, como la parte posterior del hueso. Para maximizar la preservación de detalles en las regiones de interés, se implementó un segundo proceso complementario. Este consiste en realizar un recorte anatómico antes de la reducción de resolución, eliminando aquellas partes que los expertos forenses no consideran durante el análisis.
+Esta conversión no altera la estructura de la malla, pero permite optimizar el proceso computacional. En lugar de procesar directamente los ficheros OBJ que implicaría un coste computacional adicional, la conversión permite calcular una única vez las características fijas de cada triángulo, que posteriormente serán utilizadas por los descriptores geométricos y geodésicos.
 
-Este procedimiento, también automatizado mediante Blender, consiste en generar un cubo con las dimensiones de la malla y reducirlo proporcionalmente para definir una región de interés. A continuación, se aplica un operador booleano para recortar las partes externas no deseadas, lo cual es posible gracias a que todas las mallas están previamente alineadas en la misma orientación. Una vez realizado el recorte, se procede a aplicar la reducción de resolución por colapso de aristas. Las mallas obtenidas por este procedimiento se nombran como \code{clean_remesh_<x>K_cut}, indicando que son versiones recortadas y reducidas de las mallas originales.
-
-Este doble enfoque permite disponer tanto de versiones completas como de versiones enfocadas anatómicamente, facilitando comparativas experimentales entre ambas modalidades de entrada.
+Una vez realizada esta transformación, las mallas en formato NPY están listas para ser utilizadas directamente por ExMeshCNN.
 
 \section{Búsqueda de Arquitectura Neuronal}
 \label{section4:nas}
@@ -64,22 +90,26 @@ El procesamiento de mallas 3D mediante DL, como se ha comentado, constituye un c
 
 Ante esta situación, se recurre a técnicas NAS, descritas con mayor profundidad en la Sección \ref{section2:nas}, con el fin de determinar tanto la estructura como los hiperparámetros óptimos de los modelos a emplear para el aprendizaje de las distintas características del método de Todd.
 
-De entre las diversas herramientas disponibles para realizar NAS, se ha seleccionado Optuna \cite{optuna_2019}, una biblioteca basada en optimización bayesiana, que ha demostrado resultados de alto rendimiento en tareas de generación automática de arquitecturas de red y ajuste de hiperparámetros \cite{pizurica_generic_2024}. Específicamente, se está utilizando el algoritmo \textit{Tree-structured Parzen Estimator} o TPE internamente.
+De entre las diversas herramientas disponibles para realizar NAS se ha seleccionado Optuna \cite{optuna_2019}, una biblioteca basada en optimización bayesiana que ha demostrado un alto rendimiento en tareas de generación automática de arquitecturas de red y ajuste de hiperparámetros \cite{pizurica_generic_2024}. Específicamente, se hace uso del algoritmo \textit{Tree-structured Parzen Estimator} (TPE), utilizado internamente por la biblioteca. 
 
-Los hiperparámetros considerados, junto con sus respectivos espacios de búsqueda, se detallan en la Tabla \ref{fig4:optuna_params}.
+Dado que las redes generadas en este proyecto presentan una complejidad relativamente baja en comparación con arquitecturas más generalistas, se optó por entrenarlas por completo y sin simplificar por 50 épocas, valor donde se observa que la mayoría de modelos convergen. Se aplica \textit{Model Checkpointing} para guardar automáticamente el modelo con mejor rendimiento alcanzado en la métrica Macro F1 del conjunto de validación. De este valor se deriva también la estimación de rendimiento de la arquitectura, es decir, la función objetivo que Optuna maximizará. Para más detalles sobre estas métricas, leer la Sección  \ref{section5:metrics}.
+
+Los hiperparámetros considerados, junto con sus respectivos espacios de búsqueda, se detallan en la Tabla \ref{fig4:optuna_params} y la lógica detrás de la selección de estos se justifica del siguiente modo:
+
 \begin{table}[h]
     \centering
     \begin{tabular}{|l|c|c|}
         \hline
         \rowcolor[HTML]{D33333} 
-        {\color[HTML]{FFFFFF} Hiperparámetro} & {\color[HTML]{FFFFFF} Espacio de búsqueda} & {\color[HTML]{FFFFFF} Tipo} \\ \hline
+        {\color[HTML]{FFFFFF} \textbf{Hiperparámetro}} & {\color[HTML]{FFFFFF} \textbf{Valores posibles}} & {\color[HTML]{FFFFFF} \textbf{Tipo}} \\ \hline
         Tasa de Aprendizaje & $\left[1\times 10^{-5}, 1\times10^{-1}\right]$ & Rango \\ \hline
         Optimizador & \begin{tabular}[c]{@{}c@{}}Adam, AdamW, \\ Radam, SGD\end{tabular} & Categórica \\ \hline
         Inicialización de Pesos & \begin{tabular}[c]{@{}c@{}}Sin Inicializar, Normal, \\ Xavier, Kaiming, \\ Ortogonal\end{tabular} & Categórica \\ \hline
         Escalado de Pesos & $\left[1, 10\right]$ & Rango \\ \hline
-        Función de Pérdida & CE, WCE, FL, CB & Categórica \\ \hline
-        Tipo de CBL\textsuperscript{\textdagger} & Softmax, Sigmoide, FL & Categórica \\ \hline
-        $\beta$ de CBL\textsuperscript{\textdagger} & $\left[1, 10\right]$ & Rango \\ \hline
+        Función de Pérdida & CE, WCE, FL, CBL & Categórica \\ \hline
+        $\gamma$ de FL \textsuperscript{\textdagger} & $\left[1, 10\right]$ & Rango \\ \hline
+        Tipo de CBL\textsuperscript{\textdaggerdbl} & Softmax, Sigmoide, FL & Categórica \\ \hline
+        $\beta$ de CBL\textsuperscript{\textdaggerdbl} & $\left[0, 0.9999\right]$ & Rango \\ \hline
         \begin{tabular}[c]{@{}l@{}}Descriptor geodésico,\\ densidad de canal intermedio\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
         \begin{tabular}[c]{@{}l@{}}Descriptor geodésico,\\ densidad de salida\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
         \begin{tabular}[c]{@{}l@{}}Descriptor geométrico,\\ densidad de canal intermedio\end{tabular} & $\left[16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
@@ -89,21 +119,49 @@ Los hiperparámetros considerados, junto con sus respectivos espacios de búsque
         Nº de capas densas & $\left[1, 5\right]$ & Rango \\ \hline
         Densidad capa densa $i$-ésima & $\left[8, 16, 32, 64, 128, 256\right]$ & Categórica \\ \hline
     \end{tabular}
-    \caption[Hiperparámetros utilizados por Optuna]{Hiperparámetros utilizados en el entrenamiento con Optuna junto a su espacio de búsqueda. El tipo \say{rango} indica que cualquier valor entre los indicados puede ser utilizado, mientras que el tipo \say{categórico} indica que solamente se pueden emplear los valores listados. Funciones de pérdida: CE: \textit{Cross-Entropy}; WCE: \textit{Weighted Cross-Entropy}; FL: \textit{Focal Loss}; CB: \textit{Class Balanced Loss}. \textbf{\textdagger}: Solo se aplica si la función de pérdida seleccionada es CB.}
+    \caption[Hiperparámetros utilizados por Optuna]{Hiperparámetros utilizados en el entrenamiento con Optuna junto a su espacio de búsqueda. El tipo \say{rango} indica que cualquier valor entre los indicados puede ser utilizado, mientras que el tipo \say{categórico} indica que solamente se pueden emplear los valores listados. Funciones de pérdida: CE: \textit{Cross-Entropy}; WCE: \textit{Weighted Cross-Entropy}; FL: \textit{Focal Loss}; CBL: \textit{Class Balanced Loss}. \textbf{\textdagger}: Solo se aplica si la función de pérdida seleccionada es FL. \textbf{\textdaggerdbl}: Solo se aplica si la función de pérdida seleccionada es CBL.}
     \label{fig4:optuna_params}
 \end{table}
 
 
-La lógica detrás de la selección de estos hiperparámetros se justifica del siguiente modo:
 \begin{itemize}
     \item \textbf{Optimizadores:} Se consideran variantes ampliamente utilizadas de la familia Adam, incluyendo AdamW y RAdam, que han demostrado mejoras empíricas sobre el algoritmo original en diversos contextos. Asimismo, se incluye el algoritmo clásico de Descenso de Gradiente Estocástico (SGD), dado que en ciertos escenarios puede superar el rendimiento de Adam, especialmente en términos de generalización.
     \item \textbf{Tasa de aprendizaje:} El rango seleccionado corresponde al intervalo recomendado en la literatura para los optimizadores considerados. Optuna se encarga de explorar combinaciones y descartar automáticamente aquellas que conduzcan a un rendimiento subóptimo. 
     \item \textbf{Inicialización y escalado de pesos:} Estos parámetros se incluyen debido a su impacto potencial sobre la estabilidad y eficiencia del entrenamiento. Se ha demostrado que en ciertos problemas, la elección adecuada de inicialización puede marcar una diferencia significativa en la calidad del aprendizaje.
-    \item \textbf{Funciones de pérdida:} Dado el fuerte desbalance presente en las etiquetas, se han incorporado varias funciones diseñadas específicamente para tratar este tipo de problemas. Además de la función clásica de entropía cruzada (CE), se incluyen su versión ponderada (WCE), la pérdida focal (FL), y la pérdida balanceada por clase (CB), cada una con ventajas particulares para abordar clases minoritarias. Para una descripción detallada de estas funciones, véase la Sección \ref{section5:metrics}.
-    \item \textbf{Parámetros específicos de CB:} Cuando la función de pérdida seleccionada es CB, se incluyen los hiperparámetros adicionales requeridos, cuyos valores se han establecido siguiendo las recomendaciones de los autores originales de dicha técnica.
+    \item \textbf{Funciones de pérdida:} Dado el fuerte desbalance presente en las etiquetas, se han incorporado varias funciones diseñadas específicamente para tratar este tipo de problemas. Además de la función clásica de entropía cruzada ( \textit{Cross-Entropy}, CE), se incluyen su versión ponderada (\textit{Weighted Cross-Entropy}, WCE), la pérdida focal (\textit{Focal Loss}, FL), y la pérdida balanceada por clase (\textit{Class Balanced Loss}, CBL), cada una con ventajas particulares para abordar clases minoritarias. Para una descripción detallada de estas funciones, véase la Sección \ref{section5:metrics}.
+    \item \textbf{Parámetros específicos de funciones de pérdida:} Cuando la función de pérdida seleccionada es FL o CBL, se incluyen los hiperparámetros adicionales requeridos, cuyos valores se han establecido siguiendo las recomendaciones de los autores de dichas técnicas.
     \item \textbf{Arquitectura de red:} Dado que los descriptores también constituyen capas con parámetros entrenables, se ha considerado su densidad (relación entre tamaño de entrada y salida) como un hiperparámetro a explorar, utilizando valores típicos en capas convolucionales. En cuanto al número total de capas, se optó por arquitecturas compactas, priorizando capas convolucionales sobre totalmente conectadas, con el objetivo de maximizar la eficiencia computacional y la capacidad expresiva dentro de los límites de memoria de la GPU.
     \item \textbf{Densidades de capas:} Los valores posibles para la densidad de capas se han tomado de configuraciones comúnmente utilizadas en redes profundas, procurando siempre que las configuraciones más grandes posibles puedan ajustarse dentro de la memoria disponible del hardware.
 \end{itemize}
+
+Cabe destacar que, para los experimentos multietiqueta, se han tomado decisiones específicas respecto a los hiperparámetros y la arquitectura de los modelos:
+
+\begin{itemize}
+    \item Las funciones de pérdida se asignan de manera independiente por Optuna a cada una de las características incluidas en el experimento. Esto permite optimizar el comportamiento del modelo respecto a cada etiqueta específica, ajustando la función objetivo según la naturaleza de cada característica.
+    
+    \item La estructura de la red en los experimentos multietiqueta difiere de la utilizada en los experimentos de etiqueta única. En particular, la parte totalmente conectada de la red se ramifica en tantas salidas como características se estén prediciendo, esta decisión se basa en \cite{ranjan_hyperface_2019}, donde se utilizó esta misma metodología satisfactoriamente. Las ramificaciones puede adoptar dos configuraciones distintas: una en la que todas las subredes comparten la misma arquitectura (en términos de número de capas y densidad de neuronas), y otra en la que cada subred posee una arquitectura completamente independiente del resto. Esto permite obtener la mayor variedad de arquitecturas posibles, con la esperanza de obtener modelos con el mejor rendimiento posible para cada característica. La parte convolucional de la red se mantiene idéntica para cualquiera de los casos.
+\end{itemize}
+
+Dicho todo esto, todas las arquitecturas generadas por NAS siguen una estructura base predefinida, que actúa como un \say{esqueleto} arquitectónico. Esta estructura consta de tres bloques principales dispuestos secuencialmente: (1) un bloque de entrada conformado por los descriptores geométricos y geodésicos, (2) un bloque convolucional compuesto por varias capas 1D convolucionales, y (3) un bloque totalmente conectado (denso), precedido por una capa de \textit{pooling} que conecta ambas partes. El proceso de búsqueda se encarga de optimizar aspectos internos de cada bloque (número de capas, tamaño de filtros, densidad de neuronas, etc.), pero mantiene inalterada esta macroestructura. Se puede observar un ejemplo de esta macroestructura en la Figura \ref{nas_macrostruct} tanto para modelos que usan una única etiqueta como para aquellos que usan múltiples.
+
+\begin{figure}[h]
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/4_materials-methods/NAS_sample1.pdf}
+        \caption{Macroestructura de red para modelos de etiqueta única.}
+        \label{single_label_nets}
+    \end{subfigure}
+
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/4_materials-methods/NAS_sample2.pdf}
+        \caption{Macroestructura de red para modelos multietiqueta.}
+        \label{multi_label_nets}
+    \end{subfigure}
+    \caption[Macroestructura de redes generadas por NAS]{Macroestructura de redes generadas por NAS. Todas las redes poseen este \say{esqueleto} arquitectónico, una malla 3D pasará primero por las capas de descriptores, luego pasará por el bloque convolucional llegando hasta el bloque denso por medio de una capa de \textit{pooling} como nexo. En (a) se muestra la macroestructura de los modelos de etiqueta única, en (b) la de los modelos multietiqueta, obsérvese que las ramificaciones en estos modelos son solamente de los bloques de capas densas.}
+    \label{nas_macrostruct}
+
+\end{figure}
 
 \section{Protocolo de validación experimental}
 Para el entrenamiento de los modelos se empleó la técnica de \textit{hold-out}, que consiste en dividir el conjunto de datos en dos subconjuntos principales: uno de entrenamiento y otro de test. A su vez, el conjunto de entrenamiento se subdivide para obtener un subconjunto adicional de validación. Durante el proceso de entrenamiento, el modelo es ajustado utilizando únicamente los datos del conjunto de entrenamiento, mientras que el conjunto de validación se utiliza para monitorizar el rendimiento del modelo en cada época, permitiendo detectar fenómenos como el sobreajuste para finalizar el entrenamiento aplicando \textit{Early Stopping} y orientar procesos como el ajuste de hiperparámetros.
@@ -126,7 +184,7 @@ L_{CE} = -\sum_i^n t_i \log(p_i)
 
 Donde $n$ es el número de clases, $t_i$ es la etiqueta verdadera (1 si la clase es la correcta, 0 en caso contrario) y $p_i$ es la probabilidad predicha para la $i$-ésima clase. Esta función penaliza con mayor intensidad aquellas predicciones que se alejan de la clase verdadera, incentivando al modelo a asignar una alta probabilidad a la clase correcta. Cuando la predicción es certera, el valor de la función tiende a cero; en cambio, si el modelo asigna baja probabilidad a la clase correcta, la función tiende a valores grandes positivos.
 
-Adicionalmente, dado que el problema presenta un desbalance de clases, se han incorporado funciones de pérdida específicamente diseñadas para afrontar esta problemática. En particular, se han utilizado: la versión ponderada de la entropía cruzada (\textit{Weighted Cross Entropy}, WCE), la pérdida \textit{Focal} (FL) y la pérdida \textit{Class Balanced} (CB).
+Adicionalmente, dado que el problema presenta un desbalance de clases, se han incorporado funciones de pérdida específicamente diseñadas para afrontar esta problemática. En particular, se han utilizado: la versión ponderada de la entropía cruzada (\textit{Weighted Cross Entropy}, WCE), la pérdida \textit{Focal} (FL) y la pérdida \textit{Class Balanced} (CBL).
 
 \begin{align}
     L_{WCE} &= -\sum_i^n \alpha_{i} t_i \log(p_i) \\
@@ -138,7 +196,7 @@ En la WCE, el término $\alpha_i$ representa un peso específico para cada clase
 
 Por su parte, la pérdida Focal (FL) \cite{lin_focal_2020} extiende este enfoque mediante la incorporación del término $(1 - p_i)^\gamma$, donde $\gamma$ es un parámetro ajustable denominado factor de enfoque. Esta formulación reduce el impacto de las muestras correctamente clasificadas, es decir, aquellas con alta probabilidad en la clase verdadera y amplifica el efecto de aquellas muestras más difíciles de clasificar. Al hacerlo, se logra que el modelo se concentre en los casos menos representados.
 
-La pérdida Class-Balanced (CB) \cite{cui_class-balanced_2019}, en cambio, introduce una formulación más refinada del peso por clase, basada en el número efectivo de muestras. En lugar de utilizar directamente la frecuencia inversa de las clases, CB calcula un factor de corrección con el parámetro $\beta$ que refleja mejor la cantidad de información aportada por cada clase. Esta técnica puede aplicarse como un prefactor sobre diferentes funciones de pérdida $\mathcal{L}(\mathbf{p}, y)$, siendo compatible tanto con WCE como con FL, entre otras.
+La pérdida Class-Balanced (CBL) \cite{cui_class-balanced_2019}, en cambio, introduce una formulación más refinada del peso por clase, basada en el número efectivo de muestras. En lugar de utilizar directamente la frecuencia inversa de las clases, CBL calcula un factor de corrección con el parámetro $\beta$ que refleja mejor la cantidad de información aportada por cada clase. Esta técnica puede aplicarse como un prefactor sobre diferentes funciones de pérdida $\mathcal{L}(\mathbf{p}, y)$, siendo compatible tanto con WCE como con FL, entre otras.
 
 Aunque estas funciones de pérdida son fundamentales para guiar el proceso de entrenamiento y seleccionar el mejor modelo, no ofrecen información directa sobre el rendimiento del clasificador en términos de aciertos y errores. Para ello, se emplea la métrica de \textit{accuracy}, que cuantifica la proporción de muestras clasificadas correctamente. Esta métrica se define como:
 
@@ -725,14 +783,12 @@ Estos resultados no solo refuerzan la validez de los modelos entrenados, sino qu
     \label{fig5:grad_cam__BN_samples}
 \end{figure}
 
-
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=\linewidth]{figures/5_experiments/grad-cam-USE-samples.png}
     \caption[Característica USE: Ejemplo de mapas de activación Grad-CAM]{Característica USE: Ejemplo de mapas de activación Grad-CAM. Se muestran tres mallas diferentes. En la parte superior se presentan las mallas originales, vistas de frente. En la parte inferior, las mismas mallas están coloreadas según la activación de Grad-CAM: los colores más cálidos indican una mayor activación. Se observa que el modelo tiende a enfocarse en la parte superior izquierda del hueso, con activaciones adicionales en los laterales y en zonas planas de la superficie. El modelo ha clasificado correctamente las mallas (a) y (b) como pertenecientes a la clase 1 (\say{definida}) y la malla (c) como 0 (\say{no definida}).}
     \label{fig5:grad_cam__USE_samples}
 \end{figure}
-
 
 \begin{figure}[htbp]
     \centering

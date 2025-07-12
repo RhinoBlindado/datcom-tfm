@@ -8,7 +8,7 @@ Para la realización de este TFM se dispone de una colección de 497 mallas 3D d
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.75\linewidth]{figures/4_materials-methods/pb-examples.png}
-    \caption[Ejemplos de mallas 3D de la sínfisis del pubis]{Ejemplos de mallas 3D de la sínfisis del pubis. Se presentan tres muestras distintas, renderizadas con iluminación fotorrealista desde tres ángulos: vista lateral izquierda (a), frontal (b) y lateral derecha (c). Obsérvese la complejidad de la superficie ósea, la cual ha sido capturada con alta fidelidad por el escáner 3D.}
+    \caption[Ejemplos de mallas 3D de la sínfisis del pubis]{Ejemplos de mallas 3D de la sínfisis del pubis. Se presentan tres muestras distintas, renderizadas con iluminación fotorrealista desde tres ángulos relativos a la cara sinfisaria o articular del hueso: vista lateral izquierda (a), frontal (b) y lateral derecha (c). Obsérvese la complejidad de la superficie ósea, la cual ha sido capturada con alta fidelidad por el escáner 3D.}
     \label{pb_3dexamples}
 \end{figure}
 
@@ -20,7 +20,7 @@ A partir de este punto, se utilizarán las abreviaciones en inglés de dichas ca
     \hline
     \rowcolor[HTML]{D33333} 
     {\color[HTML]{FFFFFF} Nombre Castellano} & {\color[HTML]{FFFFFF} Nombre Inglés} & {\color[HTML]{FFFFFF} Abreviación} \\ \hline
-    Crestas y Surcos & \textit{Auricular Face} & \textbf{AF} \\ \hline
+    Crestas y Surcos & \textit{Articular Face} & \textbf{AF} \\ \hline
     Porosidad Irregular & \textit{Irregular Porosity} & \textbf{IP} \\ \hline
     Borde Superior & \textit{Upper Symphysial Extremity} & \textbf{USE} \\ \hline
     Nódulo Óseo & \textit{Bony Nodule} & \textbf{BN} \\ \hline
@@ -49,7 +49,7 @@ A partir de este punto, se utilizarán las abreviaciones en inglés de dichas ca
 
 \subsection{Análisis Exploratorio de Datos}
 \label{section4:data_eda}
-Realizando un análisis exploratorio de los datos (\textit{Exploratory Data Analysis}, EDA), resulta de interés realizar una inspección visual preliminar de las mallas. En la Figura \ref{pb_3dexamples} se muestran tres mallas 3D de la sínfisis del pubis renderizados con iluminación fotorrealista desde tres ángulos diferentes: vista lateral izquierda, frontal y lateral derecha. A partir de estas imágenes puede observarse que se trata de mallas 3D de alta complejidad geométrica y nivel de detalle. Además, al tratarse de estructuras anatómicas reales, presentan una alta variabilidad morfológica tanto en dimensiones como en proporciones, lo cual supone un reto adicional para los métodos de DL a aplicar.
+Realizando un análisis exploratorio de los datos (\textit{Exploratory Data Analysis}, EDA), resulta de interés realizar una inspección visual preliminar de las mallas. En la Figura \ref{pb_3dexamples} se muestran tres mallas 3D de la sínfisis del pubis renderizados con iluminación fotorrealista desde tres ángulos diferentes relativos al lado relevante del hueso para los expertos, la cara sinfisaria o articular: vista lateral izquierda, frontal y lateral derecha. A partir de estas imágenes puede observarse que se trata de mallas 3D de alta complejidad geométrica y nivel de detalle. Además, al tratarse de estructuras anatómicas reales, presentan una alta variabilidad morfológica tanto en dimensiones como en proporciones, lo cual supone un reto adicional para los métodos de DL a aplicar.
 
 Cabe destacar que el método seleccionado (ExMeshCNN, véase \ref{section4:methods}) no ha sido validado con datos de esta naturaleza, sino con conjuntos de datos sintéticos y de menor resolución. Aun así, se espera que su rendimiento se mantenga elevado, dado que está diseñado para capturar patrones discriminativos directamente desde la superficie de las mallas, independientemente de su nivel de complejidad o del origen biológico de las estructuras representadas.
 
@@ -154,7 +154,7 @@ El resto de las características muestra un desbalance menos extremo, con entre 
     \label{fig4:todd_chars_correlogram}
 \end{figure}
 
-Si bien los datos empleados en este estudio no son de naturaleza tabular y se utilizan técnicas de DL que no requieren una extracción manual de características, resulta igualmente útil, de cara a los experimentos, analizar las asociaciones existentes entre las nueve características del método de Todd. Dado que dichas variables son categóricas, se ha optado por emplear la V de Cramér \cite{sheskin_handbook_2020}, una medida estadística que cuantifica la intensidad de la asociación entre dos variables categóricas. Un valor cercano a 1 indica una asociación fuerte entre ambas características, mientras que un valor próximo a 0 sugiere poca o ninguna asociación. Cabe destacar que la V de Cramér únicamente indica la presencia e intensidad de una relación entre variables, sin ofrecer información sobre la dirección de dicha asociación (a diferencia de las medidas de correlación para variables numéricas) \cite{jimenez_nota_2024}.
+Si bien los datos empleados en este estudio no son de naturaleza tabular y se utilizan técnicas de DL que no requieren una extracción manual de características, resulta igualmente útil, de cara a los experimentos, analizar las asociaciones existentes entre las nueve características del método de Todd. Dado que dichas variables son categóricas, se ha optado por emplear la V de Cramér \cite{sheskin_handbook_2020}, una medida estadística que cuantifica la intensidad de la asociación\footnote{Cabe destacar que la V de Cramér únicamente indica la presencia e intensidad de una relación entre variables, sin ofrecer información sobre la dirección de dicha asociación, esto a diferencia de las medidas de correlación para variables numéricas \cite{jimenez_nota_2024}.} entre dos variables categóricas. Un valor cercano a 1 indica una asociación fuerte entre ambas características, mientras que un valor próximo a 0 sugiere poca o ninguna asociación.
 
 No obstante, la V de Cramér puede verse afectada por un sesgo cuando se aplica a tablas de contingencia no cuadradas, es decir, cuando el número de categorías en las variables comparadas es diferente, lo cual sucede en varias combinaciones de las características de Todd. Para corregir este efecto y obtener una interpretación más equilibrada del grado de asociación, se ha complementado el análisis con la T de Tschuprow, una medida alternativa que atenúa este sesgo y permite una comparación más justa entre pares de variables con distinta cardinalidad.
 
@@ -194,7 +194,7 @@ Las 970 mallas presentan una resolución media de 994,601 triángulos, con un m�
 
 Por esta razón, se ha procedido a reducir la resolución de las mallas a 100,000, 50,000 y 25,000 triángulos, empleando las técnicas detalladas en la Sección \ref{section4:data_reduction}. Tal como se demuestra en los experimentos descritos en la Sección \ref{section5:experiment_edge_collapse}, esta reducción no compromete significativamente la fidelidad de la superficie original. La variación entre las superficies del modelo original y las versiones reducidas es mínima, lo que permite afirmar que las mallas simplificadas conservan en mayor o menor grado parte de la información morfológica relevante para los experimentos.
 
-Adicionalmente, el método requiere que las mallas no contengan geometría degenerada y que estén completamente selladas (es decir, que no exista geometría \textit{non-manifold} y que sea \textit{watertight}, según la terminología en gráficos por ordenador). Dado que estas mallas provienen de escaneos de objetos anatómicos reales, es esperable que algunas presenten incompletitud o defectos estructurales, lo que impide su uso directo con ExMeshCNN. Para solventar estos problemas, se aplicaron técnicas de reparación y sellado descritas en la Sección \ref{section4:data_repair}, con el objetivo de restaurar la geometría y garantizar la integridad topológica de cada modelo antes de ser procesado por la red neuronal.
+Adicionalmente, el método requiere que las mallas posean una geometría y topología correctas. Dado que estas mallas provienen de escaneos de objetos anatómicos reales, es esperable que algunas presenten incompletitud o defectos estructurales, lo que impide su uso directo con ExMeshCNN. Para solventar estos problemas, se aplicaron técnicas de reparación y sellado descritas en la Sección \ref{section4:data_repair}, con el objetivo de restaurar la geometría y garantizar la integridad topológica de cada modelo antes de ser procesado por la red neuronal.
 
 \section{Métodos}
 \label{section4:methods}
@@ -206,9 +206,7 @@ Las representaciones en cuadrícula, como en el caso de imágenes, resultan conv
 Para abordar esta limitación, se introducen dos capas iniciales en la red, denominadas descriptores, las cuales contienen parámetros entrenables. El propósito de estas capas es extraer características directamente desde la malla, independientemente del orden de sus triángulos. Estos descriptores transforman la información de la malla a un formato compatible con operaciones de convolución 1D, permitiendo que el modelo aprenda efectivamente a partir de la estructura tridimensional sin requerir una representación regular.
 
 \subsubsection{Descriptor geodésico basado en aristas}
-El objetivo de este descriptor es capturar características geodésicas locales asociadas a los triángulos de la malla, características que han sido mayoritariamente ignoradas en la literatura actual. 
-
-Se parte del concepto de distancia geodésica entre caras, definida como el camino más corto a través de aristas que conecta el centro de un triángulo objetivo con un vértice de un triángulo adyacente, pasando por uno de los vértices del triángulo objetivo. No obstante, en mallas triangulares esta métrica resulta limitada, ya que la cantidad de aristas involucradas en dichos caminos es siempre dos, lo cual no aporta mucha información.
+El objetivo de este descriptor es capturar características geodésicas locales asociadas a los triángulos de la malla, características que han sido mayoritariamente ignoradas en la literatura actual. Se parte del concepto de distancia geodésica entre caras, definida como el camino más corto a través de aristas que conecta el centro de un triángulo objetivo con un vértice de un triángulo adyacente, pasando por uno de los vértices del triángulo objetivo. No obstante, en mallas triangulares esta métrica resulta limitada, ya que la cantidad de aristas involucradas en dichos caminos es siempre dos, lo cual no aporta mucha información.
 
 Para enriquecer esta representación, se incorporan ideas provenientes de la convolución geodésica propuesta por Schult et al. \cite{schult_dualconvmesh-net_2020}, que toma en cuenta no solo la longitud del camino, sino también su curvatura. De este modo, dos caminos con la misma longitud, pero distinta curvatura permiten ser diferenciados.
 
@@ -241,7 +239,7 @@ Para una mejor comprensión de estos términos, se recomienda consultar la Figur
 \begin{itemize}
     \item Forma local del triángulo, mediante el término $\textbf{u}_{t}^{j}$, que describe cómo se distribuyen espacialmente los vértices con respecto al centroide.
     \item Orientación local, reflejada en $\overrightarrow{\textbf{n}}_{t}^{j}$, que aporta información sobre la dirección normal de la superficie.
-    \item Relaciones geodésicas entre triángulos vecinos, a través del término $|\textbf{e}_{n(t)}^{j,1} - \textbf{e}_{n(t)}^{j,2}|$, que captura la variación entre las conexiones posible
+    \item Relaciones geodésicas entre triángulos vecinos, a través del término $|\textbf{e}_{n(t)}^{j,1} - \textbf{e}_{n(t)}^{j,2}|$, que captura la variación entre las conexiones posibles.
 \end{itemize}
 
 Además, el descriptor actúa funcionalmente como un filtro de convolución 1D de tamaño 3, ya que posee parámetros entrenables. Esto permite realizar subsiguientes convoluciones 1D sobre el vector de características obtenido.
@@ -277,12 +275,12 @@ En resumen, la primera capa de cualquier red construida con ExMeshCNN se compone
     \label{eq4:concat}
     \mathcal{F}_{t} = \left[\mathcal{K}(\bar{\textbf{a}}), \mathcal{G}(\bar{\textbf{a}}) \right]
 \end{equation}
-Donde $\mathcal{F}_{t}$ es el vector de características de cada cara triangular. Para que estos descriptores funcionen correctamente, es necesario que las mallas estén exentas de geometría \textit{non-manifold} y sean \textit{watertight}: esto garantiza que una cara triangular siempre tendrá 3 vecinos a su alrededor, un requisito necesario para poder realizar el mapeo entre las caras triangulares y las características extraídas por los descriptores. 
+Donde $\mathcal{F}_{t}$ es el vector de características de cada cara triangular. Para que estos descriptores funcionen correctamente, es necesario que las mallas posean una geometría y topología correctas: esto garantiza que una cara triangular siempre tendrá 3 vecinos a su alrededor, un requisito necesario para poder realizar el mapeo entre las caras triangulares y las características extraídas por los descriptores. 
 
 \subsection{Capas convolucionales}
 Dado que las mallas no poseen un orden canónico en sus triángulos, es necesario realizar un preprocesamiento antes de aplicar una operación de convolución 1D. Para ello, se expande el vector de características de cada triángulo $f_i$ de la siguiente manera:
 \begin{align}
-    \alpha_i &= \mathcal{F_i} \\
+    \alpha_i &= \mathcal{F}_{i} \\
     \beta_i &= \sum_{j}^{3} | \mathcal{F}_{i} - \mathcal{F}_{n(i)}^{j}| 
 \end{align}
 Donde:
@@ -304,9 +302,9 @@ En cuanto a la operación de convolución, MeshCNN la aplica directamente sobre 
 
 Por el contrario, ExMeshCNN realiza convoluciones 1D sobre vectores de características extraídas a partir de descriptores geométricos y geodésicos definidos sobre las caras y aristas de la malla. Estos descriptores se calculan de manera sistemática al inicio de cada red definida con ExMeshCNN y constituyen el equivalente a la información de entrada (como los valores RGB) que una red convolucional necesita. A diferencia de MeshCNN, estas características no son heurísticas, sino que derivan de propiedades matemáticas bien definidas de la geometría y topología de la malla, proporcionando mayor capacidad de generalización. Además, al ser tratadas como entradas parametrizables, la red puede aprender durante el entrenamiento a atenuar o enfatizar aquellas características que resulten más relevantes para la tarea específica. ExMeshCNN transforma el problema tridimensional de procesado de mallas en un problema adaptable a convoluciones 1D, gracias al mapeo estructurado que realizan sus descriptores. Esto permite un tratamiento más flexible, explicable y rico en información que el enfoque tradicional propuesto por MeshCNN.
 
-MeshCNN introduce operaciones de \textit{pooling} adaptativo mediante el colapso de aristas, que pueden aplicarse entre capas convolucionales para reducir progresivamente la fidelidad de las mallas. El objetivo principal de este mecanismo es doble: por un lado, emular el efecto de concentración de información que ofrece el \textit{pooling} en CNNs tradicionales 2D, y por otro, proporcionar un cierto nivel de explicabilidad al modelo. Al observar las regiones de la malla que son colapsadas en cada etapa, se puede inferir en qué zonas se está centrando la red para llevar a cabo su tarea.
+MeshCNN introduce operaciones de \textit{pooling} adaptativo mediante el colapso de aristas, que pueden aplicarse entre capas convolucionales para reducir progresivamente la fidelidad de las mallas. El objetivo principal de este mecanismo es doble: por un lado, emular el efecto de concentración de información que ofrece el \textit{pooling} en CNNs tradicionales 2D, y por otro, proporcionar un cierto nivel de explicabilidad al modelo: al observar las regiones de la malla que retienen mayor detalle, se puede inferir en qué se está centrando la red para llevar a cabo su tarea.
 
-Si bien este enfoque es funcional, presenta ciertas limitaciones prácticas. En particular, comparar visualmente las mallas originales con sus versiones reducidas puede resultar complejo, especialmente cuando las mallas presentan formas muy distintas entre sí. En tales casos, la información obtenida puede no ser lo suficientemente clara o interpretativa como para brindar una explicabilidad efectiva.
+Si bien este enfoque es lógico, presenta ciertas limitaciones prácticas. En particular, comparar visualmente las mallas originales con sus versiones reducidas puede resultar complejo, especialmente cuando las mallas presentan formas irregulares. En tales casos, la información obtenida puede no ser lo suficientemente clara o interpretativa como para brindar una explicabilidad efectiva.
 
 En contraste, ExMeshCNN no incorpora operaciones de \textit{pooling} estructural en el diseño de sus arquitecturas. El \textit{pooling} se limita a su uso tradicional como nexo entre la parte convolucional y la parte totalmente conectada de la red. En su lugar, se opta por el uso de una adaptación del método Grad-CAM, aprovechando que las redes generadas utilizan convoluciones 1D nativas. Esta decisión aporta una ventaja clara en términos de interpretabilidad: Grad-CAM permite visualizar directamente sobre la malla original las regiones más relevantes para la predicción del modelo, sin necesidad de comparar diferentes versiones de la misma. Además, al ser una técnica bien establecida y ampliamente utilizada, facilita el análisis y la presentación de resultados de forma más intuitiva y directa.
 

@@ -23,10 +23,17 @@
 
 \noindent{\textbf{Resumen}}
 
-Foobar
-\cleardoublepage
+La estimación de la edad es una de las tareas más relevantes en antropología forense, al formar parte esencial del perfil biológico que contribuye a la identificación de personas vivas o fallecidas, especialmente cuando otros métodos como el ADN o las huellas dactilares no son viables. El método más utilizado es el propuesto por Thomas Wingate Todd en 1921, basado en el análisis visual de la superficie de la sínfisis del pubis para identificar nueve características morfológicas asociadas al envejecimiento. Sin embargo, este proceso es altamente subjetivo, dependiente del juicio del experto, y presenta una clara carencia de automatización y objetividad.
 
+Este trabajo aborda dicha problemática mediante la automatización del análisis morfológico de la sínfisis del pubis utilizando técnicas de aprendizaje profundo sobre mallas 3D de alta resolución. Se propone un enfoque novedoso basado en el framework ExMeshCNN, una arquitectura de redes convolucionales diseñada específicamente para datos de malla tridimensional. El objetivo principal es la predicción automática de las nueve características definidas por el método de Todd. Dado que no existen arquitecturas previas entrenadas para esta tarea, se recurre a búsqueda automática de arquitecturas neuronales, ejecutando más de 10.000 entrenamientos en distintas configuraciones. Además de la clasificación clásica, se explora la clasificación multietiqueta para aprovechar posibles dependencias entre características y mejorar el rendimiento predictivo.
 
+Se dispone de un total de 970 mallas 3D de sínfisis del pubis. Para su preparación, se diseñó un pipeline de preprocesado que incluye limpieza, remuestreo, reparación iterativa y conversión a formatos optimizados, garantizando mallas limpias y válidas para el modelo. Se evaluaron tres resoluciones de malla (25K, 50K y 100K triángulos), y dos configuraciones espaciales: la malla completa del hueso y una versión recortada centrada en la zona anatómicamente relevante.
+
+Los resultados muestran que ExMeshCNN es capaz de aprender patrones morfológicos relevantes incluso en condiciones de alto desbalance. Se observa una concordancia parcial entre los patrones detectados por los modelos y el comportamiento de los expertos humanos, reforzada además por las visualizaciones obtenidas mediante Grad-CAM, que muestran regiones diferenciadas de atención para cada característica. Las dos mejores características alcanzan un F1 Macro de 0.9232 y 0.8588 respectivamente, con un valor medio de 0.6891 y un 80.17\% de \textit{accuracy} medio, con cuatro características superando el 90\% en la métrica.
+
+Este trabajo demuestra la viabilidad del uso de modelos de aprendizaje profundo para el análisis automatizado de estructuras óseas complejas y sienta las bases para futuras mejoras metodológicas y aplicaciones prácticas en el ámbito forense. Asimismo, destaca la importancia de una colaboración más estrecha con expertos en antropología forense para validar las regiones anatómicas relevantes detectadas por los modelos y explorar nuevas posibles áreas de interés.
+
+\newpage
 \thispagestyle{empty}
 
 
@@ -43,7 +50,7 @@ Foobar
 \vspace{0.7cm}
 \noindent{\textbf{Abstract}} \\
 
-foobar
+\textit{Cuando esté totalmente revisado en castellano añado la traducción}
 \chapter*{}
 \thispagestyle{empty}
 

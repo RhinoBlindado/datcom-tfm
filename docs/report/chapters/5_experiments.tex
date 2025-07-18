@@ -31,7 +31,8 @@ Como se ha mencionado en la Sección \ref{section4:materials}, los datos obtenid
 
 \subsubsection{Limpieza inicial de las mallas}
 \begin{figure}[h]
-    \includegraphics[width=\linewidth]{figures/4_materials-methods/nonmanifold_examples.png}
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/4_materials-methods/nonmanifold_examples.png}
     \caption[Ejemplo de mallas \textit{non-manifold}]{Ejemplo de mallas \textit{non-manifold}. Esto sucede cuando (a) existe una arista a la que se conectan tres caras, (b) la geometría no está sellada o no es \textit{watertight}, (c) se tienen caras dentro de partes selladas de la geometría, (d) hay normales invertidos y (e) cuando hay superficies conectadas solamente por un vértice. Figura adaptada de \cite{manifold_types_2021}.}
     \label{non_manifold_types}
 \end{figure}
@@ -96,7 +97,7 @@ Esta conversión no altera la estructura de la malla, pero permite optimizar el 
 
 Una vez realizada esta transformación, las mallas en formato NPY están listas para ser utilizadas directamente por ExMeshCNN.
 
-\section{Búsqueda de Arquitectura Neuronal}
+\subsection{Búsqueda de Arquitectura Neuronal}
 \label{section4:nas}
 El procesamiento de mallas 3D mediante DL, como se ha comentado, constituye un campo aún en etapa experimental y en rápida evolución. Debido a su novedad, no existe un consenso establecido sobre cómo tratar estos datos de manera óptima. Como resultado, no se dispone de modelos preentrenados sobre mallas 3D con las características específicas requeridas en este trabajo, particularmente en el contexto de ExMeshCNN y con la resolución necesaria para abordar el presente problema.
 

@@ -1,6 +1,6 @@
-\chapter{Experimentos}
+\chapter{Estudio experimental}
 
-\section{Implementación}
+\section{Diseño experimental}
 \label{section4:implementation}
 \subsection{Entorno de desarrollo}
 \subsubsection{Software}
@@ -27,7 +27,7 @@ El entorno remoto correspondió al clúster de servidores GPU de la Universidad 
     \label{mesh_preparation_pipeline}
 \end{figure}
 
-Como se ha mencionado en la Sección \ref{section4:materials}, los datos obtenidos para este proyecto provienen de escaneos de piezas anatómicas reales digitalizadas usando el escáner Artec Miro que permite captar datos en 3D en una zona de hasta 324 cm$^3$ y escanearlos con una precisión muy alta de hasta 10 micras y una resolución de hasta 0.029 mm \cite{artec_data}. Las mallas generadas a través de estos procesos resultan en geometrías incompletas, degeneradas y con gran variabilidad de resolución. Estos factores impiden su uso directo por el \textit{framework} de ExMeshCNN. Se tiene en la Figura \ref{mesh_preparation_pipeline} un diagrama que resume los pasos que se han tomado para preprocesar las mallas.
+Como se ha mencionado en la Sección \ref{section4:materials}, los datos obtenidos para este proyecto provienen de escaneos de piezas anatómicas reales digitalizadas usando el escáner Artec Micro que permite captar datos en 3D en una zona de hasta 324 cm$^3$ y escanearlos con una precisión muy alta de hasta 10 micras y una resolución de hasta 0.029 mm \cite{artec_data}. Las mallas generadas a través de estos procesos resultan en geometrías incompletas, degeneradas y con gran variabilidad de resolución. Estos factores impiden su uso directo por el \textit{framework} de ExMeshCNN. Se tiene en la Figura \ref{mesh_preparation_pipeline} un diagrama que resume los pasos que se han tomado para preprocesar las mallas.
 
 \subsubsection{Limpieza inicial de las mallas}
 \begin{figure}[h]
@@ -37,7 +37,7 @@ Como se ha mencionado en la Sección \ref{section4:materials}, los datos obtenid
     \label{non_manifold_types}
 \end{figure}
 
-El primer paso del preprocesado consiste en la limpieza inicial de las mallas (Paso (a) en la Figura \ref{mesh_preparation_pipeline}). En este paso, mediante un \textit{script} desarrollado con PyMeshLab, se busca eliminar la mayor cantidad posible de geometría no deseada presente en las mallas crudas obtenidas mediante escaneo 3D.
+El primer paso del preprocesado consiste en la limpieza inicial de las mallas (paso (a) en la Figura \ref{mesh_preparation_pipeline}). En este paso, mediante un \textit{script} desarrollado con PyMeshLab, se busca eliminar la mayor cantidad posible de geometría no deseada presente en las mallas crudas obtenidas mediante escaneo 3D.
 
 El proceso comienza eliminando las componentes desconectadas respecto a la componente principal; es decir, se eliminan fragmentos de geometría (ya sean triángulos o vértices) que no estén conectados a la porción principal de la malla así como vértices duplicados. A continuación, se realiza una primera limpieza para remover geometría degenerada (o de cero área) y parcialmente la geometría \textit{non-manifold}: aquella donde una arista se comparte por más de dos caras, alrededor de cada vértice, las caras no forman una vecindad contigua y hay bordes o agujeros. Para un ejemplo visual de este tipo de mallas, consultar la Figura \ref{non_manifold_types}. Realizado todo esto, se guarda una versión intermedia de la malla para su posterior procesamiento.
 
@@ -48,12 +48,12 @@ En este paso, las mallas intermedias se encuentran con una geometría y topolog�
 
 Para ello, se empleó Blender, que dispone de un modificador de remuestreo robusto llamado \textit{Remesh}. Se desarrolló un segundo \textit{script} que toma como entrada la malla de salida del paso (a) y aplica el operador de remuestreo en modo \textit{SHARP}, con una profundidad del árbol octal de 10 (para preservar la fidelidad geométrica) y una escala de 1. El resultado es una malla libre de huecos, aunque este proceso puede reintroducir geometría \textit{non-manifold}.
 
-Se puede detallar en la Figura \ref{remesh_hole_example} el resultado de procesar la malla por este paso de preprocesado, obsérvese como el modificador sella por completo el hueco en la parte posterior de la malla 3D.
+La Figura \ref{remesh_hole_example} detalla el resultado de procesar la malla por este paso de preprocesado, obsérvese como el modificador sella por completo el hueco en la parte posterior de la malla 3D.
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{figures/4_materials-methods/remesh_hole_filled_example.png}
-    \caption[Ejemplo de malla sellada por remuestreo]{Ejemplo de malla sellada mediante remuestreo. Se muestran las mallas vistas desde la parte posterior de la cara articular: en (a) se observa la malla tras el proceso de limpieza inicial, aún con un hueco visible en la zona posterior; en (b), la misma malla tras haber sido remuestrada durante el paso (b) del preprocesado, donde dicho hueco ha sido sellado.}
+    \caption[Ejemplo de malla sellada por remuestreo]{Ejemplo de malla sellada mediante remuestreo. Se muestran las mallas vistas desde la parte posterior de la cara articular: en (a) se observa la malla tras el proceso de limpieza inicial, aún con un hueco visible en la zona posterior; en (b), la misma malla tras haber sido remuestrada durante el paso (b) del preprocesado (Figura \ref{mesh_preparation_pipeline}), donde dicho hueco ha sido sellado.}
     \label{remesh_hole_example}
 \end{figure}
 
@@ -62,7 +62,7 @@ Se puede detallar en la Figura \ref{remesh_hole_example} el resultado de procesa
 Debido a la posible reintroducción de geometría \textit{non-manifold} tras el remuestreo, se implementó en el mismo \textit{script} el paso (c) del preprocesado. Este paso consiste en un procedimiento iterativo diseñado para eliminar dicha geometría no válida. El procedimiento sigue los siguientes pasos:
 
 \begin{enumerate}
-    \item Se parte de la malla resultante del paso (b).
+    \item Se parte de la malla resultante del paso (b) (Figura \ref{mesh_preparation_pipeline}).
     \item Se seleccionan los vértices \textit{non-manifold} existentes. Si los hay, se realiza primero una eliminación de vértices duplicados, lo que en muchos casos deja la malla en un estado topológicamente válido.
     \item Se realiza una nueva selección de vértices \textit{non-manifold}. Si persisten, se colapsan vecindarios locales de dichos vértices en un único vértice con el fin de mitigar posibles huecos generados en pasos o iteraciones anteriores.
     \item Se repite la selección de vértices \textit{non-manifold}. Si aún existen, se eliminan directamente. Este paso puede generar nuevos huecos, que serán tratados en la siguiente iteración mediante el paso 3.
@@ -74,9 +74,7 @@ Se ha comprobado que, para los datos utilizados, este procedimiento converge tra
 \subsubsection{Recorte de mallas}
 Obsérvese en la Figura \ref{mesh_preparation_pipeline} que existe una decisión entre los pasos (c) y (d) o (e) sobre recortar primero la malla antes de realizar la reducción de triángulos.
 
-Se ha añadido este paso debido a que la reducción uniforme afecta por igual a todas las regiones de la malla, incluyendo zonas anatómicamente poco relevantes para el análisis forense, como la parte posterior y laterales del hueso respecto con la cara articular. Para maximizar la preservación de detalles en dicha cara articular siendo la región de interés, se implementó este proceso. Este consiste en realizar un recorte anatómico antes de la reducción de resolución, eliminando aquellas partes que los expertos forenses no consideran durante el análisis.
-
-Este doble enfoque permite disponer tanto de versiones completas como de versiones enfocadas en la cara articular, facilitando comparativas experimentales entre ambas modalidades de entrada.
+Se ha añadido este paso debido a que la reducción uniforme afecta por igual a todas las regiones de la malla, incluyendo zonas anatómicamente poco relevantes para el análisis forense, como la parte posterior y laterales del hueso respecto con la cara articular. Para maximizar la preservación de detalles en dicha cara articular siendo la región de interés, se implementó este proceso. Este consiste en realizar un recorte anatómico antes de la reducción de resolución, eliminando aquellas partes que los expertos forenses no consideran durante el análisis. Este doble enfoque permite disponer tanto de versiones completas como de versiones enfocadas en la cara articular, facilitando comparativas experimentales entre ambas modalidades de entrada.
 
 El procedimiento, también automatizado mediante Blender, consiste en generar un cubo con las dimensiones de la malla (\textit{bounding box}) y reducirlo proporcionalmente para definir una región de interés. A continuación, se aplica un modificador booleano para recortar las partes externas no deseadas, lo cual es posible gracias a que todas las mallas están previamente alineadas en la misma orientación. Una vez realizado el recorte que también genera una malla sellada, se procede a aplicar la reducción de resolución. Se puede observar un ejemplo de una malla antes y después de haber sido recortada en la Figura \ref{bbox_cut_sample}.
 
@@ -171,23 +169,25 @@ Dicho todo esto, todas las arquitecturas generadas por NAS siguen una estructura
         \caption{Macroestructura de red para modelos multietiqueta.}
         \label{multi_label_nets}
     \end{subfigure}
-    \caption[Macroestructura de redes generadas por NAS]{Macroestructura de redes generadas por NAS. Todas las redes poseen este \say{esqueleto} arquitectónico, una malla 3D pasará primero por las capas de descriptores, luego pasará por el bloque convolucional llegando hasta el bloque denso por medio de una capa de \textit{pooling} como nexo. En (a) se muestra la macroestructura de los modelos de etiqueta única, en (b) la de los modelos multietiqueta, obsérvese que las ramificaciones en estos modelos son solamente de los bloques de capas densas.}
+    \caption[Macroestructura de redes generadas por NAS]{Macroestructura de redes generadas por NAS. Todas las redes poseen esta arquitectura genérica: una malla 3D se procesará primero por las capas de descriptores, luego pasará por el bloque convolucional llegando hasta el bloque denso por medio de una capa de \textit{pooling} como nexo. En (a) se muestra la macroestructura de los modelos de etiqueta única, en (b) la de los modelos multietiqueta, obsérvese que las ramificaciones en estos modelos son solamente de los bloques de capas densas.}
     \label{nas_macrostruct}
 \end{figure}
 
 
 \section{Protocolo de validación experimental}
-Para el entrenamiento de los modelos se empleó la técnica de \textit{hold-out}, que consiste en dividir el conjunto de datos en dos subconjuntos principales: uno de entrenamiento y otro de test. A su vez, el conjunto de entrenamiento se subdivide para obtener un subconjunto adicional de validación. Durante el proceso de entrenamiento, el modelo es ajustado utilizando únicamente los datos del conjunto de entrenamiento, mientras que el conjunto de validación se utiliza para monitorizar el rendimiento del modelo en cada época, permitiendo detectar fenómenos como el sobreajuste para finalizar el entrenamiento aplicando \textit{Early Stopping}, almacenar el mejor modelo por medio del \textit{Model Checkpointing} y orientar el ajuste de hiperparámetros.
+Para el entrenamiento de los modelos se empleó la técnica de \textit{hold-out}, que consiste en dividir el conjunto de datos en dos subconjuntos principales: uno de entrenamiento y otro de test. A su vez, el conjunto de entrenamiento se subdivide para obtener un subconjunto adicional de validación. Durante el proceso de entrenamiento, el modelo es ajustado utilizando únicamente los datos del conjunto de entrenamiento, mientras que el conjunto de validación se utiliza para monitorizar el rendimiento del modelo en cada época, permitiendo detectar fenómenos como el sobreajuste para finalizar el entrenamiento aplicando \textit{Early Stopping}, almacenar el mejor modelo por medio del \textit{Model Checkpointing} y orientar el ajuste de hiperparámetros. Se optó por esta estrategia en lugar de una validación cruzada tradicional de $n$ particiones ($n$-fold cross-validation), debido al elevado coste computacional que implicaría. Aunque la arquitectura ExMeshCNN presenta una buena eficiencia, el uso conjunto con técnicas de NAS multiplica considerablemente el tiempo necesario para cada experimento, haciendo que aplicar $n$-fold CV resulte intratable en los plazos estimados para este proyecto.
 
 Una vez completado el entrenamiento, el modelo final se evalúa utilizando el conjunto de test, que se ha mantenido completamente aislado durante todo el proceso de ajuste, proporcionando así una estimación objetiva del rendimiento general del modelo sobre datos no vistos.
 
 Como se describió en la Sección \ref{section4:data_preparation}, se utilizan tanto huesos izquierdos como derechos de los individuos. Dado que, desde el punto de vista anatómico, ambos presentan una alta similitud morfológica, realizar la partición del conjunto de datos a nivel de muestra podría provocar una fuga de información (\textit{data leakage}). Para evitar este problema, la división se llevó a cabo a nivel de individuo: todos los huesos pertenecientes a un mismo sujeto se incluyen exclusivamente en uno de los subconjuntos (entrenamiento, validación o test), sin solapamiento entre ellos. Esto garantiza que el modelo no memorice rasgos individuales específicos, sino que generalice adecuadamente aprendiendo patrones morfológicos relevantes.
 
-Sin embargo, debido al fuerte desbalance presente en los datos, no resulta viable utilizar una única partición común para todas las características, ya que podría conducir a una representación deficiente de ciertas clases en algunas características, afectando negativamente el proceso de aprendizaje. Por esta razón, se optó por realizar una división estratificada por característica, con el objetivo de maximizar la representación y asegurar un entrenamiento más efectivo de los modelos.
+Uno de los retos más significativos de este trabajo es el marcado desbalance entre clases presente en los datos, una condición que afecta directamente la capacidad del modelo para generalizar adecuadamente. Este desbalance varía entre las diferentes características del método de Todd, y en muchos casos existen clases con muy pocos ejemplos en comparación con otras (véase Sección \ref{section4:data_eda} para más detalles), dificultando el aprendizaje robusto y equitativo. Debido a ello, no resulta viable utilizar una única partición común para todas las características, ya que esto podría conducir a una representación muy deficiente de ciertas clases en algunas tareas, afectando negativamente el rendimiento del modelo. Por esta razón, se optó por realizar una división estratificada individual para cada característica, maximizando así su representación interna y permitiendo un proceso de entrenamiento más efectivo.
 
-En los experimentos multietiqueta, donde se consideran varias características simultáneamente, se empleó una técnica de estratificación iterativa \cite{sechidis2011stratification, pmlr-v74-szymański17a}, que permite preservar de forma aproximada la distribución conjunta de etiquetas en los subconjuntos generados, minimizando así la pérdida de información estructural y el desbalance entre clases.
+En los experimentos multietiqueta, donde varias características se modelan simultáneamente, el problema del desbalance se intensifica, ya que se debe considerar la combinación de distribuciones entre etiquetas. Para mitigar este efecto, se utilizó una técnica de estratificación iterativa \cite{sechidis2011stratification, pmlr-v74-szymański17a}, que permite preservar de forma aproximada la distribución conjunta de etiquetas en los subconjuntos generados. Esto reduce significativamente la pérdida de información estructural entre clases y ayuda a mantener un equilibrio relativo, mitigando en parte las dificultades impuestas por el fuerte desbalance, uno de los principales desafíos técnicos del proyecto. 
 
-\section{Métricas}
+En todos los experimentos se aplicó la misma proporción en la división de los datos, siguiendo la recomendación habitual para la técnica \textit{hold-out}: se empleó un 65\% del total para el conjunto de entrenamiento, un 15\% para validación y el 20\% restante para test.
+
+\section{Funciones de pérdida y métricas de rendimiento}
 \label{section5:metrics}
 Dado que se trata de un problema de clasificación, se emplea la función de pérdida de entropía cruzada (\textit{cross-entropy loss}) para ajustar los pesos y sesgos de las neuronas del modelo. Esta función se define de la siguiente forma:
 
@@ -211,7 +211,7 @@ Por su parte, la pérdida Focal (FL) \cite{lin_focal_2020} extiende este enfoque
 
 La pérdida Class-Balanced (CBL) \cite{cui_class-balanced_2019}, en cambio, introduce una formulación más refinada del peso por clase, basada en el número efectivo de muestras. En lugar de utilizar directamente la frecuencia inversa de las clases, CBL calcula un factor de corrección con el parámetro $\beta$ que refleja mejor la cantidad de información aportada por cada clase. Esta técnica puede aplicarse como un prefactor sobre diferentes funciones de pérdida $\mathcal{L}(\mathbf{p}, y)$, siendo compatible tanto con WCE como con FL, entre otras.
 
-Aunque estas funciones de pérdida son fundamentales para guiar el proceso de entrenamiento y seleccionar el mejor modelo, no ofrecen información directa sobre el rendimiento del clasificador en términos de aciertos y errores. Para ello, se emplea la métrica de \textit{accuracy}, que cuantifica la proporción de muestras clasificadas correctamente. Esta métrica se define como:
+Aunque estas funciones de pérdida son fundamentales para guiar el proceso de entrenamiento y seleccionar el mejor modelo, no ofrecen información directa sobre el rendimiento del clasificador en términos de aciertos y errores. Para ello, se emplea la métrica de exactidud o \textit{accuracy}, que cuantifica la proporción de muestras clasificadas correctamente. Esta métrica se define como:
 
 \begin{equation}
 \text{Accuracy} = \frac{TP + TN}{TP + TN + FP + FN}
@@ -224,8 +224,7 @@ A pesar de su carácter intuitivo y simplicidad, el \textit{accuracy} puede indu
 Por ello, se incluye la métrica F1, que representa un balance armónico entre \textit{precision} y \textit{recall}:
 \begin{equation}
     \text{F1} = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}
-    \end{equation}
-    Por ello, la métrica que se utilizará como , definido como:
+\end{equation}
 
 donde las métricas de \textit{precision} y \textit{recall}, en el contexto binario, se definen como:
 \begin{align}
@@ -235,17 +234,19 @@ donde las métricas de \textit{precision} y \textit{recall}, en el contexto bina
 
 La \textit{precision} indica qué proporción de las predicciones positivas realizadas por el modelo son correctas, mientras que \textit{recall} mide la proporción de muestras realmente positivas que fueron correctamente identificadas. Estas métricas permiten detectar posibles sesgos en el comportamiento del modelo, tales como una mayor propensión a cometer falsos positivos o falsos negativos.
 
-Dado que en este proyecto se busca una clasificación lo más equilibrada posible entre clases, se opta por utilizar la métrica F1. En particular, se utiliza la media macro del F1 (F1 Macro) como criterio principal para emitir un veredicto final sobre la calidad del aprendizaje de los modelos. Esta considera por igual todas las clases, sin ponderarlas según su frecuencia. Este enfoque es especialmente adecuado en contextos con desbalance de clases, ya que asegura que cada clase contribuya equitativamente a la métrica. Su cálculo se basa en las versiones multiclase de \textit{precision} y \textit{recall}, definidas como:
-
+Dado que en este proyecto se persigue una clasificación lo más equilibrada posible entre clases, se adopta como métrica principal la media macro del F1 (F1 Macro). Esta variante calcula primero el F1 de cada clase de forma individual y luego promedia estos valores, asignando el mismo peso a todas las clases sin considerar su frecuencia en el conjunto de datos. Esta propiedad la hace especialmente adecuada para contextos con fuerte desbalance de clases, como es el caso de este trabajo, ya que penaliza con mayor severidad los errores cometidos en las clases minoritarias. En consecuencia, el F1 Macro se emplea como criterio principal para evaluar y comparar el rendimiento de los modelos entrenados. Su formulación matemática es la siguiente:
+\begin{align}
+    \text{F1}_{\text{Macro}} &=  2 \cdot \frac{\text{Precision}_{\text{Macro}} \cdot \text{Recall}_{\text{Macro}}}{\text{Precision}_{\text{Macro}} + \text{Recall}_{\text{Macro}}} 
+\end{align}
+Dado que su cálculo se basa en las versiones multiclase de \textit{precision} y \textit{recall}, estas se definen como:
 \begin{align}
     \text{Precision}_{\text{Macro}} &= \frac{\text{Precision}_{\text{Clase A}}+\text{Precision}_{\text{Clase B}}+\dots+\text{Precision}_{\text{Clase N}}}{N} \\
     \text{Recall}_{\text{Macro}} &= \frac{\text{Recall}_{\text{Clase A}}+\text{Recall}_{\text{Clase B}}+\dots+\text{Recall}_{\text{Clase N}}}{N}
 \end{align}
 
-Durante el proceso de NAS, como se detalla en la Sección \ref{section4:nas}, fue necesario definir una función objetivo (\textit{fitness}) que guiara la optimización. Dada la naturaleza desbalanceada del problema, se eligió la métrica F1 macro como base para esta función. El valor de fitness se define como:
-
+Durante el proceso de NAS, como se detalla en la Sección \ref{section4:nas}, fue necesario definir una función objetivo (\textit{fitness}) que guiara la optimización. Dada la naturaleza desbalanceada del problema, se eligió la métrica F1 Macro como base para esta función. El valor de fitness se define como:
 \begin{equation}
-    \text{Fitness} = \text{F1 Macro}_{\text{Validación}} \cdot (1 - | \text{F1 Macro}_{\text{Validación}} -  \text{F1 Macro}_{\text{Entrenamiento}}|)
+    \text{Fitness} = \text{F1}_{\text{Macro}_{\text{Validación}}} \cdot (1 - | \text{F1}_{\text{Macro}_{\text{Validación}}} -  \text{F1}_{\text{Macro}_{\text{Entrenamiento}}}|)
 \end{equation}
 
 La heurística de esta formulación es la siguiente: por un lado, se favorecen modelos con un alto rendimiento en el conjunto de validación, y por otro, se penaliza la discrepancia entre el rendimiento en entrenamiento y validación, lo cual es indicativo de sobreajuste. De este modo, se priorizan aquellos modelos que generalizan bien y no simplemente memorizan los datos de entrenamiento.
@@ -288,7 +289,7 @@ En esta fase, se llevaron a cabo los denominados experimentos de etiqueta única
 
 \begin{itemize}
 \item \textbf{Resolución de la malla}: 100,000 (abreviado a 100K); 50,000 (50K) o 25,000 (25K) triángulos.
-\item \textbf{Tipo de malla}: Malla completa (abreviado a \textit{Full}) o malla recortada (\textit{Cut}).
+\item \textbf{Tipo de malla}: Malla completa (abreviado a \textit{Full}) o malla recortada (\textit{Cut}), ver Figura \ref{bbox_cut_sample}.
 \end{itemize}
 
 Cada ejecución implicó la realización de 200 entrenamientos distintos con el objetivo de obtener el modelo más adecuado para predecir cada característica de forma individual mediante NAS. Dado que se trabajó con las 9 características del método de Todd, y que para cada una de ellas se realizaron 6 combinaciones distintas de configuración, el número total de entrenamientos realizados asciende a: $9\times6\times200=10,800$ entrenamientos totales. Esto equivale a 1,800 entrenamientos por característica, lo que refleja el elevado grado de exploración llevado a cabo con el fin de asegurar un modelo óptimo para cada una.
@@ -325,20 +326,20 @@ El resto de las características muestran un comportamiento relativamente unifor
 
 Un aspecto adicional a destacar es el impacto del tipo de malla utilizada. Exceptuando el modelo de LSE, todos los demás alcanzaron mejores resultados al emplear las versiones recortadas de las mallas. Este comportamiento respalda la hipótesis de que eliminar estructuras óseas irrelevantes (según la práctica de los expertos) permite concentrar el poder de representación del modelo en la zona de interés, reduciendo el ruido y facilitando la identificación de patrones significativos. En el caso de LSE, sin embargo, las mallas completas resultaron más beneficiosas, lo cual podría implicar que la información relevante para esta característica se encuentra distribuida también fuera de la región de la cara articular de la sínfisis.
 
-Respecto a la resolución, se observa que los mejores resultados, en general, se obtuvieron con la resolución más baja de 25K triángulos, seguida de 50K, y solo dos modelos alcanzaron su mejor desempeño con 100K triángulos. Esta observación concuerda con lo reportado por los autores de ExMeshCNN \cite{kim_exmeshcnn_2022}, donde también se encontró que las mallas de menor resolución producían mejores resultados. Se teoriza que esto se debe a que, al aumentar la resolución, la operación de \textit{global average pooling} que conecta las capas convolucionales con las totalmente conectadas podría estar diluyendo información crítica al comprimir un mayor número de triángulos en una única representación.
+Respecto a la resolución, se observa que los mejores resultados, en general, se obtuvieron con la resolución más baja de 25K triángulos, seguida de 50K, y solo dos modelos alcanzaron su mejor desempeño con 100K triángulos. Esta observación concuerda con lo reportado por los autores de ExMeshCNN \cite{kim_exmeshcnn_2022}, donde también se encontró que las mallas de menor resolución producían mejores resultados. Esto se puede deber a que, al aumentar la resolución, la operación de \textit{global average pooling} que conecta las capas convolucionales con las totalmente conectadas podría estar diluyendo información crítica al comprimir un mayor número de triángulos en una única representación.
 
 Sin embargo, las características LSE e IP constituyen una excepción a esta tendencia: en ambos casos, la mayor resolución permitió obtener un mejor rendimiento, lo que indica que para estas características el mayor nivel de detalle en la superficie ósea proporciona una ventaja en el aprendizaje del modelo.
 
 \subsection{Experimentos multietiqueta}
 Una vez realizados los experimentos de etiqueta única, se procedió a entrenar modelos capaces de predecir múltiples características simultáneamente. Para ello, se empleó el enfoque de \textit{multi-label classification}, que permite que cada muestra del conjunto de datos pueda estar asociada a más de una etiqueta, en contraste con la clasificación tradicional donde cada muestra pertenece a una única clase. 
 
-Cabe destacar que, si bien los modelos entrenados en para estos experimentos son efectivamente multietiqueta, el objetivo último no es necesariamente obtener un único modelo capaz de predecir de forma óptima todas las características simultáneamente. Más bien, se busca evaluar si el aprendizaje conjunto de varias características puede mejorar el rendimiento en la predicción individual de cada una. Por ello, incluso si un modelo multietiqueta logra un rendimiento significativamente superior en una única característica, aunque su rendimiento en otras no sea destacable, dicho modelo es de interés para esa característica específica. Esto permite valorar modelos multietiqueta no como soluciones integrales, sino también como posibles especializaciones con beneficios colaterales derivados del aprendizaje compartido.
+Cabe destacar que, si bien los modelos entrenados en estos experimentos son efectivamente multietiqueta, el objetivo último no es necesariamente obtener un único modelo capaz de predecir de forma óptima todas las características simultáneamente. Más bien, se busca evaluar si el aprendizaje conjunto de varias características puede mejorar el rendimiento en la predicción individual de cada una. Por ello, incluso si un modelo multietiqueta logra un rendimiento significativamente superior en una única característica, aunque su rendimiento en otras no sea destacable, dicho modelo es de interés para esa característica específica. Esto permite valorar modelos multietiqueta no como soluciones integrales, sino también como posibles especializaciones con beneficios colaterales derivados del aprendizaje compartido.
 
 Siguiendo esta lógica, primero se realizaron 200 entrenamientos con todas las características de Todd por cada resolución, tipo de malla y, adicionalmente, dos configuraciones de la parte densa o totalmente conectada del modelo: una donde todas las salidas poseen la misma estructura (abreviado a \textit{Same}) y otra donde cada salida tiene una estructura densa independiente (\textit{Variable}). Es decir $2 \times 2 \times 3 \times 200 = 2,400$ entrenamientos.
 
-Posteriormente, se llevaron a cabo experimentos adicionales utilizando la mejor combinación de resolución de malla y tipo de malla obtenidos cada característica individual en los experimentos de etiqueta única, junto con las tres características que presentan mayor asociación con ella, según los valores de la T de Tschuprow mostrados en la Tabla \ref{table4:corr}. En este caso, también se evaluaron ambas configuraciones de la parte densa del modelo (\textit{Same} y \textit{Variable}) haciendo 200 entrenamientos por experimento. O sea, $9 \times 2 \times 200 = 3,600$ entrenamientos con las tres características con mayor asociación a una característica dada.
+Posteriormente, se llevaron a cabo experimentos adicionales utilizando la mejor combinación de resolución de malla y tipo de malla obtenidos para cada característica individual en los experimentos de etiqueta única, junto con las tres características que presentan mayor asociación con ella, según los valores de la T de Tschuprow mostrados en la Tabla \ref{table4:corr}. En este caso, también se evaluaron ambas configuraciones de la parte densa del modelo (\textit{Same} y \textit{Variable}) haciendo 200 entrenamientos por experimento. O sea, $9 \times 2 \times 200 = 3,600$ entrenamientos con las tres características con mayor asociación a una característica dada.
 
-El tiempo requerido varió no solo en función de la resolución de las mallas, si no que también se vió influido por la complejidad de la parte densa del modelo. Como era de esperar, los modelos con mayor número de características y resolución elevada fueron los que presentaron mayores requerimientos computacionales: Para las configuraciones con nueve características y resolución de 100K triángulos, el tiempo de entrenamiento se situó entre 28 y 30 días continuos. Con 50K triángulos, la duración se redujo a aproximadamente 15 días, y con 25K triángulos, a unos 7 días.
+El tiempo requerido varió no solo en función de la resolución de las mallas, sino que también se vio influido por la complejidad de la parte densa del modelo. Como era de esperar, los modelos con mayor número de características y resolución elevada fueron los que presentaron mayores requerimientos computacionales: Para las configuraciones con nueve características y resolución de 100K triángulos, el tiempo de entrenamiento se situó entre 28 y 30 días continuos. Con 50K triángulos, la duración se redujo a aproximadamente 15 días, y con 25K triángulos, a unos 7 días.
 
 En los experimentos con cuatro características, los tiempos se redujeron considerablemente: Con mallas de 100K triángulos, los entrenamientos tomaron alrededor de 10 días; con 50K triángulos, cerca de 5 días y con 25K triángulos, aproximadamente 3 o 4 días por ejecución. Estos tiempos evidencian el alto coste computacional del proceso experimental, así como el compromiso asumido para lograr una validación exhaustiva de los modelos generados.
 
@@ -396,7 +397,7 @@ Sobre las características de soporte, nuevamente se encuentra una distribución
     \label{table5:multilabel_comparison}
 \end{table}
 
-Finalmente, se observa que los resultados obtenidos en los experimentos multietiqueta poseen una ligera ventaja sobre los de etiqueta única, observándose la Tabla \ref{table5:multilabel_comparison}, dónde 5 de las 9 características mejoran la métrica F1 Macro respecto a sus contrapartes de etiqueta única. Esto sugiere que el modelo es capaz de aprender patrones más complejos y representativos al considerar múltiples características simultáneamente, lo que a su vez puede mejorar la generalización del modelo y su capacidad para capturar relaciones entre las distintas características. Siendo esto consistente con la literatura consultada, donde se ha demostrado que los modelos multietiqueta pueden beneficiarse de la correlación o asociación entre las etiquetas para mejorar el rendimiento general del modelo \cite{ranjan_hyperface_2019}. Si bien existe más disparidad respecto al \textit{accuracy} entre los experimentos de etiqueta única y multietiqueta, en general se observa que se mantiene un rendimiento alto en ambas configuraciones, con valores muy similares a los obtenidos en los experimentos de etiqueta única.
+Finalmente, se observa que los resultados obtenidos en los experimentos multietiqueta poseen una ligera ventaja sobre los de etiqueta única, observándose la Tabla \ref{table5:multilabel_comparison}, donde 5 de las 9 características mejoran la métrica F1 Macro respecto a sus contrapartes de etiqueta única. Esto sugiere que el modelo es capaz de aprender patrones más complejos y representativos al considerar múltiples características simultáneamente, lo que a su vez puede mejorar la generalización del modelo y su capacidad para capturar relaciones entre las distintas características. Siendo esto consistente con la literatura consultada, donde se ha demostrado que los modelos multietiqueta pueden beneficiarse de la correlación o asociación entre las etiquetas para mejorar el rendimiento general del modelo \cite{ranjan_hyperface_2019}. Si bien existe más disparidad respecto al \textit{accuracy} entre los experimentos de etiqueta única y multietiqueta, en general se observa que se mantiene un rendimiento alto en ambas configuraciones, con valores muy similares a los obtenidos en los experimentos de etiqueta única.
 
 \section{Análisis de Resultados}
 Durante los experimentos realizados, se ha observado que los modelos son capaces de aprender patrones topológicos relevantes en las mallas óseas para predecir las características de Todd. Los resultados obtenidos tanto en los experimentos de etiqueta única como en los de multietiqueta muestran un rendimiento prometedor, con valores de \textit{accuracy} y F1 Macro que evidencian una buena capacidad de generalización por parte de los modelos, lo que a su vez demuestra una buena selección de tanto espacio de búsqueda como estrategia de búsqueda de la técnica de NAS empleada. Esto también deja en evidencia la efectividad del \textit{framework} de ExMeshCNN en datos reales.

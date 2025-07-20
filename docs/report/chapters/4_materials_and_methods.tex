@@ -2,7 +2,7 @@
 
 \section{Materiales}
 \label{section4:materials}
-Para la realización de este TFM se dispone de una colección de 497 mallas 3D de la sínfisis del pubis en formato OBJ. Se tratan de 484 huesos izquierdos y 486 derechos, con un rango de edades entre los 18 y 60 años, provenientes de países mediterráneos desarrollados, como España. Estas mallas fueron escaneadas por el personal del Laboratorio de Antropología Física del Departamento de Medicina Legal, Toxicología y Antropología Física de la Universidad de Granada. Además de la digitalización tridimensional, el equipo del laboratorio examinó cuidadosamente cada una de las muestras y etiquetó manualmente los atributos correspondientes a las características morfológicas observables en la superficie de la sínfisis del pubis así como la edad real de fallecimiento de los individuos, datos que también han sido provistos dentro de un fichero de Microsoft Excel. Se utilizaron las características y atributos propuestos por Villar et al. \cite{villar2017first}, que se pueden visualizar en la Tabla \ref{table:themBones}.
+Para la realización de este TFM se dispone de una colección de 497 mallas 3D de la sínfisis del pubis en formato OBJ. Se tratan de 484 huesos izquierdos y 486 derechos, con un rango de edades entre los 18 y 60 años, provenientes de países mediterráneos desarrollados, como España. Estas mallas fueron escaneadas por el personal del Laboratorio de Antropología Física del Departamento de Medicina Legal, Toxicología y Antropología Física de la Universidad de Granada. Además de la digitalización tridimensional, el equipo del laboratorio examinó cuidadosamente cada una de las muestras y etiquetó manualmente los atributos correspondientes a las características morfológicas observables en la superficie de la sínfisis del pubis así como la edad real de fallecimiento de los individuos, datos que también han sido provistos dentro de un fichero de Microsoft Excel. Se utilizaron las características y atributos propuestos por Villar et al. \cite{villar2017first} descritas en el atlas propuesto por Irurita et al. \cite{irurita2025pubic}, que se pueden visualizar en la Tabla \ref{table:themBones}.
 
 
 \begin{figure}[htbp]
@@ -58,7 +58,7 @@ Centrándose ahora en los datos asociados a cada malla, se observa que la muestr
 De ambos gráficos se aprecia que las edades más representadas corresponden a individuos de mayor edad, lo cual es coherente considerando el origen de los datos. Sin embargo, este patrón también evidencia un desbalance inherente en la muestra, un fenómeno esperado cuando se trabaja con datos reales.
 
 \subsubsection{Análisis Univariable}
-Continuando con el EDA enfocado en las nueve características del método de Todd, se observa un claro desbalance en la distribución de atributos, como se muestra en las gráficas correspondientes en la Figura \ref{fig4:todd_chars}. Los atributos más representados son coherentes con las manifestaciones morfológicas que el hueso de la sínfisis del pubis presenta a edades más avanzadas.
+Continuando con el EDA enfocado en las nueve características del método de Todd, se observa un claro desbalance en la distribución de atributos, como se muestra en las gráficas correspondientes en las Figuras \ref{fig4:todd_chars_1}, \ref{fig4:todd_chars_2} y \ref{fig4:todd_chars_3}. Los atributos más representados son coherentes con las manifestaciones morfológicas que el hueso de la sínfisis del pubis presenta a edades más avanzadas.
 
 Desde la perspectiva del balance de datos, las características USE (Subfigura \ref{fig4:todd_chars__use}), BN (Subfigura \ref{fig4:todd_chars__bn}), DP (Subfigura \ref{fig4:todd_chars__dp}) y LSE (Subfigura \ref{fig4:todd_chars__lse}) presentan un desbalance particularmente acentuado, con aproximadamente 95\%, 91\%, 90\% y 90\% de las muestras concentradas en un solo atributo, respectivamente. Este fuerte desbalance sugiere que estas características podrían tener un rendimiento limitado al ser utilizadas para el entrenamiento de modelos de DL.
 
@@ -81,11 +81,11 @@ Desde la perspectiva del balance de datos, las características USE (Subfigura \
         \caption{Característica DM. Leyenda: \textbf{0}: No Definido, \textbf{1}: En Formación, \textbf{2}: Definido.}
         \label{fig4:todd_chars__dm}
     \end{subfigure}
-    \phantomcaption
+    \caption[Distribución de las características de Todd (1 de 3)]{Distribución de las etiquetas para cada característica de Todd en el conjunto de datos (1 de 3). Para cada característica, se muestran las frecuencias de las diferentes clases observadas en los datos disponibles. Esta visualización permite apreciar el grado de desbalance entre clases y la variabilidad presente en cada rasgo morfológico.}
+    \label{fig4:todd_chars_1}
 
 \end{figure}
 \begin{figure}[p]
-    \ContinuedFloat
 
     \begin{subfigure}{\textwidth}
         \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_dp_distr.pdf}
@@ -105,11 +105,10 @@ Desde la perspectiva del balance de datos, las características USE (Subfigura \
         \label{fig4:todd_chars__lse}
     \end{subfigure}
 
-    \phantomcaption
-    \label{fig4:todd_chars}
+    \caption[Distribución de las características de Todd (2 de 3)]{Distribución de las etiquetas para cada característica de Todd en el conjunto de datos (2 de 3). Para cada característica, se muestran las frecuencias de las diferentes clases observadas en los datos disponibles. Esta visualización permite apreciar el grado de desbalance entre clases y la variabilidad presente en cada rasgo morfológico.}
+    \label{fig4:todd_chars_2}
 \end{figure}
 \begin{figure}[p]
-    \ContinuedFloat
 
     \begin{subfigure}{\textwidth}
         \includegraphics[width=\linewidth]{../../scripts/eda/eda_univar/char_use_distr.pdf}
@@ -128,7 +127,9 @@ Desde la perspectiva del balance de datos, las características USE (Subfigura \
         \caption{Característica VM. Leyenda: \textbf{0}: Ausente, \textbf{1}: En Formación, \textbf{2}: Formado, Sin Excrecencias, \textbf{3}: Formado, Pocas Excrecencias, \textbf{4}: Formado, Muchas Excrecencias.}
         \label{fig4:todd_chars__vm}
     \end{subfigure}
-    \caption[Distribución de las características de Todd]{Distribución de las etiquetas para cada característica de Todd en el conjunto de datos. Para cada característica, se muestran las frecuencias de las diferentes clases observadas en los datos disponibles. Esta visualización permite apreciar el grado de desbalance entre clases y la variabilidad presente en cada rasgo morfológico.}
+    \caption[Distribución de las características de Todd (3 de 3)]{Distribución de las etiquetas para cada característica de Todd en el conjunto de datos (3 de 3). Para cada característica, se muestran las frecuencias de las diferentes clases observadas en los datos disponibles. Esta visualización permite apreciar el grado de desbalance entre clases y la variabilidad presente en cada rasgo morfológico.}
+    \label{fig4:todd_chars_3}
+
 
 \end{figure}
 
@@ -192,7 +193,7 @@ Cabe destacar que, en el caso de la característica DP (Subfigura \ref{fig4:todd
 
 Las 970 mallas presentan una resolución media de 994,601 triángulos, con un mínimo de 329,438 y un máximo de 1,688,348 triángulos. Para poder aplicar el método ExMeshCNN, descrito en la Sección \ref{section4:methods}, es necesario que todas las mallas tengan una resolución uniforme. Una opción inicial considerada fue remuestrear las mallas al número medio de triángulos; sin embargo, este tamaño resulta inviable computacionalmente con el hardware disponible.
 
-Por esta razón, se ha procedido a reducir la resolución de las mallas a 100,000, 50,000 y 25,000 triángulos, empleando las técnicas detalladas en la Sección \ref{section4:data_reduction}. Tal como se demuestra en los experimentos descritos en la Sección \ref{section5:experiment_edge_collapse}, esta reducción no compromete significativamente la fidelidad de la superficie original. La variación entre las superficies del modelo original y las versiones reducidas es mínima, lo que permite afirmar que las mallas simplificadas conservan en mayor o menor grado parte de la información morfológica relevante para los experimentos.
+Por esta razón, se ha procedido a reducir la resolución de las mallas a 100,000, 50,000 y 25,000 triángulos, utilizando las técnicas descritas en la Sección \ref{section4:data_reduction}. La elección de 100,000 triángulos responde al objetivo de mantener la mayor fidelidad geométrica posible sin que ello comprometa la viabilidad computacional de los entrenamientos. Tal como se demuestra en los experimentos de la Sección \ref{section5:experiment_edge_collapse}, esta reducción no afecta significativamente la fidelidad topológica de las mallas originales. Las resoluciones de 50,000 y 25,000 triángulos se han incluido para analizar cómo afectan reducciones más agresivas al rendimiento del modelo. La comparación mediante la distancia de Hausdorff indica que las diferencias geométricas respecto al modelo original son, en general, mínimas. Esto sugiere que incluso con resoluciones inferiores, las mallas conservan en buena medida la información morfológica necesaria para los experimentos, haciendo viable su uso en tareas de clasificación sin una pérdida drástica de calidad.
 
 Adicionalmente, el método requiere que las mallas posean una geometría y topología correctas. Dado que estas mallas provienen de escaneos de objetos anatómicos reales, es esperable que algunas presenten incompletitud o defectos estructurales, lo que impide su uso directo con ExMeshCNN. Para solventar estos problemas, se aplicaron técnicas de reparación y sellado descritas en la Sección \ref{section4:data_repair}, con el objetivo de restaurar la geometría y garantizar la integridad topológica de cada modelo antes de ser procesado por la red neuronal.
 

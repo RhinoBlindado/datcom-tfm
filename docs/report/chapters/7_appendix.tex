@@ -1,1 +1,299 @@
 \appendix
+\chapter{Arquitectura e hiperparámetros de los mejores modelos}
+\label{best_model_arch}
+Para facilitar la comprensión, se incluye una tabla resumen que detalla los datos de entrada utilizados por cada modelo, diferenciando la arquitectura y los otros hiperparámetros seleccionados. La Tabla \ref{table5:sample_table} muestra un ejemplo del formato empleado, junto con la explicación de cada una de sus columnas y filas.
+
+Los mejores modelos obtenidos presentan configuraciones arquitectónicas notablemente diversas entre sí, lo que indica que la búsqueda automática ha sido efectiva para adaptar la estructura de las redes a los requerimientos específicos de cada característica. Pese a esta diversidad, se observa una tendencia general hacia redes con mayor profundidad en las capas convolucionales, como en los casos de AF (Tabla \ref{table5:AF_best_model}), BN (Tabla \ref{table5:BN_best_model}), IP (Tabla \ref{table5:IP_best_model}), LSE (Tabla \ref{table5:LSE_best_model}), VB (Tabla \ref{table5:VB_best_model}) y VM (Tabla \ref{table5:VM_best_model}), donde se utilizaron 4 o más capas convolucionales, y algunas, como AF, BN y VM, alcanzaron hasta 6 capas. Esto sugiere que estas características pueden requerir una mayor capacidad de representación para capturar los patrones complejos presentes en las mallas.
+
+En cuanto al número de filtros por capa, se aprecia un patrón común de expansión y contracción a lo largo de la red, posiblemente reflejando una estructura tipo cuello de botella. USE (Tabla \ref{table5:USE_best_model}) junto con DM y DP (Tabla \ref{table5:DM_DP_best_model}) son las excepciones donde este patrón no se manifiesta claramente. Las capas totalmente conectadas, en cambio, presentan mayor variabilidad en cuanto al número de neuronas y estructura, sin un patrón claro, lo que indica una fuerte dependencia del diseño respecto a la tarea específica.
+
+En términos de hiperparámetros ajenos a la estructura, se detecta un uso consistente del optimizador Adam y de la inicialización Kaiming en la mayoría de los modelos exitosos, lo que sugiere que estas configuraciones son adecuadas para el entrenamiento de redes basadas en ExMeshCNN. En cuanto a las funciones de pérdida, predomina el uso de WCE, seguida por CBL, lo cual es coherente con la naturaleza desbalanceada del problema y valida su idoneidad para este tipo de clasificación. Por parte del \textit{Learning Rate}, se observa que es otra variable muy dependiente de la característica, pero es notable que los valores rondan $1\times10^{-3}$ y $1\times10^{-4}$ los cuales son rangos aceptables para los optimizadores, con LSE siendo la única características cuyo mejor modelo usó valores de $1\times10^{-5}$. 
+
+\begin{figure}[h]
+    \begin{minipage}{\linewidth}
+        \centering
+        \begin{tabular}{c|cc|c|c|}
+            \hline
+            \rowcolor[HTML]{D33333} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & {\color[HTML]{FFFFFF} \textbf{CONV}} & {\color[HTML]{FFFFFF} \textbf{FN}} \\ \cline{2-5} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} &  & \textbf{(h)} \\ \cline{1-3} \cline{5-5} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & (c) &  &  \\ \cline{1-1}
+            \multicolumn{1}{|c|}{(a)} & OUT & (d) &  &  \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} &  &  \\ \cline{1-3}
+            \multicolumn{1}{|c|}{(b)} & MID & (e) &  &  \\ \cline{1-1}
+             & OUT & (f) & \multirow{-6}{*}{(g)} & \multirow{-5}{*}{(i)} \\ \cline{2-5} 
+        \end{tabular}
+    
+        \vspace{1em}
+    
+        \begin{tabular}{|
+            >{\columncolor[HTML]{D33333}}c |c|c|}
+            \hline
+            {\color[HTML]{FFFFFF} \textbf{LR}} & (j) & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & (k) & \textbf{(h)} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{INIT}} & (l) & (n) \\ \hline
+        \end{tabular}
+        \captionof{table}[Formato de tabla usado para resumir los datos de entrada, la estructura de la red y los hiperparámetros de los mejores modelos]{Formato utilizado para resumir los datos de entrada, la estructura de la red y los hiperparámetros empleados en cada uno de los modelos. La tabla superior detalla las configuraciones relativas a los datos y la arquitectura, mientras que la tabla inferior resume los hiperparámetros principales. En la tabla superior, la columna \textbf{DATA} especifica las características de los datos de entrada: \textbf{RES} indica la resolución de la malla (a) y \textbf{TYPE} su tipo (b). La columna \textbf{DECR} incluye la configuración de los descriptores utilizados: \textbf{GEOD} para el descriptor geodésico y \textbf{GEOM} para el descriptor geométrico; MID y OUT indican respectivamente la densidad de sus capas intermedias (c, e) y de salida (d, f). La columna \textbf{CONV} muestra la arquitectura de las capas convolucionales: número de capas y densidad de cada una (g). La columna \textbf{FN} presenta en (h) las características morfológicas predichas y en (i) la configuración de la parte densa del modelo de cada una. En la tabla inferior, \textbf{LR} indica la tasa de aprendizaje (j), \textbf{OPTIMIZER} el optimizador empleado (k), \textbf{INIT} el tipo de inicialización de pesos (l), y \textbf{LOSS} la función de pérdida (n) asociada a la característica correspondiente (h).}
+        \label{table5:sample_table}
+    \end{minipage}
+\end{figure}
+
+%% AF
+\begin{figure}[htbp]
+    \centering
+    % --- Top: Table ---
+    \begin{minipage}{\linewidth}
+        \centering
+        \begin{tabular}{c|cc|c|cccc|}
+            \hline
+            \rowcolor[HTML]{D33333} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & {\color[HTML]{FFFFFF} \textbf{CONV}} & \multicolumn{4}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \cline{2-8} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & 64 & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{DM}} & \multicolumn{1}{c|}{\textbf{LSE}} & \textbf{USE} \\ \cline{1-3} \cline{5-8} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 16 & 32 & \multicolumn{1}{c|}{256} & \multicolumn{1}{c|}{8} & \multicolumn{1}{c|}{16} & 32 \\ \cline{1-1} \cline{5-6}
+            \multicolumn{1}{|c|}{50K} & OUT & 128 & 32 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{8} & 32 \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & 128 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{64} & 256 \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\textit{Cut}} & MID & 128 & 256 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{128} & 64 \\ \cline{1-1} \cline{7-7}
+             & OUT & 256 & 32 &  &  & \multicolumn{1}{c|}{} & 16 \\ \cline{2-4} \cline{8-8} 
+        \end{tabular}
+
+        \vspace{1em}
+
+        \begin{tabular}{|
+            >{\columncolor[HTML]{D33333}}c |c|
+            >{\columncolor[HTML]{FFCCC9}}c ccc|}
+            \hline
+            {\color[HTML]{FFFFFF} \textbf{LR}} & $3.4261 \times 10^{-4}$ & \multicolumn{4}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}}} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & AdamW & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{DM}} & \multicolumn{1}{c|}{\textbf{LSE}} & \textbf{USE} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{INIT}} & N/A & \multicolumn{1}{c|}{WCE} & \multicolumn{1}{c|}{WCE} & \multicolumn{1}{c|}{CE} & WCE \\ \hline
+        \end{tabular}
+        \captionof{table}[Característica AF: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.]{Característica \textbf{AF}: Configuración de los datos de entrada, arquitectura de red y otros hiperparámetros del mejor modelo. El mejor modelo hace uso de mallas recortadas (\textit{Cut}) a 50K triángulos de resolución, estructura multietiqueta con AF y sus tres características más asociadas con capas densas variables entre sí. Véase \ref{table5:sample_table} para una descripción de cada elemento de la tabla. Funciones de pérdida: CE: \textit{Cross-Entropy}; WCE: \textit{Weighted Cross-Entropy}.}
+        \label{table5:AF_best_model}
+    \end{minipage}
+\end{figure}
+
+%% BN
+\begin{figure}[htbp]
+    \centering
+    % --- Top: Table ---
+    \begin{minipage}{\linewidth}
+        \centering
+        \begin{tabular}{c|cc|c|cccc}
+            \hline
+            \rowcolor[HTML]{D33333} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & {\color[HTML]{FFFFFF} \textbf{CONV}} & \multicolumn{4}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \cline{2-8} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & 256 & \multicolumn{1}{c|}{\cellcolor[HTML]{FFFFFF}\textbf{AF}} & \multicolumn{1}{c|}{\textbf{BN}} & \multicolumn{1}{c|}{\textbf{DP}} & \multicolumn{1}{c|}{\textbf{LSE}} \\ \cline{1-3} \cline{5-8} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 256 & 128 & \multicolumn{1}{c|}{\cellcolor[HTML]{FFFFFF}128} & \multicolumn{1}{c|}{32} & \multicolumn{1}{c|}{32} & \multicolumn{1}{c|}{32} \\ \cline{1-1} \cline{5-5}
+            \multicolumn{1}{|c|}{25K} & OUT & 16 & 256 & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{128} \\ \cline{1-3} \cline{6-6}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & 64 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{256} & \multicolumn{1}{c|}{128} \\ \cline{1-3} \cline{8-8} 
+            \multicolumn{1}{|c|}{\textit{Cut}} & MID & 32 & 16 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{16} &  \\ \cline{1-1}
+             & OUT & 16 & 64 &  & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{256} &  \\ \cline{2-4} \cline{7-7}
+        \end{tabular}
+
+        \vspace{1em}
+
+        \begin{tabular}{|
+            >{\columncolor[HTML]{D33333}}c |c|c
+            >{\columncolor[HTML]{FFCCC9}}c cc|}
+            \hline
+            {\color[HTML]{FFFFFF} \textbf{LR}} & $5.0965 \times 10^{-3}$ & \multicolumn{4}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}}} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Radam & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{BN}} & \multicolumn{1}{c|}{\textbf{DP}} & \textbf{LSE} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & \multicolumn{1}{c|}{FL} & \multicolumn{1}{c|}{CBL} & \multicolumn{1}{c|}{CBL} & CBL \\ \hline
+        \end{tabular}
+        \captionof{table}[Característica BN: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.]{Característica \textbf{BN}: Configuración de los datos de entrada, arquitectura de red y otros hiperparámetros del mejor modelo. El mejor modelo hace uso de mallas recortadas (\textit{Cut}) a 25K triángulos de resolución, estructura multietiqueta con BN y sus tres características más asociadas con capas densas variables entre sí. Véase \ref{table5:sample_table} para una descripción de cada elemento de la tabla. Funciones de pérdida: FL: \textit{Focal Loss}; CBL: \textit{Class-Balanced Loss}.}
+        \label{table5:BN_best_model}
+    \end{minipage}
+\end{figure}
+
+%% DM / DP
+\begin{figure}[htbp]
+    \centering
+    % --- Top: Table ---
+    \begin{minipage}{\linewidth}
+        \centering
+        \begin{tabular}{c|cc|cc}
+            \hline
+            \rowcolor[HTML]{D33333} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{CONV}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \cline{2-5} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{\textbf{Todos}} \\ \cline{1-3} \cline{5-5} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 16 & \multicolumn{1}{c|}{128} & \multicolumn{1}{c|}{32} \\ \cline{1-1} \cline{5-5} 
+            \multicolumn{1}{|c|}{100K} & OUT & 16 & \multicolumn{1}{c|}{128} &  \\ \cline{1-4}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} &  &  \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\textit{Cut}} & MID & 16 &  &  \\ \cline{1-1}
+             & OUT & 256 &  &  \\ \cline{2-3}
+        \end{tabular}
+
+        \vspace{1em}
+
+        \begin{tabular}{cc|ccccc}
+        \hline
+        \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LR}}} & $1.4861 \times 10^{-4}$ & \multicolumn{5}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}}} \\ \hline
+        \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{OPTIMIZER}}} & Adam & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{BN}} & \multicolumn{1}{c|}{\textbf{DM}} & \multicolumn{1}{c|}{\textbf{DP}} & \multicolumn{1}{c|}{\textbf{IP}} \\ \hline
+        \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{INIT}}} & Kaiming & \multicolumn{1}{c|}{WCE} & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{WCE} \\ \hline
+        &  & \multicolumn{1}{c|}{\textbf{LSE}} & \multicolumn{1}{c|}{\textbf{USE}} & \multicolumn{1}{c|}{\textbf{VB}} & \multicolumn{1}{c|}{\textbf{VM}} &  \\ \cline{3-6}
+        &  & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{WCE} & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{CE} &  \\ \cline{3-6}
+        \end{tabular}
+        \captionof{table}[Característica DM y DP: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.]{Características \textbf{DM} y \textbf{DP}: Configuración de los datos de entrada, arquitectura de red y otros hiperparámetros del mejor modelo. El mejor modelo hace uso de mallas recortadas (\textit{Cut}) a 100K triángulos de resolución, estructura multietiqueta utilizando todas las características con capas densas idénticas entre sí. Véase \ref{table5:sample_table} para una descripción de cada elemento de la tabla. Funciones de pérdida: CE: \textit{Cross-Entropy}; WCE: \textit{Weighted Cross-Entropy}.}
+        \label{table5:DM_DP_best_model}
+    \end{minipage}
+\end{figure}
+
+%% IP
+\begin{figure}[htbp]
+    \centering
+    % --- Top: Table ---
+    \begin{minipage}{\linewidth}
+        \centering
+        \begin{tabular}{c|cc|cc}
+            \hline
+            \rowcolor[HTML]{D33333} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{CONV}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \cline{2-5} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{\textbf{IP}} \\ \cline{1-3} \cline{5-5} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 256 & \multicolumn{1}{c|}{128} & \multicolumn{1}{c|}{256} \\ \cline{1-1} \cline{5-5} 
+            \multicolumn{1}{|c|}{100K} & OUT & 32 & \multicolumn{1}{c|}{64} &  \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & \multicolumn{1}{c|}{64} &  \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\textit{Cut}} & MID & 16 & \multicolumn{1}{c|}{32} &  \\ \cline{1-1} \cline{4-4}
+             & OUT & 256 &  &  \\ \cline{2-3}
+        \end{tabular}
+
+        \vspace{1em}
+
+        \begin{tabular}{|
+            >{\columncolor[HTML]{D33333}}c |c|c|}
+            \hline
+            {\color[HTML]{FFFFFF} \textbf{LR}} & $1.2990 \times 10^{-3}$ & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Radam & \textbf{IP} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & WCE \\ \hline
+        \end{tabular}
+        \captionof{table}[Característica IP: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.]{Característica \textbf{IP}: Configuración de los datos de entrada, arquitectura de red y otros hiperparámetros del mejor modelo. El mejor modelo hace uso de mallas recortadas (\textit{Cut}) a 100K triángulos de resolución, estructura de etiqueta única. Véase \ref{table5:sample_table} para una descripción de cada elemento de la tabla. Funciones de pérdida: WCE: \textit{Weighted Cross-Entropy}.}
+        \label{table5:IP_best_model}
+    \end{minipage}
+\end{figure}
+
+%% LSE
+\begin{figure}[htbp]
+    \centering
+    % --- Top: Table ---
+    \begin{minipage}{\linewidth}
+        \centering
+        \begin{tabular}{c|cc|cc}
+            \hline
+            \rowcolor[HTML]{D33333} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{CONV}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \cline{2-5} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & \multicolumn{1}{c|}{256} & \multicolumn{1}{c|}{\textbf{LSE}} \\ \cline{1-3} \cline{5-5} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 32 & \multicolumn{1}{c|}{16} & \multicolumn{1}{c|}{8} \\ \cline{1-1}
+            \multicolumn{1}{|c|}{100K} & OUT & 64 & \multicolumn{1}{c|}{64} & \multicolumn{1}{c|}{16} \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & \multicolumn{1}{c|}{16} & \multicolumn{1}{c|}{256} \\ \cline{1-4}
+            \multicolumn{1}{|c|}{\textit{Full}} & MID & 256 & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{128} \\ \cline{1-1} \cline{5-5} 
+             & OUT & 128 &  &  \\ \cline{2-3}
+    \end{tabular}
+
+        \vspace{1em}
+
+        \begin{tabular}{|
+            >{\columncolor[HTML]{D33333}}c |c|c|}
+            \hline
+            {\color[HTML]{FFFFFF} \textbf{LR}} & $8.4586 \times 10^{-5}$ & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Adam & \textbf{LSE} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{INIT}} & Orthogonal & WCE \\ \hline
+        \end{tabular}
+        \captionof{table}[Característica LSE: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.]{Característica \textbf{LSE}: Configuración de los datos de entrada, arquitectura de red y otros hiperparámetros del mejor modelo. El mejor modelo hace uso de mallas completas (\textit{Full}) a 100K triángulos de resolución, estructura de etiqueta única. Véase \ref{table5:sample_table} para una descripción de cada elemento de la tabla. Funciones de pérdida: WCE: \textit{Weighted Cross-Entropy}.}
+        \label{table5:LSE_best_model}
+    \end{minipage}
+\end{figure}
+
+%% USE
+\begin{figure}[htbp]
+    \centering
+    % --- Top: Table ---
+    \begin{minipage}{\linewidth}
+        \centering
+        \begin{tabular}{c|cc|cc}
+            \hline
+            \rowcolor[HTML]{D33333} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{CONV}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \cline{2-5} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & \multicolumn{1}{c|}{32} & \multicolumn{1}{c|}{\textbf{Todos}} \\ \cline{1-3} \cline{5-5} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 128 & \multicolumn{1}{c|}{32} & \multicolumn{1}{c|}{16} \\ \cline{1-1} \cline{4-5} 
+            \multicolumn{1}{|c|}{25K} & OUT & 256 &  &  \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} &  &  \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\textit{Cut}} & MID & 16 &  &  \\ \cline{1-1}
+             & OUT & 32 &  &  \\ \cline{2-3}
+        \end{tabular}
+
+        \vspace{1em}
+
+        \begin{tabular}{|
+            >{\columncolor[HTML]{D33333}}c |c|ccc
+            >{\columncolor[HTML]{FFCCC9}}c c|}
+            \hline
+            {\color[HTML]{FFFFFF} \textbf{LR}} & $1.3456 \times 10^{-3}$ & \multicolumn{5}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}}} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Adam & \multicolumn{1}{c|}{\textbf{AF}} & \multicolumn{1}{c|}{\textbf{DM}} & \multicolumn{1}{c|}{\textbf{LSE}} & \multicolumn{1}{c|}{\textbf{USE}} & \textbf{IP} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & \multicolumn{1}{c|}{CBL} & \multicolumn{1}{c|}{CE} & \multicolumn{1}{c|}{CBL} & \multicolumn{1}{c|}{FL} & WCE \\ \hline
+        \end{tabular}
+        \captionof{table}[Característica USE: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.]{Característica \textbf{USE}: Configuración de los datos de entrada, arquitectura de red y otros hiperparámetros del mejor modelo. El mejor modelo hace uso de mallas recortadas (\textit{Cut}) a 25K triángulos de resolución, estructura multietiqueta con USE y sus tres características más asociadas con capas densas idénticas entre sí. Véase \ref{table5:sample_table} para una descripción de cada elemento de la tabla. Funciones de pérdida: CE: \textit{Cross-Entropy}; WCE: \textit{Weighted Cross-Entropy}; FL: \textit{Focal Loss}; CBL: \textit{Class-Balanced Loss}.}
+        \label{table5:USE_best_model}
+    \end{minipage}
+\end{figure}
+
+%% VB
+\begin{figure}[htbp]
+    \centering
+    % --- Top: Table ---
+    \begin{minipage}{\linewidth}
+        \centering
+        \begin{tabular}{c|cc|c|c|}
+            \hline
+            \rowcolor[HTML]{D33333} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & {\color[HTML]{FFFFFF} \textbf{CONV}} & {\color[HTML]{FFFFFF} \textbf{FN}} \\ \cline{2-5} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & 64 & \textbf{VB} \\ \cline{1-3} \cline{5-5} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 128 & 256 & 8 \\ \cline{1-1}
+            \multicolumn{1}{|c|}{50K} & OUT & 256 & 16 & 256 \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & 16 & 8 \\ \cline{1-4}
+            \multicolumn{1}{|c|}{\textit{Cut}} & MID & 256 &  & 128 \\ \cline{1-1}
+             & OUT & 32 &  & 32 \\ \cline{2-3} \cline{5-5} 
+        \end{tabular}
+
+        \vspace{1em}
+
+        \begin{tabular}{|
+            >{\columncolor[HTML]{D33333}}c |c|c|}
+            \hline
+            {\color[HTML]{FFFFFF} \textbf{LR}} & $7.9839  \times 10^{-3}$ & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Adam & \textbf{VB} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & CE \\ \hline
+        \end{tabular}
+        \captionof{table}[Característica VB: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.]{Característica \textbf{VB}: Configuración de los datos de entrada, arquitectura de red y otros hiperparámetros del mejor modelo. El mejor modelo hace uso de mallas recortadas (\textit{Cut}) a 50K triángulos de resolución, estructura de etiqueta única. Véase \ref{table5:sample_table} para una descripción de cada elemento de la tabla. Funciones de pérdida: CE: \textit{Cross-Entropy}.}
+        \label{table5:VB_best_model}
+    \end{minipage}
+\end{figure}
+
+%% VM
+\begin{figure}[htbp]
+    \centering
+    % --- Top: Table ---
+    \begin{minipage}{\linewidth}
+        \centering
+        \begin{tabular}{c|cc|c|c}
+            \hline
+            \rowcolor[HTML]{D33333} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} }} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DECR}}} & {\color[HTML]{FFFFFF} \textbf{CONV}} & \multicolumn{1}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{FN}}} \\ \cline{2-5} 
+            \multicolumn{1}{|c|}{\multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{DATA}}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOD}}} & 256 & \multicolumn{1}{c|}{\textbf{VM}} \\ \cline{1-3} \cline{5-5} 
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{RES}}} & MID & 32 & 256 & \multicolumn{1}{c|}{256} \\ \cline{1-1}
+            \multicolumn{1}{|c|}{50K} & OUT & 32 & 16 & \multicolumn{1}{c|}{256} \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{TYPE}}} & \multicolumn{2}{c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{GEOM}}} & 16 & \multicolumn{1}{c|}{8} \\ \cline{1-3}
+            \multicolumn{1}{|c|}{\textit{Cut}} & MID & 64 & 16 & \multicolumn{1}{c|}{32} \\ \cline{1-1} \cline{5-5} 
+             & OUT & 64 & 64 &  \\ \cline{2-4}
+        \end{tabular}
+
+        \vspace{1em}
+        
+        \begin{tabular}{|
+            >{\columncolor[HTML]{D33333}}c |c|c|}
+            \hline
+            {\color[HTML]{FFFFFF} \textbf{LR}} & $2.4282  \times 10^{-4}$ & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{LOSS}} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{OPTIMIZER}} & Adam & \textbf{VM} \\ \hline
+            {\color[HTML]{FFFFFF} \textbf{INIT}} & Kaiming & FL \\ \hline
+        \end{tabular}
+        \captionof{table}[Característica VM: Datos de entrada, estructura de red e hiperparámetros del mejor modelo.]{Característica \textbf{VM}: Configuración de los datos de entrada, arquitectura de red y otros hiperparámetros del mejor modelo. El mejor modelo hace uso de mallas recortadas (\textit{Cut}) a 50K triángulos de resolución, estructura de etiqueta única. Véase \ref{table5:sample_table} para una descripción de cada elemento de la tabla. Funciones de pérdida: FL: \textit{Focal Loss}.}
+        \label{table5:VM_best_model}
+    \end{minipage}
+\end{figure}

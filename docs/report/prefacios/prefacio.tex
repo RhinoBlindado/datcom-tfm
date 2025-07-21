@@ -29,9 +29,10 @@ Este trabajo aborda dicha problemática mediante la automatización del análisi
 
 Se dispone de un total de 970 mallas 3D de sínfisis del pubis. Para su preparación, se diseñó un pipeline de preprocesado que incluye limpieza, remuestreo, reparación iterativa y conversión a formatos optimizados, garantizando mallas limpias y válidas para el modelo. Se evaluaron tres resoluciones de malla (25K, 50K y 100K triángulos), y dos configuraciones espaciales: la malla completa del hueso y una versión recortada centrada en la zona anatómicamente relevante.
 
-Los resultados muestran que ExMeshCNN es capaz de aprender patrones morfológicos relevantes incluso en condiciones de alto desbalance. Se observa una concordancia parcial entre los patrones detectados por los modelos y el comportamiento de los expertos humanos, reforzada además por las visualizaciones obtenidas mediante Grad-CAM, que muestran regiones diferenciadas de atención para cada característica. Las dos mejores características alcanzan un F1 Macro de 0.92 y 0.86 respectivamente, con un valor medio de 0.67 y un 80.17\% de precisión media, con cuatro características superando el 90\% en la métrica.
+Los resultados muestran que los modelos de aprendizaje profundo basados en el \textit{framework} de ExMeshCNN son capaces de aprender patrones morfológicos relevantes incluso en condiciones de alto desbalance. Se observa una concordancia parcial entre los patrones detectados por los modelos y el comportamiento de los expertos humanos, reforzada además por las visualizaciones obtenidas mediante Grad-CAM, que muestran regiones diferenciadas de atención para cada característica. Las dos mejores características alcanzan un F1 Macro de 0.92 y 0.86 respectivamente, con un valor medio de 0.67 y un 80.17\% de precisión media, con cuatro características superando el 90\% en la métrica.
 
-Este trabajo demuestra la viabilidad del uso de modelos de aprendizaje profundo para el análisis automatizado de estructuras óseas complejas y sienta las bases para futuras mejoras metodológicas y aplicaciones prácticas en el ámbito forense. 
+Este trabajo demuestra la viabilidad del uso de modelos de aprendizaje profundo para el análisis automatizado de estructuras óseas complejas y sienta las bases para futuras mejoras metodológicas y aplicaciones prácticas en el ámbito forense.
+
 %Asimismo, este trabajo abre nuevas líneas de investigación como por ejemplo la posibilidad de una colaboración más estrecha con expertos en antropología forense para validar las regiones anatómicas relevantes detectadas por los modelos y explorar nuevas posibles áreas de interés.
 
 \newpage
@@ -51,7 +52,15 @@ Este trabajo demuestra la viabilidad del uso de modelos de aprendizaje profundo 
 \vspace{0.7cm}
 \noindent{\textbf{Abstract}} \\
 
-\textit{Cuando esté totalmente revisado en castellano añado la traducción}
+Age estimation is one of the most relevant tasks in forensic anthropology, as it constitutes an essential component of the biological profile and a crucial step for the identification of living or deceased individuals, especially when other methods such as DNA or fingerprinting are not viable. One of the most widely used methods, from which numerous variants have emerged, is the one proposed by Thomas Wingate Todd in 1921. It is based on the visual analysis of the pubic symphysis surface to identify nine morphological features associated with aging. However, this process is highly subjective, reliant on expert judgment, and lacks automation and objectivity.
+
+This work addresses that issue by automating the morphological analysis of the pubic symphysis using deep learning techniques applied to high-resolution 3D meshes. A novel approach is proposed based on the ExMeshCNN framework, a convolutional neural network architecture specifically designed for 3D mesh data. The main objective is the automatic prediction of the nine morphological features defined by Todd's method. Since there are no pre-existing architectures trained for this task, neural architecture search is employed, conducting over 10,000 training runs with different configurations. In addition to traditional single-label classification, multi-label classification is also explored to leverage potential dependencies between features and improve predictive performance.
+
+A total of 970 3D meshes of the pubic symphysis are available. For their preparation, a preprocessing pipeline was designed, including cleaning, resampling, iterative repair, and conversion to optimized formats, ensuring clean and valid meshes for the model. Three mesh resolutions were evaluated (25K, 50K, and 100K triangles), along with two spatial configurations: the complete bone mesh and a cropped version focused on the anatomically relevant area.
+
+The results show that the deep learning models using the ExMeshCNN framework are capable of learning relevant morphological patterns even under highly imbalanced conditions. A partial agreement is observed between the patterns detected by the models and the behavior of human experts, further supported by Grad-CAM visualizations that highlight distinct attention regions for each feature. The two best-performing features achieve a Macro F1 score of 0.92 and 0.86, respectively, with an average of 0.67 and a mean accuracy of 80.17\%, with four features surpassing 90\%.
+
+This work demonstrates the feasibility of using deep learning models for the automated analysis of complex bone structures and lays the groundwork for future methodological improvements and practical applications in the forensic field.
 \chapter*{}
 \thispagestyle{empty}
 

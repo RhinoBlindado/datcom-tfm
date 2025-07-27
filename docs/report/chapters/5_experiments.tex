@@ -20,7 +20,7 @@ El entorno local consistió en un ordenador portátil Asus FX505DT equipado con 
 El entorno remoto correspondió al clúster de servidores GPU de la Universidad de Granada, denominado NGPU, ubicado en el CPD Santa Lucía. En particular, se utilizó preferentemente el nodo denominado Talos, que dispone de dos procesadores AMD EPYC 7742, 1 TB de memoria RAM y 8 GPUs Nvidia Tesla A100, cada una con 40 GB de VRAM. En este entorno se ejecutaron la totalidad de los experimentos a gran escala, gestionados mediante acceso remoto vía SSH y utilizando el sistema de planificación de tareas SLURM.
 
 \subsection{Preprocesamiento de datos}
-
+\label{data_preprocessing}
 \begin{figure}[h]
     \includegraphics[width=\linewidth]{figures/4_materials-methods/mesh_preparation_pipeline.pdf}
     \caption[Diagrama resumen del preprocesado de datos]{Diagrama resumen del preprocesado de datos. Las mallas 3D escaneadas son primero limpiadas (a): se eliminan los materiales, geometría errónea y disconexa. Las mallas resultantes se remuestrean (b) para sellar los huecos existentes y obtener una geometría y topología uniforme. Este proceso puede reintroducir irregularidades, por lo que posteriormente se realiza una reparación adicional (c). A continuación, la malla puede recortarse (d) hasta un porcentaje de su tamaño original quitando partes no relevantes de la malla antes de ser simplificada (e) a un número determinado de triángulos. Finalmente, se convierten (f) al formato compatible con ExMeshCNN.}
@@ -72,17 +72,18 @@ Debido a la posible reintroducción de geometría \textit{non-manifold} tras el 
 Se ha comprobado que, para los datos utilizados, este procedimiento converge tras un número finito de iteraciones, generando mallas completamente selladas y con una topología válida para su posterior procesamiento.
 
 \subsubsection{Recorte de mallas}
-Obsérvese en la Figura \ref{mesh_preparation_pipeline} que existe una decisión entre los pasos (c) y (d) o (e) sobre recortar primero la malla antes de realizar la reducción de triángulos.
-
-Se ha añadido este paso debido a que la reducción uniforme afecta por igual a todas las regiones de la malla, incluyendo zonas anatómicamente poco relevantes para el análisis forense, como la parte posterior y laterales del hueso respecto con la cara articular. Para maximizar la preservación de detalles en dicha cara articular siendo la región de interés, se implementó este proceso. Este consiste en realizar un recorte anatómico antes de la reducción de resolución, eliminando aquellas partes que los expertos forenses no consideran durante el análisis. Este doble enfoque permite disponer tanto de versiones completas como de versiones enfocadas en la cara articular, facilitando comparativas experimentales entre ambas modalidades de entrada.
-
-El procedimiento, también automatizado mediante Blender, consiste en generar un cubo con las dimensiones de la malla (\textit{bounding box}) y reducirlo proporcionalmente para definir una región de interés. A continuación, se aplica un modificador booleano para recortar las partes externas no deseadas, lo cual es posible gracias a que todas las mallas están previamente alineadas en la misma orientación. Una vez realizado el recorte que también genera una malla sellada, se procede a aplicar la reducción de resolución. Se puede observar un ejemplo de una malla antes y después de haber sido recortada en la Figura \ref{bbox_cut_sample}.
 
 \begin{figure}[htbp]
     \includegraphics[width=\linewidth]{figures/4_materials-methods/bbox_cut_sample.png}
     \caption[Ejemplo de malla antes y después del recorte]{Ejemplo de malla antes y después del recorte. En (a) se observa la malla obtenida por el paso (c) vista de frente a la cara articular y por detrás de la misma. En (b) se observa la misma malla recortada, nótese la cantidad de geometría que se ha removido y que el recorte también genera mallas selladas.}
     \label{bbox_cut_sample}
 \end{figure}
+
+Obsérvese en la Figura \ref{mesh_preparation_pipeline} que existe una decisión entre los pasos (c) y (d) o (e) sobre recortar primero la malla antes de realizar la reducción de triángulos.
+
+Se ha añadido este paso debido a que la reducción uniforme afecta por igual a todas las regiones de la malla, incluyendo zonas anatómicamente poco relevantes para el análisis forense, como la parte posterior y laterales del hueso respecto con la cara articular. Para maximizar la preservación de detalles en dicha cara articular siendo la región de interés, se implementó este proceso. Este consiste en realizar un recorte anatómico antes de la reducción de resolución, eliminando aquellas partes que los expertos forenses no consideran durante el análisis. Este doble enfoque permite disponer tanto de versiones completas como de versiones enfocadas en la cara articular, facilitando comparativas experimentales entre ambas modalidades de entrada.
+
+El procedimiento, también automatizado mediante Blender, consiste en generar un cubo con las dimensiones de la malla (\textit{bounding box}) y reducirlo proporcionalmente para definir una región de interés. A continuación, se aplica un modificador booleano para recortar las partes externas no deseadas, lo cual es posible gracias a que todas las mallas están previamente alineadas en la misma orientación. Una vez realizado el recorte que también genera una malla sellada, se procede a aplicar la reducción de resolución. Se puede observar un ejemplo de una malla antes y después de haber sido recortada en la Figura \ref{bbox_cut_sample}.
 
 \subsubsection{Reducción de resolución}
 \label{section4:data_reduction}
@@ -95,6 +96,7 @@ Esta conversión no altera la estructura de la malla, pero permite optimizar el 
 
 Una vez realizada esta transformación, las mallas en formato NPY están listas para ser utilizadas directamente por ExMeshCNN.
 
+\FloatBarrier
 \subsection{Búsqueda de Arquitectura Neuronal}
 \label{section4:nas}
 El procesamiento de mallas 3D mediante DL, como se ha comentado, constituye un campo aún en etapa experimental y en rápida evolución. Debido a su novedad, no existe un consenso establecido sobre cómo tratar estos datos de manera óptima. Como resultado, no se dispone de modelos preentrenados sobre mallas 3D con las características específicas requeridas en este trabajo, particularmente en el contexto de ExMeshCNN y con la resolución necesaria para abordar el presente problema.
@@ -322,7 +324,7 @@ El tiempo requerido por cada ejecución varió en función de la resolución de 
     VB & 0.52 & 0.53 & 50K & \textit{Cut} \\
     VM & 0.70 & 0.67 & 50K & \textit{Cut} \\ \hline
     \end{tabular}
-    \caption[Cuadro resumen de los mejores modelos obtenidos para cada característica]{Cuadro resumen de los mejores modelos obtenidos para cada característica en el conjunto de datos de test. Se observan en las columnas \say{Test Acc} y \say{Test F1} los valores obtenidos para las métricas de \textit{accuracy} y F1 Macro respectivamente.}
+    \caption[Cuadro resumen de los mejores modelos obtenidos para cada característica]{Cuadro resumen de los mejores modelos obtenidos para cada característica en el conjunto de datos de test. Las columnas \say{Test Acc} y \say{Test F1} indican los valores obtenidos para las métricas de \textit{accuracy} y F1 Macro respectivamente. La columna \say{Tipo} indica si se ha utilizado la malla completa (\textit{Full}) o la versión recortada (\textit{Cut}), véase Figura \ref{bbox_cut_sample}.}
     \label{table5:single_tag__results}
 \end{table}
 
@@ -362,7 +364,7 @@ En los experimentos con cuatro características, los tiempos se redujeron consid
         \rowcolor[HTML]{D33333} 
         \multicolumn{2}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Característica}}} & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} } & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} } & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} } & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} } & \cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} } \\ \cline{1-2}
         \rowcolor[HTML]{D33333} 
-        \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Evaluada}}} & {\color[HTML]{FFFFFF} \textbf{Soporte}} & \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{\begin{tabular}[c]{@{}c@{}}Test \\ Acc\end{tabular}}}} & \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{\begin{tabular}[c]{@{}c@{}}Test \\ F1\end{tabular}}}} & \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Resolución}}} & \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Hueso}}} & \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Estructura Densa}}} \\ \hline
+        \multicolumn{1}{|c|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Evaluada}}} & {\color[HTML]{FFFFFF} \textbf{Soporte}} & \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{\begin{tabular}[c]{@{}c@{}}Test \\ Acc\end{tabular}}}} & \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{\begin{tabular}[c]{@{}c@{}}Test \\ F1\end{tabular}}}} & \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Resolución}}} & \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Tipo}}} & \multirow{-2}{*}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Estructura Densa}}} \\ \hline
         \multicolumn{1}{|c|}{AF} & DM, LSE, USE & 0.69 & 0.52 & 50K & \textit{Cut} & \textit{Variable} \\
         \multicolumn{1}{|c|}{BN} & AF, DP, LSE & 0.91 & 0.79 & 25K & \textit{Cut} & \textit{Variable} \\
         \multicolumn{1}{|c|}{DM} & Todas & 0.80 & 0.65 & 100K & \textit{Cut} & \textit{Same} \\
@@ -374,7 +376,7 @@ En los experimentos con cuatro características, los tiempos se redujeron consid
         \multicolumn{1}{|c|}{VM} & AF, DM, IP & 0.70 & 0.50 & 100K & \textit{Cut} & \textit{Variable} \\ \hline
     \end{tabular}%
     }
-    \caption[Resultados de los mejores modelos obtenidos para cada característica en los experimentos multietiqueta]{Resultados de los mejores modelos obtenidos para cada característica en los experimentos multietiqueta en el conjunto de datos de test. Se observan en las columnas \say{Test Acc} y \say{Test F1} los valores obtenidos para las métricas de \textit{accuracy} y F1 Macro respectivamente.}
+    \caption[Resultados de los mejores modelos obtenidos para cada característica en los experimentos multietiqueta]{Resultados de los mejores modelos obtenidos para cada característica en los experimentos multietiqueta en el conjunto de datos de test. Las columnas \say{Test Acc} y \say{Test F1} indican los valores obtenidos para las métricas de \textit{accuracy} y F1 Macro respectivamente. La columna \say{Tipo} indica si se ha utilizado la malla completa (\textit{Full}) o la versión recortada (\textit{Cut}), véase Figura \ref{bbox_cut_sample}. La columna \say{Estructura Densa} indica si el modelo utiliza la misma estructura densa para las salidas de la red (\textit{Same}) o si cada salida puede variar independiente del resto (\textit{Variable}), véase Subsección \ref{section4:nas}.}
     \label{table5:multilabel_results}
     \end{table}
 

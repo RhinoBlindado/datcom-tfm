@@ -204,7 +204,7 @@ Como se ha mencionado previamente en la Sección \ref{section3:meshes}, ExMeshCN
 \subsection{Capa de descriptores}
 Las representaciones en cuadrícula, como en el caso de imágenes, resultan convenientes porque encapsulan tanto la información de conectividad (es decir, la vecindad local entre píxeles) como las características asociadas (como los valores RGB) en una única estructura matricial. Sin embargo, esta estrategia no puede trasladarse directamente a las mallas tridimensionales debido a su naturaleza irregular y a la ausencia de un orden canónico entre sus elementos.
 
-Para abordar esta limitación, se introducen dos capas iniciales en la red, denominadas descriptores, las cuales contienen parámetros entrenables. El propósito de estas capas es extraer características directamente desde la malla, independientemente del orden de sus triángulos. Estos descriptores transforman la información de la malla a un formato compatible con operaciones de convolución 1D, permitiendo que el modelo aprenda efectivamente a partir de la estructura tridimensional sin requerir una representación regular.
+Para abordar esta limitación, se introducen dos capas iniciales en la red, denominadas \say{descriptores}, cuyo propósito es extraer de la malla información que permita caracterizar cada cara triangular, de forma de que sea invariante e independientemente del orden en el que se encuentran. De esta forma se obtiene información que es similar a los valores RGB de un píxel, y a los cuales se les puede aplicar convoluciones permitiendo que el modelo pueda aprender efectivamente partiendo de una estructura 3D sin representación regular. 
 
 \subsubsection{Descriptor geodésico basado en aristas}
 El objetivo de este descriptor es capturar características geodésicas locales asociadas a los triángulos de la malla, características que han sido mayoritariamente ignoradas en la literatura actual. Se parte del concepto de distancia geodésica entre caras, definida como el camino más corto a través de aristas que conecta el centro de un triángulo objetivo con un vértice de un triángulo adyacente, pasando por uno de los vértices del triángulo objetivo. No obstante, en mallas triangulares esta métrica resulta limitada, ya que la cantidad de aristas involucradas en dichos caminos es siempre dos, lo cual no aporta mucha información.
@@ -252,7 +252,7 @@ En la literatura, las características geométricas más comúnmente empleadas p
 
 \begin{equation}
 \label{eq4:geometric}
-    \mathcal{G}(\bar{\textbf{a}_{t}}) = \phi_{0} \textbf{c}_{t} + \phi_{1} \overrightarrow{\textbf{n}}_{t} + \phi_{2} \sum_{j}^{3} | \textbf{c}_{t} - \textbf{c}_{n(t)}^{j} | + \phi_{3} | \overrightarrow{\textbf{n}}_{t} \times \overrightarrow{\textbf{n}}_{n(t)}^j |
+    \mathcal{G}(\bar{\textbf{a}_{t}}) = \phi_{0} \textbf{c}_{t} + \phi_{1} \overrightarrow{\textbf{n}}_{t} + \phi_{2} \sum_{j}^{3} | \textbf{c}_{t} - \textbf{c}_{n(t)}^{j} | + \phi_{3} \sum_{j}^{3} | \overrightarrow{\textbf{n}}_{t} \times \overrightarrow{\textbf{n}}_{n(t)}^j |
 \end{equation}
 Donde:
 \begin{itemize}
@@ -296,6 +296,7 @@ Este paso expande temporalmente el conjunto de datos, duplicando la cantidad de 
 A diferencia de otros enfoques, ExMeshCNN mantiene fijo el tamaño del filtro de convolución entre capas y controla la capacidad de la red a través de la densidad (profundidad) de las mismas. Esta arquitectura facilita el uso de técnicas de interpretabilidad como Grad-CAM, permitiendo identificar los triángulos que más contribuyen al resultado final del modelo. Adicionalmente, esta es la razón por la cual se requiere un número idéntico de caras triangulares en las mallas 3D: no se puede variar el tamaño de una capa convolucional, por lo que tiene que fijarse a un valor ya conocido de antemano.
 
 \subsection{ExMeshCNN vs MeshCNN}
+\label{exmeshcnn_vs_meshcnn}
 
 \begin{table}[h]
     \centering

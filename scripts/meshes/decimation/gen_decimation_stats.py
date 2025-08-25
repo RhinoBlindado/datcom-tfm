@@ -30,7 +30,7 @@ sample_count = ms.mesh(0).vertex_number()
 redux_path = os.path.join(mesh_path, "{}_reductions".format(mesh_fname))
 os.makedirs(redux_path)
 
-haus_res = {"reduction" : [], "mean" : [], "max" : [], "rms" : []}
+haus_res = {"reduction" : [], "abs_mean" : [], "abs_max" : [], "rel_mean" : [], "rel_max": [], "bbox": []}
 
 pbar = tqdm(initial=0, total=len(scale_step), unit=" it")
 
@@ -49,9 +49,11 @@ for i, scale in enumerate(scale_step):
 
     act_hausdorff = ms.get_hausdorff_distance(sampledmesh=0, targetmesh=i+1, samplenum = sample_count)
     haus_res["reduction"].append(scale)
-    haus_res["mean"].append(act_hausdorff["mean"])
-    haus_res["max"].append(act_hausdorff["max"])
-    haus_res["rms"].append(act_hausdorff["RMS"])
+    haus_res["abs_mean"].append(act_hausdorff["mean"])
+    haus_res["abs_max"].append(act_hausdorff["max"])
+    haus_res["rel_mean"].append((act_hausdorff["mean"] / act_hausdorff["diag_mesh_0"]) * 100)
+    haus_res["rel_max"].append((act_hausdorff["max"] / act_hausdorff["diag_mesh_0"]) * 100)
+    haus_res["bbox"].append(act_hausdorff["diag_mesh_0"])
     ms.delete_current_mesh()
     pbar.update(1)
 

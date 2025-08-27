@@ -30,55 +30,45 @@ Finalmente, al acotar aún más la búsqueda a estudios que combinen IA con mode
 En las siguientes subsecciones primero se presenta brevemente el estado del arte de los métodos estimación de edad tradicionales. Posteriormente se presentan los métodos de estimación automáticos haciendo uso de la sínfisis del pubis y finalmente, el estado del arte del procesamiento de datos 3D por DL.
 
 \subsection{Métodos tradicionales para restos óseos}
-En cuanto al cráneo, los métodos más comúnmente empleados para la estimación de la edad son los propuestos por Meindl y Lovejoy \cite{meindl1985ectocranial}, Acsádi y Nemeskéri \cite{acsadi1970history}, y Mann \cite{mann1991maxillary}. Estos enfoques se basan en el análisis del grado de osificación de las articulaciones fibrosas que conectan los distintos huesos del cráneo, conocidas como suturas craneales. De acuerdo con una revisión reciente \cite{ruengdit2020cranial}, estos métodos tienden a producir resultados erráticos y con baja precisión. Por ello, se recomienda su utilización únicamente como complemento de otros métodos basados en diferentes estructuras óseas. No obstante, el mismo estudio señala que la incorporación de nuevas tecnologías, como la tomografía axial computarizada, ha contribuido a reducir los márgenes de error en la estimación de edad, como se evidencia en trabajos como \cite{chiba2013age, boyd2015use}.
+\subsubsection{Suturas craneales}
+A lo largo del tiempo se han propuesto distintos métodos para evaluar el grado de osificación de las articulaciones fibrosas del cráneo, conocidas como suturas craneales. Entre los más relevantes se encuentran los de Acsádi y Nemeskéri \cite{acsadi1970history}, Meindl y Lovejoy \cite{meindl1985ectocranial}, Mann \cite{mann1991maxillary} y Perizonius \cite{perizonius_closing_1984}. En general, estos métodos se basan en la observación macroscópica del cierre de las suturas, clasificando su estado en diferentes categorías que luego se traducen en una estimación de edad. No obstante, la precisión de esta técnica ha sido ampliamente cuestionada, considerándose insuficiente para un uso práctico en AF \cite{franklin_forensic_2010}, salvo cuando se emplea de manera complementaria junto con otros métodos basados en estructuras óseas distintas o con el uso de tomografías axiales computarizadas para aumentar su precisión \cite{ruengdit2020cranial}.
 
-Respecto a las costillas, el método más utilizado es el desarrollado por İșcan y Loth \cite{icscan1984age, icscan1985age}, que se enfoca en los cambios morfológicos del extremo ventral de la cuarta costilla asociados al envejecimiento. Sin embargo, este método presenta diversas limitaciones, tales como sesgos poblacionales, escasa reproducibilidad entre distintas poblaciones y errores tanto intraevaluador como interevaluador de magnitud moderada \cite{fanton2010critical, hartnett2010analysis}. Actualmente, el método ha comenzado a incorporar de forma limitada técnicas de imagen como la tomografía axial computarizada para mejorar su precisión \cite{blaszkowska2019validation}.
+\subsubsection{Costillas}
+El método más ampliamente utilizado es el desarrollado por İșcan y Loth \cite{icscan1984age, icscan1985age}, que se centra en el análisis del extremo ventral de la cuarta costilla mediante un sistema de nueve fases que describen el proceso de envejecimiento de esta estructura. La evaluación considera aspectos como la forma, la textura y la calidad del hueso, que permiten asignar la muestra a una fase determinada, la cual está vinculada a un rango específico de edad. Sin embargo, esta técnica presenta limitaciones derivadas de sesgos poblacionales, variabilidad intra- e interobservador y una reducida reproducibilidad \cite{fanton2010critical, hartnett2010analysis}. Con el fin de solventar estas limitaciones, se han propuesto mejoras basadas en enfoques de estadística bayesiana \cite{munoz_sex_2018} y en la aplicación de tomografía axial computarizada \cite{blaszkowska2019validation}.
 
-En cuanto a la cara auricular del ilion, los métodos más utilizados para la estimación de la edad son los propuestos por Lovejoy \cite{lovejoy1985chronological} y por Buckberry y Chamberlain \cite{buckberry_age_2002}. Al igual que otros métodos tradicionales, estos también presentan limitaciones importantes en cuanto a la precisión de las estimaciones y están sujetos a diversos sesgos poblacionales \cite{falys2006auricular, michopoulou2017auricular}. En la actualidad, se ha intentado mejorar la fiabilidad de estos métodos mediante la incorporación de técnicas de imagen como la tomografía axial computarizada \cite{villa2013reliability, barrier2009age}, así como mediante la aplicación de enfoques analíticos basados en estadística bayesiana. No obstante, los resultados obtenidos con estos métodos complementarios han sido mixtos y no concluyentes \cite{nikita2018evaluation}.
+\subsubsection{Cara auricular del ilion}
+Existen diversos métodos que emplean el desgaste de la cara auricular del ilion, situada en la pelvis, como indicador de edad. El primero fue propuesto por Lovejoy \cite{lovejoy1985chronological}, y posteriormente ampliado en los métodos de Buckberry y Chamberlain \cite{buckberry_age_2002} y de Osborne \cite{osborne_reconsidering_2004}. La elección de esta zona se debe a su resistencia al daño post-mortem y a la estabilidad de la articulación, lo que provoca que el patrón de desgaste se desarrolle de forma relativamente constante a lo largo de la vida. Sin embargo, la precisión de las estimaciones es limitada, ya que las categorías establecidas son demasiado amplias y se solapan, además de estar afectadas por sesgos poblacionales \cite{falys2006auricular, michopoulou2017auricular}. Con el objetivo de mejorar la fiabilidad de este enfoque, se han incorporado técnicas de imagen avanzadas, como la tomografía axial computarizada \cite{warrier_applicability_2024, villa2013reliability}.
 
 \subsection{Métodos tradicionales utilizando la sínfisis del pubis}
-
-La sínfisis del pubis constituye el hueso más comúnmente empleado en la estimación de la edad en contextos forenses, como se mencionó previamente en la Sección \ref{daIntro_ProblemDef}. En la actualidad, el método más difundido para este propósito es el propuesto por Suchey-Brooks \cite{RefWorks:RefID:20-brooks1990skeletal}, una variante modernizada del método original desarrollado por Todd. Ambos métodos se basan en la observación de características morfológicas específicas de la superficie de la sínfisis púbica (véase Tabla \ref{table:themBones}) para clasificar el hueso dentro de un determinado rango de edad. El método de Todd establece una clasificación en 10 fases o intervalos de edad, mientras que el método de Suchey-Brooks reduce esta categorización a 6 fases, aunque estas presentan un mayor grado de solapamiento entre sí. Los rangos definidos por ambos métodos pueden consultarse en las Tablas \ref{table:age_todd_} y \ref{table:age_suchey_brooks}.
+Los métodos de Todd y de Suchey-Brooks son los más empleados en AF para la estimación de la edad. Ambos procedimientos consisten en examinar detalladamente la superficie de la sínfisis del pubis, evaluando el desgaste que ocurre a medida que el individuo envejece (véase Tabla \ref{table:themBones} y \ref{themBomes:visualExample}), y clasificando dicho desgaste en distintas fases según los rangos establecidos por cada método, los cuales se presentan en las Tablas \ref{table:age_todd_} y \ref{table:age_suchey_brooks}.
 
 \begin{table}[h]
 \centering
-\begin{tabular}{|c|c|}
-    \hline
-    \rowcolor[HTML]{D33333} 
-    {\color[HTML]{FFFFFF} \textbf{Etapa}} & {\color[HTML]{FFFFFF} \textbf{Rango de Edad}} \\ \hline
-    I & 18-19 \\ \hline
-    II & 20-21 \\ \hline
-    III & 22-24 \\ \hline
-    IV & 25-26 \\ \hline
-    V & 27-30 \\ \hline
-    VI & 30-35 \\ \hline
-    VII & 35-39 \\ \hline
-    VIII & 39-44 \\ \hline
-    IX & 45-50 \\ \hline
-    X & 50+ \\ \hline
-\end{tabular}
-\caption{Rangos de edad del Método de Todd}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|
+>{\columncolor[HTML]{D33333}}c |c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\color[HTML]{FFFFFF} \textbf{Rango de Edad}} & I & II & III & IV & V & VI & VII & VIII & IX & X \\ \hline
+{\color[HTML]{FFFFFF} \textbf{Etapa}} & 18-19 & 20-21 & 22-24 & 25-26 & 27-30 & 30-35 & 35-39 & 39-44 & 45-50 & 50+ \\ \hline
+\end{tabular}%
+}
+\caption{Rangos de edad del Método de Todd.}
 \label{table:age_todd_}
 \end{table}
 
 \begin{table}[h]
 \centering
-\begin{tabular}{|c|c|}
-    \hline
-    \rowcolor[HTML]{D33333} 
-    {\color[HTML]{FFFFFF} \textbf{Etapa}} & {\color[HTML]{FFFFFF} \textbf{Rango de Edad}} \\ \hline
-    I & 15-23 \\ \hline
-    II & 19-34 \\ \hline
-    III & 21-46 \\ \hline
-    IV & 23-57 \\ \hline
-    V & 27-66 \\ \hline
-    VI & 34-86 \\ \hline
+\begin{tabular}{|
+>{\columncolor[HTML]{D33333}}c |c|c|c|c|c|c|}
+\hline
+{\color[HTML]{FFFFFF} \textbf{Etapa}} & I & II & III & IV & V & VI \\ \hline
+\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Rango de Edad}} & 15-23 & 19-34 & 21-46 & 23-57 & 27-66 & 34-86 \\ \hline
 \end{tabular}
-\caption{Rangos de edad del Método de Suchey-Brooks}
+\caption{Rangos de edad del Método de Suchey-Brooks.}
 \label{table:age_suchey_brooks}
 \end{table}
 
-Según un metaanálisis reciente \cite{schanandore2022accuracy}, el método de Suchey-Brooks se posiciona como uno de los más precisos para la estimación de la edad en contextos forenses. No obstante, diversos autores recomiendan su aplicación con precaución debido a sus limitaciones inherentes \cite{priya2017methods}. En la actualidad, el uso de imágenes provenientes de tomografías computarizadas permite aplicar el método directamente sobre modelos volumétricos, replicando de manera virtual el análisis que tradicionalmente se realiza sobre el hueso físico. Algunos estudios \cite{wade2011preliminary,villa2013forensic,lottering2014morphometric,lopez2015image} han aprovechado esta tecnología para observar los cambios en la densidad ósea interna que ocurren con el envejecimiento, con el fin de refinar los procesos de estimación. Sin embargo, a pesar de la incorporación puntual de estas tecnologías, el método continúa dependiendo de características morfológicas subjetivas. Esta subjetividad conduce a que las estimaciones finales estén fuertemente influenciadas por la experiencia del perito, más que por una evaluación objetiva y sistemática de los datos, lo cual compromete tanto la efectividad como la credibilidad del proceso de estimación \cite{garvin_current_2012}.
+Estos métodos se consideran generalmente los más precisos dentro del contexto forense. No obstante, diversos autores advierten sobre la necesidad de aplicarlos con cautela debido a sus limitaciones intrínsecas \cite{priya2017methods}. Actualmente, la disponibilidad de imágenes provenientes de tomografías computarizadas ha permitido aplicar los métodos sobre modelos volumétricos, replicando de forma virtual el análisis que tradicionalmente se realiza sobre el hueso físico. Estudios recientes \cite{wade2011preliminary,villa2013forensic,lottering2014morphometric,lopez2015image} han aprovechado esta tecnología para examinar cambios en la densidad ósea interna asociados al envejecimiento, contribuyendo así a refinar las estimaciones. A pesar de estas mejoras, la práctica sigue dependiendo de la evaluación de características morfológicas subjetivas, lo que provoca que las estimaciones finales estén fuertemente condicionadas por la experiencia del perito, más que por un análisis objetivo y sistemático, comprometiendo tanto la precisión como la confiabilidad del proceso \cite{garvin_current_2012}.
 
 \subsection{Métodos automáticos utilizando la sínfisis del pubis}
 
@@ -104,19 +94,15 @@ Los cuatro últimos estudios mencionados son los más cercanos al enfoque de est
 
 \section{Representaciones 3D en \textit{Deep Learning}}
 \label{3d_reprs_DL}
-Como se discutió en la Sección \ref{section2:3dreps}, existen múltiples formas de representar datos tridimensionales para su utilización en técnicas de DL. En esta sección se analiza cuál de estas representaciones resulta más adecuada para la extracción automática de características morfológicas orientadas a la estimación de la edad, y se presentan los avances más recientes asociados a dicha representación.
+Como se discutió en la Sección \ref{section2:3dreps}, existen diversas formas de representar datos tridimensionales para su uso en técnicas de DL. En esta sección se evalúa cuál de estas representaciones resulta más adecuada para el presente proyecto, así como los avances recientes asociados a la misma.
 
-La representación mediante nubes de puntos es la más sencilla, ya que consiste únicamente en un conjunto de coordenadas tridimensionales. Sin embargo, esta simplicidad implica que conceptos clave como la vecindad local y la conectividad entre puntos no están bien definidos. Esto dificulta la aplicación directa de operaciones típicas de CNNs, generando ambigüedades que afectan negativamente el rendimiento del modelo, especialmente en escenarios que requieren un alto nivel de detalle. Por estas razones, esta representación se descarta para este trabajo.
+En primer lugar, se descartan las representaciones que convierten los datos a formatos 2D, como proyecciones o vistas múltiples, ya que se desea aprovechar al máximo la riqueza de detalle que ofrecen los datos 3D sobre las superficies de los objetos. Este tipo de representación provoca la pérdida de información, especialmente en zonas complejas de la malla donde pueden producirse oclusiones. De manera similar, se descarta la representación RGB-D, que tampoco captura la complejidad completa del modelo tridimensional.
 
-La representación RGB-D, aunque útil para algunas aplicaciones, es esencialmente una representación 2.5D y, por lo tanto, no tiene la capacidad de capturar completamente la complejidad de la geometría tridimensional. Dado que el objetivo es analizar en detalle la morfología ósea, esta representación también se descarta.
+Las nubes de puntos, aunque tridimensionales, resultan insuficientes para este proyecto, pues generan ambigüedades a la hora de reconstruir la superficie de la malla, particularmente en escenarios que requieren un alto nivel de detalle. Los descriptores 3D, que generan \say{firmas} o representaciones compactas de la malla, también se consideran inadecuados, ya que pierden información topológica crítica. Por la misma razón, se descartan las representaciones basadas en grafos, que requieren transformaciones intermedias de la malla 3D.
 
-Las proyecciones y vistas múltiples permiten aprovechar arquitecturas clásicas de CNNs mediante la conversión del objeto 3D en una o varias imágenes 2D. Sin embargo, este enfoque conlleva pérdida de información topológica al realizar la proyección, y puede presentar problemas en superficies complejas donde partes del modelo ocluyen otras, generando aún más pérdida de información. Por ello, ambas representaciones se descartan igualmente.
+Las representaciones volumétricas, como los vóxeles o los árboles octales, presentan limitaciones importantes debido a su ineficiencia computacional y alto consumo de recursos. Resulta impracticable utilizarlas al nivel de detalle requerido para los escaneos 3D de huesos de este proyecto.
 
-Los descriptores 3D simplifican un modelo tridimensional en una representación compacta o \say{firma}, que resulta útil para tareas de reconocimiento global. Sin embargo, dado que este trabajo se enfoca en analizar detalladamente la topología de la superficie ósea, esta simplificación resulta inadecuada. Además, los descriptores son más eficaces en tareas de aprendizaje no supervisado que en supervisado, lo cual refuerza su exclusión. Por motivos similares, las representaciones basadas en grafos también se descartan, ya que requieren una transformación intermedia del modelo 3D que complica el tratamiento directo de su geometría.
-
-Las representaciones volumétricas, como los vóxeles, permiten describir el volumen completo del objeto en una rejilla tridimensional. Sin embargo, esta aproximación tiene un elevado coste computacional debido a la necesidad de realizar operaciones sobre espacios vacíos, lo que incrementa significativamente el uso de memoria. Además, este tipo de representación no permite capturar con suficiente precisión los detalles finos de la superficie, lo que la hace inadecuada para el problema planteado.
-
-La representación seleccionada en este trabajo es la de mallas poligonales tridimensionales. Estas son ampliamente utilizadas en el ámbito de la informática gráfica, lo que ha dado lugar a una gran variedad de herramientas y algoritmos para su procesamiento y análisis. Además, la mayoría de escáneres 3D empleados en AF generan directamente este tipo de representación, lo que facilita el flujo de trabajo. Las mallas son una representación eficiente y precisa: en zonas lisas y planas se utilizan pocos polígonos, mientras que en zonas con geometría compleja la densidad de polígonos aumenta, permitiendo capturar detalles intrincados. Desde el punto de vista del procesamiento mediante CNNs, las mallas ofrecen una ventaja adicional, ya que proporcionan información explícita sobre la conectividad entre vértices, lo que permite definir vecindarios locales de forma natural y estructurada.
+Por estas razones, se seleccionan las mallas poligonales como la representación óptima para este trabajo. Esta representación combina eficiencia y precisión: en áreas planas se emplean pocos polígonos, mientras que en zonas complejas la densidad aumenta, permitiendo capturar detalles intrincados. Además, las mallas poligonales son ampliamente utilizadas en informática gráfica, lo que ha generado un ecosistema de herramientas y algoritmos para su análisis. La mayoría de los escáneres 3D utilizados en AF generan directamente este tipo de mallas, facilitando el flujo de trabajo. Desde la perspectiva de las CNNs, las mallas ofrecen la ventaja de proporcionar información explícita sobre la conectividad de los vértices, lo que permite definir vecindarios locales de manera natural y estructurada.
 
 \subsection{Mallas poligonales}
 \label{section3:meshes}

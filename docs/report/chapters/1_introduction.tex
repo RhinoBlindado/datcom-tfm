@@ -100,7 +100,7 @@ En las últimas décadas los avances en IA, especialmente en ML y CV, han facili
 
 No obstante, resulta sorprendente que, en la actualidad, la AF siga presentando un nivel relativamente bajo de sofisticación tecnológica \cite{RefWorks:RefID:21-mesejo2020survey}. En este contexto, una de las principales motivaciones de este trabajo es impulsar la modernización y automatización de la AF desde una perspectiva tecnológica, centrándose particularmente en la aplicación de técnicas avanzadas para la estimación de edad.
 
-Además, como se mencionó previamente, la subjetividad inherente a la AF representa un desafío desde el punto de vista legal. En muchos casos, los análisis carecen de una base científica sólida según el criterio de Daubert \cite{noauthor_daubert_nodate}, el cual establece los requisitos para la admisibilidad del testimonio experto en un juicio. Según este criterio, un método es válido si: (1) los resultados son reproducibles y han sido verificados por terceros, (2) posee tasas de error conocidas y (3) es aceptado por la comunidad científica forense.
+Además, como se ha mencionado previamente, la subjetividad inherente a la AF representa un desafío desde el punto de vista legal. En muchos casos, los análisis carecen de una base científica sólida según el criterio de Daubert \cite{noauthor_daubert_nodate}, el cual establece los requisitos para la admisibilidad del testimonio experto en un juicio. Según este criterio, un método es válido si: (1) los resultados son reproducibles y han sido verificados por terceros, (2) posee tasas de error conocidas y (3) es aceptado por la comunidad científica forense.
 
 En este sentido, la aplicación de IA en AF puede contribuir significativamente a la reducción de la subjetividad en las identificaciones, minimizando errores humanos, y acelerando la realización de múltiples tareas, estructurando el conocimiento experto y facilitando la obtención de nuevos hallazgos. Esto, a su vez, fortalecería la base científica de los métodos utilizados en la disciplina, permitiendo que sean reproducibles y que se conozcan con precisión sus tasas de error, lo que favorecería su cumplimiento con el criterio de Daubert y su aceptación en el ámbito legal.
 
@@ -121,7 +121,7 @@ Estos datos subrayan la necesidad de incorporar técnicas informáticas automati
 
 Tras haber descrito el problema y su motivación, el objetivo principal de este TFM consiste en desarrollar y validar un modelo de aprendizaje profundo que, a partir de modelos 3D de la sínfisis púbica, permita extraer características morfológicas relevantes para la estimación de la edad en el momento de la muerte.
 
-Cabe destacar que este trabajo se construye como una continuación directa del TFG desarrollado previamente por el propio autor \cite{lugli_tfg_2022}\footnote{Galardonado con el Premio a Mejor TFG del Grado de Ingeniería Informática por la E.T.S. de Ingenierías Informática y de Telecomunicación de la Universidad de Granada, 10 de mayo de 2023.}. En dicho trabajo preliminar se exploró un método que fue en ese momento el estado del arte para el procesamiento de los escaneos 3D de la sínfisis del pubis, donde solo se centró en la predicción de una de las nueve características morfológicas del método de Todd, concretamente el Nódulo Óseo. Se realizó con una cantidad mucho más restringida de datos y de capacidad de cómputo. Aun así se lograron resultados prometedores, siendo esta la razón de ser de este proyecto actual.
+Cabe destacar que este trabajo se construye como una mejora y expansión directa del TFG desarrollado previamente por el propio autor \cite{lugli_tfg_2022}\footnote{Galardonado con el Premio a Mejor TFG del Grado de Ingeniería Informática por la E.T.S. de Ingenierías Informática y de Telecomunicación de la Universidad de Granada, 10 de mayo de 2023.}. En dicho trabajo preliminar, centrado en la predicción de una de las nueve características morfológicas del método de Todd (concretamente, el Nódulo Óseo), se exploró un método que fue, en ese momento, el estado del arte para el procesamiento de los escaneos 3D de la sínfisis del pubis. Dicho TFG se realizó con una cantidad mucho más restringida de datos y de capacidad de cómputo y, aun así, se lograron resultados muy prometedores, dando origen al proyecto actual.
 
 El presente TFM amplía sustancialmente dicho enfoque inicial, incorporando técnicas más actuales y sofisticadas de DL para datos 3D, así como procedimientos más avanzados para la obtención de la arquitectura e hiperparámetros de dichos modelos. Además, se aborda un volumen experimental considerablemente mayor y se incorpora el análisis del efecto de la resolución de las mallas sobre el rendimiento predictivo así como una visión a la interpretabilidad de los modelos obtenidos. Todo ello con el objetivo de avanzar hacia un sistema más robusto, reproducible y explicable para la clasificación automática de las características morfológicas utilizadas en la estimación de la edad de la muerte.
 
@@ -216,9 +216,9 @@ Asimismo, la fase de pruebas se extendió más de lo previsto, ya que algunas ve
 \label{table:plan2}
 \end{table}
 
-Para la estimación del coste total del proyecto, se ha considerado un salario de 35\officialeuro/hora, correspondiente al perfil de un responsable de I+D en una empresa tecnológica o un investigador senior. Además, se han incluido los costes materiales, entre los que destacan: el precio del portátil empleado para el desarrollo del TFM, dispositivos de almacenamiento masivo, el uso de un servidor con GPU de altas prestaciones, y otros gastos misceláneos. El desglose completo puede consultarse en la Tabla \ref{table:money}, donde se estima el coste total del proyecto ronda los 19,550.00\officialeuro.
+Para la estimación del coste total del proyecto, se ha considerado un salario de 35\officialeuro/hora, correspondiente al perfil de un responsable de I+D en una empresa tecnológica o un investigador senior. Además, se han incluido los costes materiales, entre los que destacan: el precio del portátil empleado para el desarrollo del TFM, dispositivos de almacenamiento masivo, el uso de un servidor con GPU de altas prestaciones, y otros gastos misceláneos. El desglose completo puede consultarse en la Tabla \ref{table:money}, donde se estima el coste total del proyecto ronda los 45,000\officialeuro.
 
-En particular, el servidor GPU se ha valorado en 15,000\officialeuro, asumiendo una amortización a dos años. Esto supone un coste diario de 20.55\officialeuro, lo que se traduce en 6,391.05\officialeuro\space durante el periodo estimado de duración del proyecto.
+En particular, el servidor GPU utilizado se trata de un servidor Nvidia DGX A100, valorado en 75,000\officialeuro, asumiendo una amortización a dos años. Esto supone un coste diario de 102.74\officialeuro, lo que se traduce en 31,952.14\officialeuro\space durante el periodo estimado de duración del proyecto.
 
 \begin{table}[h]
     \centering
@@ -232,11 +232,11 @@ En particular, el servidor GPU se ha valorado en 15,000\officialeuro, asumiendo 
         \multicolumn{1}{|l|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Item}}} & \multicolumn{1}{l|}{\cellcolor[HTML]{D33333}{\color[HTML]{FFFFFF} \textbf{Costo}}} \\ \hline
         \multicolumn{1}{|l|}{Salario} & \multicolumn{1}{l|}{11,812.50\officialeuro} \\ \hline
         \multicolumn{1}{|l|}{Portátil} & \multicolumn{1}{l|}{800.00\officialeuro} \\ \hline
-        \multicolumn{1}{|l|}{Servidor GPU} & \multicolumn{1}{l|}{6,391.05\officialeuro} \\ \hline
+        \multicolumn{1}{|l|}{Servidor GPU} & \multicolumn{1}{l|}{31,952.14\officialeuro} \\ \hline
         \multicolumn{1}{|l|}{Almacenamiento} & \multicolumn{1}{l|}{150.00\officialeuro} \\ \hline
         \multicolumn{1}{|l|}{Otros} & \multicolumn{1}{l|}{400.00\officialeuro} \\ \hline
         \rowcolor[HTML]{FFCCC9} 
-        \multicolumn{1}{|r|}{\cellcolor[HTML]{FFCCC9}Total} & \multicolumn{1}{l|}{\cellcolor[HTML]{FFCCC9}19,553.55\officialeuro} \\ \hline
+        \multicolumn{1}{|r|}{\cellcolor[HTML]{FFCCC9}Total} & \multicolumn{1}{l|}{\cellcolor[HTML]{FFCCC9}45,114.64\officialeuro} \\ \hline
     \end{tabular}
 \caption{Estimación de coste del proyecto}
 \label{table:money}

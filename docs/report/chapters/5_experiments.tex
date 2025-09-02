@@ -87,7 +87,7 @@ El procedimiento, también automatizado mediante Blender, consiste en generar un
 
 \subsubsection{Reducción de resolución}
 \label{section4:data_reduction}
-Una vez obtenidas las mallas que presentan una geometría adecuada y sin defectos topológicos estando o no recortadas, persiste una variabilidad importante: el número de triángulos es diferente entre mallas. Para normalizar esta característica, se diseñó un \textit{script} que aplica una reducción global de resolución a la malla mediante colapso de aristas. Esto permite reducir de forma progresiva el número de triángulos, preservando en la medida de lo posible la topología general y los detalles relevantes. El resultado son mallas con un número fijo de triángulos especificado por el usuario. En el caso del proyecto actual se fijaron a valores de 100,000; 50,000 y 25,000 triángulos.
+Una vez obtenidas las mallas que presentan una geometría adecuada y sin defectos topológicos estando o no recortadas, persiste una variabilidad importante: el número de triángulos es diferente entre mallas. Para normalizar esta característica, se diseñó un \textit{script} que aplica una reducción global de resolución a la malla mediante colapso de aristas. Esto permite reducir de forma progresiva el número de triángulos, preservando en la medida de lo posible la topología general y los detalles relevantes. El resultado son mallas con un número fijo de triángulos especificado por el usuario. En el caso del proyecto actual se fijaron a valores de 100,000, 50,000 y 25,000 triángulos.
 
 \subsubsection{Conversión de Formato}
 Como último paso (f) del preprocesado, guiándose por la Figura \ref{mesh_preparation_pipeline}, se realiza la conversión de formato. Hasta este punto, las mallas han sido representadas mediante ficheros en formato OBJ. Sin embargo, ExMeshCNN, debido a los requisitos específicos que imponen sus descriptores y capas convolucionales, requiere que los datos estén en un formato particular utilizando el formato de guardado NPY de NumPy.
@@ -300,7 +300,7 @@ Una vez validado que es factible utilizar versiones reducidas de las mallas sin 
 En esta fase, se llevaron a cabo los denominados experimentos de etiqueta única, donde se entrena un modelo independiente para cada una de las características de Todd, sin considerar la influencia de las demás características. Por cada característica, se realizaron 6 ejecuciones distintas resultantes de las combinaciones de los siguientes parámetros:
 
 \begin{itemize}
-\item \textbf{Resolución de la malla}: 100,000 (abreviado a 100K); 50,000 (50K) o 25,000 (25K) triángulos.
+\item \textbf{Resolución de la malla}: 100,000 (abreviado a 100K), 50,000 (50K) o 25,000 (25K) triángulos.
 \item \textbf{Tipo de malla}: Malla completa (abreviado a \textit{Full}) o malla recortada (\textit{Cut}), ver Figura \ref{bbox_cut_sample}.
 \end{itemize}
 

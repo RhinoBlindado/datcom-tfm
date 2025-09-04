@@ -1,9 +1,9 @@
-[:es: Español](#trabajo-de-fin-de-master) | [:gb: English](#masters-thesis)
+[:es: Español](#trabajo-de-fin-de-máster) | [:gb: English](#masters-thesis)
 
 ---
 # Trabajo de Fin de Máster #
-## :books: Curso 2024-2025, Máster en Ciencia de Datos e Ingeniería en Computadores, ETSIIT UGR.
-### _Clasificación automática de criterios morfológicos para estimación de la edad de muerte a partir de modelos 3D de la sínfisis del pubis_
+## :books: Curso 2024-2025, Máster Universitario en Ciencia de Datos e Ingeniería de Computadores, ETSIIT UGR.
+### _Clasificación automática de criterios morfológicos para estimación de la edad de la muerte a partir de modelos 3D de la sínfisis del pubis_
 
 **Autor**
 - Valentino Lugli
@@ -20,6 +20,8 @@ La memoria se encuentra disponible para su lectura [aquí]().
 
 ### :file_cabinet: Datos
 
+## :: Estructura del Repositorio
+
 ### :nut_and_bolt: Ejecución
 
 #### Entrenamiento
@@ -35,7 +37,7 @@ La memoria se encuentra disponible para su lectura [aquí]().
 En este trabajo se utilizó el _framework_ de [ExMeshCNN](https://github.com/gyeomo/ExMeshCNN).
 
 ---
-# Bachelor's Thesis #
+# Master's Thesis #
 ## :books: 2024-2025 Course, Master's Degree in Data Science and Computer Engineering, ETSIIT UGR.
 ### _Automatic classification of morphological criteria for age-of-death estimation using 3D scans of the pubic symphysis_.
 
@@ -51,6 +53,8 @@ En este trabajo se utilizó el _framework_ de [ExMeshCNN](https://github.com/gye
 ### :gear: Installation
  
 ### :file_cabinet: Data
+
+## :: Repository Structure
  
 ### :nut_and_bolt: Execution
 
